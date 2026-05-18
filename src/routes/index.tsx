@@ -43,12 +43,7 @@ function Landing() {
           <div className="max-w-3xl">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur">
               <Sparkles className="h-3 w-3" />
-              Facebook · Instagram · TikTok · 2nd Numbers
-            </div>
-          <div className="max-w-3xl">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur">
-              <Sparkles className="h-3 w-3" />
-              Secure digital marketplace · Paystack checkout
+              Facebook · Instagram · TikTok · 2nd Numbers · Paystack checkout
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-white md:text-6xl">
               The marketplace for{" "}
