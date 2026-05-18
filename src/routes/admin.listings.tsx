@@ -30,7 +30,7 @@ type Listing = {
   is_active: boolean;
 };
 
-const blank: Listing = { title: "", description: "", price: 0, category: "Accounts", image_url: "", stock: 1, is_active: true };
+const blank: Listing = { title: "", description: "", price: 0, category: "Facebook", image_url: "", stock: 1, is_active: true };
 
 function AdminListings() {
   const qc = useQueryClient();
