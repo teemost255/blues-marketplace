@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
