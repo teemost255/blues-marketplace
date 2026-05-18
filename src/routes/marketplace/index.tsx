@@ -40,7 +40,7 @@ function Marketplace() {
     },
   });
 
-  const categories = useMemo(() => ["all", "Accounts", "Software", "Templates", "Services", "Other"], []);
+  const categories = useMemo(() => ["all", ...LISTING_CATEGORIES], []);
   const totalPages = data ? Math.max(1, Math.ceil(data.count / PAGE_SIZE)) : 1;
 
   return (
