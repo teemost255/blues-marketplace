@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
@@ -35,16 +36,14 @@ function Landing() {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 opacity-90"
-          style={{ background: "var(--gradient-hero)" }}
-        />
+        <div className="absolute inset-0 -z-10 opacity-90" style={{ background: "var(--gradient-hero)" }} />
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,oklch(0.74_0.08_190/0.3),transparent_60%)]" />
-        <div className="container mx-auto px-4 py-24 md:py-32">
+        <AnimatedBlobs withOrbits />
+        <div className="container relative mx-auto px-4 py-20 md:py-32">
           <div className="max-w-3xl">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur">
               <Sparkles className="h-3 w-3" />
-              Secure digital marketplace · Paystack checkout
+              Facebook · Instagram · TikTok · 2nd Numbers · Paystack checkout
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-white md:text-6xl">
               The marketplace for{" "}

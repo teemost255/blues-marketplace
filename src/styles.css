@@ -128,3 +128,50 @@
   }
   h1, h2, h3, h4 { letter-spacing: -0.02em; }
 }
+
+/* Animated circular background blobs */
+@keyframes blob-float-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -60px) scale(1.1); }
+  66% { transform: translate(-30px, 30px) scale(0.95); }
+}
+@keyframes blob-float-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-50px, 40px) scale(1.05); }
+  66% { transform: translate(35px, -25px) scale(0.9); }
+}
+@keyframes blob-float-3 {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate(20px, -40px) scale(1.15) rotate(180deg); }
+}
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+
+.bg-blobs {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0;
+}
+.bg-blobs::before, .bg-blobs::after, .bg-blobs > span {
+  content: ""; position: absolute; border-radius: 9999px;
+  filter: blur(60px); opacity: 0.55; will-change: transform;
+}
+.bg-blobs::before {
+  width: 420px; height: 420px; top: -120px; left: -100px;
+  background: radial-gradient(circle, oklch(0.74 0.08 190 / 0.7), transparent 70%);
+  animation: blob-float-1 18s ease-in-out infinite;
+}
+.bg-blobs::after {
+  width: 480px; height: 480px; bottom: -160px; right: -120px;
+  background: radial-gradient(circle, oklch(0.58 0.10 210 / 0.6), transparent 70%);
+  animation: blob-float-2 22s ease-in-out infinite;
+}
+.bg-blobs > span {
+  width: 320px; height: 320px; top: 40%; left: 50%;
+  background: radial-gradient(circle, oklch(0.38 0.09 240 / 0.5), transparent 70%);
+  animation: blob-float-3 26s ease-in-out infinite;
+}
+
+.ring-orbit {
+  position: absolute; border-radius: 9999px;
+  border: 1px dashed oklch(0.74 0.08 190 / 0.25);
+  animation: spin-slow 40s linear infinite;
+  pointer-events: none;
+}

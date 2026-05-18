@@ -59,24 +59,39 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
+          country: string | null
           created_at: string
           display_name: string | null
           id: string
+          phone: string | null
+          referral_code: string | null
           updated_at: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
+          country?: string | null
           created_at?: string
           display_name?: string | null
           id: string
+          phone?: string | null
+          referral_code?: string | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
+          country?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          phone?: string | null
+          referral_code?: string | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
