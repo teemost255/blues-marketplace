@@ -155,7 +155,7 @@ function Landing() {
             const meta = CATEGORY_META[cat];
             const Icon = meta.icon;
             return (
-              <Link key={cat} to="/marketplace" search={{ category: cat } as never}>
+              <Link key={cat} to="/marketplace">
                 <Card className={`group relative overflow-hidden border-border/60 p-6 transition-all hover:-translate-y-1 hover:shadow-lg bg-gradient-to-br ${meta.tint}`}>
                   <Icon className="h-8 w-8 text-foreground/80" />
                   <div className="mt-4 font-semibold">{cat}</div>
