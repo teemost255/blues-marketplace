@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
-  role: "admin" | "user" | null;
+  role: "admin" | "moderator" | "user" | null;
+  isStaff: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
@@ -16,7 +17,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<"admin" | "user" | null>(null);
+  const [role, setRole] = useState<"admin" | "moderator" | "user" | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadRole = async (uid: string) => {
@@ -25,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("role")
       .eq("user_id", uid);
     if (data?.some((r) => r.role === "admin")) setRole("admin");
-    else if (data && data.length > 0) setRole("user");
+    else if (data?.some((r) => r.role === "moderator")) setRole("moderator");
     else setRole("user");
   };
 
