@@ -59,8 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) await loadRole(user.id);
   };
 
+  const isStaff = role === "admin" || role === "moderator";
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signOut, refreshRole }}>
+    <AuthContext.Provider value={{ user, session, role, isStaff, loading, signOut, refreshRole }}>
       {children}
     </AuthContext.Provider>
   );
