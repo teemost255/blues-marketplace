@@ -12,22 +12,44 @@ function AdminLayout() {
   const { user, role, isStaff, loading, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  if (loading) return <div className="grid min-h-screen place-items-center text-muted-foreground">Loading…</div>;
-  if (!user) return (
-    <div className="grid min-h-screen place-items-center px-4 text-center">
-      <div><h1 className="text-2xl font-semibold">Please sign in</h1><Button asChild className="mt-4"><Link to="/login">Sign in</Link></Button></div>
-    </div>
-  );
-  if (!isStaff) return (
-    <div className="grid min-h-screen place-items-center px-4 text-center">
-      <div>
-        <h1 className="text-2xl font-semibold">Admin access required</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Your account doesn't have admin or moderator privileges.</p>
-        <Button asChild className="mt-4"><Link to="/dashboard">Back to dashboard</Link></Button>
+  // CRITICAL: If the app is still loading user data/roles, do not redirect.
+  // Wait until loading is false.
+  if (loading) {
+    return (
+      <div className="grid min-h-screen place-items-center text-muted-foreground">
+        Checking access...
       </div>
-    </div>
-  );
+    );
+  }
 
+  // If loading is finished and there is no user, then redirect/show login.
+  if (!user) {
+    return (
+      <div className="grid min-h-screen place-items-center px-4 text-center">
+        <div>
+          <h1 className="text-2xl font-semibold">Please sign in</h1>
+          <Button asChild className="mt-4"><Link to="/login">Sign in</Link></Button>
+        </div>
+      </div>
+    );
+  }
+
+  // If loading is finished and user is not staff, show access denied.
+  if (!isStaff) {
+    return (
+      <div className="grid min-h-screen place-items-center px-4 text-center">
+        <div>
+          <h1 className="text-2xl font-semibold">Admin access required</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your account doesn't have sufficient privileges.
+          </p>
+          <Button asChild className="mt-4"><Link to="/dashboard">Back to dashboard</Link></Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Define links based on verified role
   const isAdmin = role === "admin";
   const links = [
     { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true, show: true },
@@ -64,7 +86,7 @@ function AdminLayout() {
           </Button>
         </div>
       </aside>
-      <main className="flex-1"><Outlet /></main>
+      <main className="flex-1 p-6"><Outlet /></main>
     </div>
   );
 }
