@@ -45,6 +45,7 @@ function AdminLayout() {
           <Link to="/" className="flex items-center gap-2 font-semibold">
             <Anchor className="h-5 w-5 text-sidebar-primary" /> Admin Panel
           </Link>
+          <Badge variant="secondary" className="mt-2 text-[10px] uppercase">{role}</Badge>
         </div>
         <nav className="flex-1 space-y-1 px-3">
           {links.map((l) => {
