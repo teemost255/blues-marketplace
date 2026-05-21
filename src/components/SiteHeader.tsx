@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export function SiteHeader() {
   const { user, role, signOut } = useAuth();
@@ -73,6 +74,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {user && <NotificationBell />}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

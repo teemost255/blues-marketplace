@@ -80,9 +80,19 @@ function Register() {
 
   const handleGoogle = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/dashboard",
+      // Use origin so Lovable/Google redirect back to the app root for handling
+      redirect_uri: window.location.origin,
     });
-    if (result.error) toast.error("Google sign-in failed");
+
+    if (result.error) {
+      toast.error("Google sign-in failed");
+      return;
+    }
+
+    if (!result.redirected) {
+      toast.success("Signed in with Google");
+      navigate({ to: "/dashboard" });
+    }
   };
 
   return (

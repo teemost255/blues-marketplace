@@ -21,13 +21,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadRole = async (uid: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", uid);
-    if (data?.some((r) => r.role === "admin")) setRole("admin");
-    else if (data?.some((r) => r.role === "moderator")) setRole("moderator");
-    else setRole("user");
+    setLoading(true);
+
+    try {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", uid);
+      if (data?.some((r) => r.role === "admin")) setRole("admin");
+      else if (data?.some((r) => r.role === "moderator")) setRole("moderator");
+      else setRole("user");
+    } catch (error) {
+      console.error("Failed to load user role", error);
+      setRole("user");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -35,17 +44,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        setTimeout(() => { loadRole(s.user.id); }, 0);
+        loadRole(s.user.id);
       } else {
         setRole(null);
+        setLoading(false);
       }
     });
 
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) loadRole(s.user.id).finally(() => setLoading(false));
-      else setLoading(false);
+      if (s?.user) {
+        loadRole(s.user.id);
+      } else {
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
