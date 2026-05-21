@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Activity, FileText, LayoutDashboard, Menu, Settings, ShieldCheck, ShoppingBag, Ticket, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { AdminGuard, useAdminPermissions } from "@/lib/admin-guard";
+import { useAdminPermissions } from "@/lib/admin-guard";
 import { useAuth } from "@/lib/auth";
 import { getAdminSession } from "@/lib/admin-auth";
 
@@ -83,7 +83,6 @@ function AdminLayout() {
   );
 
   return (
-    <AdminGuard>
       <div className="flex min-h-screen bg-red-50">
         <aside className="hidden w-72 flex-col border-r border-red-200 bg-red-50 text-red-900 md:flex">
           <SidebarContent />
@@ -127,6 +126,5 @@ function AdminLayout() {
           </main>
         </div>
       </div>
-    </AdminGuard>
   );
 }
