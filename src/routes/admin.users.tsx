@@ -111,7 +111,7 @@ function AdminUsers() {
   );
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="mx-auto max-w-screen-xl p-4 md:p-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Users</h1>
@@ -119,7 +119,14 @@ function AdminUsers() {
         </div>
         <div className="relative w-full md:w-80">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search by name or ID" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+          <Input
+            type="search"
+            aria-label="Search users"
+            placeholder="Search by name or ID"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="pl-9"
+          />
         </div>
       </div>
 
@@ -146,21 +153,21 @@ function AdminUsers() {
                 </Badge>
                 <Badge variant={statusVariant as any}>{u.status}</Badge>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" size="sm" disabled={!isAdmin} onClick={() => setVerified(u.id, !u.is_verified)}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                <Button variant="outline" size="sm" disabled={!isAdmin} className="w-full sm:w-auto" onClick={() => setVerified(u.id, !u.is_verified)}>
                   <BadgeCheck className="mr-1 h-4 w-4" /> {u.is_verified ? "Unverify" : "Verify"}
                 </Button>
                 {u.status === "active" ? (
                   <SuspendDialog disabled={!isAdmin} onConfirm={(reason) => setStatus(u.id, "suspended", reason)} />
                 ) : (
-                  <Button variant="outline" size="sm" disabled={!isAdmin} onClick={() => setStatus(u.id, "active")}>
+                  <Button variant="outline" size="sm" disabled={!isAdmin} className="w-full sm:w-auto" onClick={() => setStatus(u.id, "active")}>
                     <Play className="mr-1 h-4 w-4" /> Reactivate
                   </Button>
                 )}
                 <Button
                   variant="outline" size="sm"
                   disabled={!isAdmin}
-                  className="text-destructive hover:text-destructive"
+                  className="w-full text-destructive hover:text-destructive sm:w-auto"
                   onClick={() => {
                     if (!isAdmin) return rejectModeratorAction();
                     if (confirm(`Ban ${u.display_name ?? "this user"}? They will lose access immediately.`)) {
@@ -198,13 +205,29 @@ function SuspendDialog({ onConfirm, disabled }: { onConfirm: (reason: string) =>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Suspend user</DialogTitle></DialogHeader>
-        <div className="space-y-2">
-          <Label>Reason (shown in audit log)</Label>
-          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Policy violation, suspicious activity, etc." />
+        <div className="space-y-4">
+          <Label htmlFor="suspend-reason">Reason (shown in audit log)</Label>
+          <Textarea
+            id="suspend-reason"
+            required
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Policy violation, suspicious activity, etc."
+          />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={() => { onConfirm(reason || "No reason provided"); setOpen(false); setReason(""); }}>Suspend</Button>
+          <Button variant="outline" onClick={() => { setOpen(false); setReason(""); }}>Cancel</Button>
+          <Button
+            disabled={!reason.trim()}
+            onClick={() => {
+              if (!reason.trim()) return;
+              onConfirm(reason.trim());
+              setOpen(false);
+              setReason("");
+            }}
+          >
+            Suspend
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
