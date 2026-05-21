@@ -1,13 +1,13 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
-import { getAdminSession, clearAdminSession } from "@/lib/admin-auth";
+import { getAdminSession, clearAdminSession, type AdminSession } from "@/lib/admin-auth";
 
 export function AdminGuard({ children }: { children: ReactNode }) {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const adminSession = getAdminSession();
+  const [adminSession] = useState<AdminSession | null>(() => getAdminSession());
 
   // Check both traditional admin/moderator roles and new admin session
   const isAdmin = role === "admin" || !!adminSession;
@@ -54,7 +54,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
 export function AdminLoginGuard({ children }: { children: ReactNode }) {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const adminSession = getAdminSession();
+  const [adminSession] = useState<AdminSession | null>(() => getAdminSession());
 
   // Check if already authenticated as admin or moderator
   const isAdminAuthenticated = role === "admin" || role === "moderator" || !!adminSession;
@@ -80,8 +80,8 @@ export function AdminLoginGuard({ children }: { children: ReactNode }) {
 
 export function useAdminPermissions() {
   const { role } = useAuth();
-  const adminSession = getAdminSession();
-  
+  const [adminSession] = useState<AdminSession | null>(() => getAdminSession());
+
   const isAdmin = role === "admin" || !!adminSession;
   const isModerator = role === "moderator";
 
