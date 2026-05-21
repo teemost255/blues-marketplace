@@ -25,44 +25,52 @@ export async function authenticateAdmin(
   credentials: AdminCredentials
 ): Promise<AdminLoginResponse> {
   try {
-    // Call the verify_admin_password RPC function
-    const { data, error } = await supabase
-      .rpc("verify_admin_password", {
-        p_email: credentials.email.toLowerCase(),
+    const response = await fetch("/api/admin/sync-auth", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        email: credentials.email.toLowerCase(),
         password: credentials.password,
-      })
-      .single();
+      }),
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      return {
+        success: false,
+        error: result.error || "Authentication failed. Please check your credentials.",
+      };
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: credentials.email.toLowerCase(),
+      password: credentials.password,
+    });
 
     if (error) {
-      console.error("Admin authentication error:", error);
+      console.error("Admin supabase sign-in error:", error);
       return {
         success: false,
-        error: "Authentication failed. Please check your credentials.",
+        error: error.message,
       };
     }
 
-    if (!data) {
+    if (!data?.user) {
       return {
         success: false,
-        error: "Admin account not found.",
+        error: "Authentication failed. No user session was created.",
       };
     }
 
-    if (!data.is_valid) {
-      return {
-        success: false,
-        error: "Invalid email or password.",
-      };
-    }
-
-    // Return admin session data
     return {
       success: true,
       admin: {
-        id: data.id,
-        email: data.email,
-        display_name: data.display_name,
-        isValid: data.is_valid,
+        id: data.user.id,
+        email: data.user.email ?? credentials.email.toLowerCase(),
+        display_name: data.user.user_metadata?.display_name ?? null,
+        isValid: true,
       },
     };
   } catch (err) {

@@ -1,28 +1,25 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
-import { getAdminSession, clearAdminSession, type AdminSession } from "@/lib/admin-auth";
+import { clearAdminSession } from "@/lib/admin-auth";
 
 export function AdminGuard({ children }: { children: ReactNode }) {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const [adminSession] = useState<AdminSession | null>(() => getAdminSession());
 
-  // Check both traditional admin/moderator roles and new admin session
-  const isAdmin = role === "admin" || !!adminSession;
-  const isStaff = role === "admin" || role === "moderator" || !!adminSession;
+  const isAdmin = role === "admin";
+  const isStaff = role === "admin" || role === "moderator";
 
   useEffect(() => {
     if (!loading && !isStaff) {
       if (user && role === "user") {
         navigate({ to: "/dashboard" });
-      } else if (!user && !adminSession) {
-        // Not authenticated at all
+      } else if (!user) {
         navigate({ to: "/login" });
       }
     }
-  }, [loading, user, role, isStaff, adminSession, navigate]);
+  }, [loading, user, role, isStaff, navigate]);
 
   if (loading) {
     return <div className="grid min-h-screen place-items-center text-muted-foreground">Loading…</div>;
@@ -54,10 +51,9 @@ export function AdminGuard({ children }: { children: ReactNode }) {
 export function AdminLoginGuard({ children }: { children: ReactNode }) {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const [adminSession] = useState<AdminSession | null>(() => getAdminSession());
 
   // Check if already authenticated as admin or moderator
-  const isAdminAuthenticated = role === "admin" || role === "moderator" || !!adminSession;
+  const isAdminAuthenticated = role === "admin" || role === "moderator";
 
   useEffect(() => {
     if (!loading) {
@@ -69,7 +65,7 @@ export function AdminLoginGuard({ children }: { children: ReactNode }) {
         navigate({ to: "/dashboard" });
       }
     }
-  }, [loading, user, role, isAdminAuthenticated, navigate, adminSession]);
+  }, [loading, user, role, isAdminAuthenticated, navigate]);
 
   if (loading) {
     return <div className="grid min-h-screen place-items-center text-muted-foreground">Loading…</div>;
@@ -80,9 +76,8 @@ export function AdminLoginGuard({ children }: { children: ReactNode }) {
 
 export function useAdminPermissions() {
   const { role } = useAuth();
-  const [adminSession] = useState<AdminSession | null>(() => getAdminSession());
 
-  const isAdmin = role === "admin" || !!adminSession;
+  const isAdmin = role === "admin";
   const isModerator = role === "moderator";
 
   const signOutAdmin = () => {

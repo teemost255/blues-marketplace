@@ -11,8 +11,6 @@ import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/lib/auth";
 import {
   authenticateAdmin,
-  storeAdminSession,
-  getAdminSession,
   checkIsAdminEmail,
 } from "@/lib/admin-auth";
 
@@ -71,12 +69,8 @@ export function LoginForm({
           return toast.error(result.error || "Authentication failed");
         }
 
-        // Store admin session
-        if (result.admin) {
-          storeAdminSession(result.admin);
-          toast.success("Welcome admin!");
-          navigate({ to: "/admin" });
-        }
+        toast.success("Welcome admin!");
+        navigate({ to: "/admin" });
       } else {
         // Regular user login flow
         const { error } = await supabase.auth.signInWithPassword({

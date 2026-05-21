@@ -3,9 +3,7 @@ import { useState } from "react";
 import { Activity, FileText, LayoutDashboard, Menu, Settings, ShieldCheck, ShoppingBag, Ticket, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { useAdminPermissions } from "@/lib/admin-guard";
 import { useAuth } from "@/lib/auth";
-import { getAdminSession } from "@/lib/admin-auth";
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
@@ -23,24 +21,14 @@ const navLinks = [
 
 function AdminLayout() {
   const { user, signOut } = useAuth();
-  const { signOutAdmin } = useAdminPermissions();
-  const adminSession = getAdminSession();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
-  // Determine if this is a traditional admin or new admin session
-  const isNewAdmin = !!adminSession;
-  const adminEmail = isNewAdmin ? adminSession?.email : user?.email;
-  const adminDisplayName = isNewAdmin ? adminSession?.display_name : user?.email;
+  const adminEmail = user?.email;
+  const adminDisplayName = user?.email;
 
   const handleSignOut = async () => {
-    if (isNewAdmin) {
-      // New admin auth - clear session and redirect
-      signOutAdmin();
-    } else {
-      // Traditional admin auth - use Supabase signOut
-      await signOut();
-    }
+    await signOut();
   };
 
   const SidebarContent = ({ onNav }: { onNav?: () => void }) => (

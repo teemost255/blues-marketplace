@@ -11,7 +11,6 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { getAdminSession } from "@/lib/admin-auth";
 
 export const Route = createFileRoute("/admin/settings")({
   component: AdminSettings,
@@ -64,12 +63,6 @@ function AdminSettings() {
     qc.invalidateQueries({ queryKey: ["listing-categories"] });
   };
 
-  const [adminSession, setAdminSession] = useState<any>(null);
-
-  useEffect(() => {
-    setAdminSession(getAdminSession());
-  }, []);
-
   useEffect(() => {
     if (!data) return;
     setHero({ headline: data.hero?.headline ?? "", subheadline: data.hero?.subheadline ?? "" });
@@ -77,9 +70,7 @@ function AdminSettings() {
     setSupport({ email: data.support?.email ?? "", whatsapp: data.support?.whatsapp ?? "" });
   }, [data]);
 
-  const isAdmin = role === "admin" || !!adminSession;
-
-  if (!isAdmin) {
+  if (role !== "admin") {
     return <div className="p-8 text-muted-foreground">Admins only.</div>;
   }
 
