@@ -218,15 +218,17 @@ export function LoginForm({
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link
-              to="/register"
-              className="font-medium text-accent hover:underline"
-            >
-              Register
-            </Link>
-          </p>
+          {!adminOnly && (
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <Link
+                to="/register"
+                className="font-medium text-accent hover:underline"
+              >
+                Register
+              </Link>
+            </p>
+          )}
         </Card>
       </div>
     </div>
