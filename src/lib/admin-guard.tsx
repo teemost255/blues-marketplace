@@ -9,11 +9,12 @@ export function AdminGuard({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const adminSession = getAdminSession();
 
-  // Check both traditional admin role (from user_roles) and new admin session
+  // Check both traditional admin/moderator roles and new admin session
   const isAdmin = role === "admin" || !!adminSession;
+  const isStaff = role === "admin" || role === "moderator" || !!adminSession;
 
   useEffect(() => {
-    if (!loading && !isAdmin) {
+    if (!loading && !isStaff) {
       if (user && role === "user") {
         navigate({ to: "/dashboard" });
       } else if (!user && !adminSession) {
@@ -21,7 +22,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
         navigate({ to: "/adminlogin" });
       }
     }
-  }, [loading, user, role, isAdmin, adminSession, navigate]);
+  }, [loading, user, role, isStaff, adminSession, navigate]);
 
   if (loading) {
     return <div className="grid min-h-screen place-items-center text-muted-foreground">Loading…</div>;
@@ -55,15 +56,15 @@ export function AdminLoginGuard({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const adminSession = getAdminSession();
 
-  // Check if already authenticated as admin
-  const isAdminAuthenticated = role === "admin" || !!adminSession;
+  // Check if already authenticated as admin or moderator
+  const isAdminAuthenticated = role === "admin" || role === "moderator" || !!adminSession;
 
   useEffect(() => {
     if (!loading) {
       if (isAdminAuthenticated) {
-        // Already admin, go to admin dashboard
+        // Already admin/staff, go to admin dashboard
         navigate({ to: "/admin" });
-      } else if (user && role !== "admin") {
+      } else if (user && role === "user") {
         // Regular user, send to dashboard
         navigate({ to: "/dashboard" });
       }
