@@ -28,7 +28,7 @@ export async function authenticateAdmin(
     // Call the verify_admin_password RPC function
     const { data, error } = await supabase
       .rpc("verify_admin_password", {
-        email: credentials.email.toLowerCase(),
+        p_email: credentials.email.toLowerCase(),
         password: credentials.password,
       })
       .single();

@@ -31,7 +31,7 @@ CREATE TRIGGER admins_users_set_updated_at BEFORE UPDATE ON public.admins_users
   FOR EACH ROW EXECUTE FUNCTION public.tg_set_updated_at();
 
 -- Function to verify admin password (for authentication)
-CREATE OR REPLACE FUNCTION public.verify_admin_password(email text, password text)
+CREATE OR REPLACE FUNCTION public.verify_admin_password(p_email text, password text)
 RETURNS TABLE (id uuid, display_name text, email text, is_valid boolean)
 LANGUAGE plpgsql
 SECURITY DEFINER
