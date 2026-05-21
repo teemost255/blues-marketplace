@@ -29,9 +29,39 @@ function AdminSettings() {
     },
   });
 
+  const { data: categories } = useQuery({
+    queryKey: ["listing-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("listing_categories").select("name").order("name");
+      if (error) throw error;
+      return (data ?? []).map((row: any) => row.name);
+    },
+  });
+
   const [hero, setHero] = useState({ headline: "", subheadline: "" });
   const [ann, setAnn] = useState({ enabled: false, text: "" });
   const [support, setSupport] = useState({ email: "", whatsapp: "" });
+  const [newCategory, setNewCategory] = useState("");
+
+  const addCategory = async () => {
+    const name = newCategory.trim();
+    if (!name) return toast.error("Enter a category name");
+
+    const { error } = await supabase.from("listing_categories").insert({ name, created_by: user?.id });
+    if (error) return toast.error(error.message);
+
+    await supabase.from("admin_audit_log").insert({
+      actor_id: user!.id,
+      action: "create_category",
+      target_type: "listing_categories",
+      target_id: name,
+      meta: { name },
+    });
+
+    toast.success("Category created");
+    setNewCategory("");
+    qc.invalidateQueries({ queryKey: ["listing-categories"] });
+  };
 
   useEffect(() => {
     if (!data) return;
@@ -86,6 +116,32 @@ function AdminSettings() {
           <div><Label>WhatsApp / phone</Label><Input value={support.whatsapp} onChange={(e) => setSupport({ ...support, whatsapp: e.target.value })} /></div>
         </div>
         <div className="mt-4"><Button onClick={() => save("support", support)}><Save className="mr-2 h-4 w-4" />Save support</Button></div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="mb-4 flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent" /><h2 className="font-semibold">Listing categories</h2></div>
+        <p className="text-sm text-muted-foreground">Create new listing categories for the marketplace and admin listing form.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto]">
+          <div>
+            <Label htmlFor="new-category">New category</Label>
+            <Input
+              id="new-category"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="e.g. Snapchat"
+            />
+          </div>
+          <Button className="self-end" onClick={addCategory}>Add category</Button>
+        </div>
+        <div className="mt-4 grid gap-2">
+          {categories && categories.length > 0 ? (
+            categories.map((category) => (
+              <div key={category} className="rounded-lg border border-border/70 bg-muted p-3 text-sm text-muted-foreground">{category}</div>
+            ))
+          ) : (
+            <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">No categories available yet.</div>
+          )}
+        </div>
       </Card>
     </div>
   );

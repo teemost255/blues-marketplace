@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MarketplaceIndexRouteImport } from './routes/marketplace/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as MarketplaceIdRouteImport } from './routes/marketplace/$id'
 import { Route as DashboardWishlistRouteImport } from './routes/dashboard.wishlist'
 import { Route as DashboardWalletRouteImport } from './routes/dashboard.wallet'
@@ -30,6 +31,8 @@ import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminListingsRouteImport } from './routes/admin.listings'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as TermsRouteImport } from './routes/terms'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -61,10 +64,15 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => rootRouteImport,
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const MarketplaceIdRoute = MarketplaceIdRouteImport.update({
   id: '/marketplace/$id',
@@ -136,12 +144,25 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/admin/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
+  '/admin': typeof AdminRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/login': typeof AdminLoginRoute
@@ -164,6 +185,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/login': typeof AdminLoginRoute
@@ -188,6 +211,9 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
+  '/admin': typeof AdminRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/login': typeof AdminLoginRoute
@@ -213,6 +239,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/register'
+    | '/privacy'
+    | '/terms'
+    | '/admin'
     | '/admin/audit'
     | '/admin/listings'
     | '/admin/login'
@@ -235,6 +264,8 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/register'
+    | '/privacy'
+    | '/terms'
     | '/admin/audit'
     | '/admin/listings'
     | '/admin/login'
@@ -258,6 +289,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/register'
+    | '/privacy'
+    | '/terms'
+    | '/admin'
     | '/admin/audit'
     | '/admin/listings'
     | '/admin/login'
@@ -282,6 +316,9 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
+  PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
+  AdminRoute: typeof AdminRoute
   AdminAuditRoute: typeof AdminAuditRoute
   AdminListingsRoute: typeof AdminListingsRoute
   AdminLoginRoute: typeof AdminLoginRoute
@@ -301,6 +338,27 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -475,13 +533,15 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
+  AdminRoute: AdminRoute,
   AdminAuditRoute: AdminAuditRoute,
-  AdminListingsRoute: AdminListingsRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminTicketsRoute: AdminTicketsRoute,
   AdminTransactionsRoute: AdminTransactionsRoute,
   AdminUsersRoute: AdminUsersRoute,
+  PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
   MarketplaceIdRoute: MarketplaceIdRoute,
   AdminIndexRoute: AdminIndexRoute,
   MarketplaceIndexRoute: MarketplaceIndexRoute,

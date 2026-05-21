@@ -181,7 +181,9 @@ function Register() {
             </div>
             <label className="flex items-start gap-2 text-sm text-muted-foreground">
               <Checkbox checked={form.agree} onCheckedChange={(v) => set("agree", v === true)} className="mt-0.5" />
-              <span>I agree to the <a href="#" className="text-accent hover:underline">Terms</a> and <a href="#" className="text-accent hover:underline">Privacy Policy</a>.</span>
+              <span>
+                I agree to the <Link to="/terms" className="text-accent hover:underline">Terms</Link> and <Link to="/privacy" className="text-accent hover:underline">Privacy Policy</Link>.
+              </span>
             </label>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating..." : "Create account"}

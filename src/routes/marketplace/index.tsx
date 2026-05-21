@@ -24,6 +24,17 @@ function Marketplace() {
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(0);
 
+  const { data: categories } = useQuery({
+    queryKey: ["listing-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("listing_categories").select("name").order("name");
+      if (error) throw error;
+      return (data ?? []).map((row: any) => row.name);
+    },
+  });
+
+  const categoryOptions = useMemo(() => ["all", ...(categories ?? LISTING_CATEGORIES)], [categories]);
+
   const { data, isLoading } = useQuery({
     queryKey: ["listings", q, category, sort, page],
     queryFn: async () => {
@@ -40,7 +51,6 @@ function Marketplace() {
     },
   });
 
-  const categories = useMemo(() => ["all", ...LISTING_CATEGORIES], []);
   const totalPages = data ? Math.max(1, Math.ceil(data.count / PAGE_SIZE)) : 1;
 
   return (
@@ -59,7 +69,7 @@ function Marketplace() {
           </div>
           <Select value={category} onValueChange={(v) => { setCategory(v); setPage(0); }}>
             <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-            <SelectContent>{categories.map((c) => <SelectItem key={c} value={c}>{c === "all" ? "All categories" : c}</SelectItem>)}</SelectContent>
+            <SelectContent>{categoryOptions.map((c) => <SelectItem key={c} value={c}>{c === "all" ? "All categories" : c}</SelectItem>)}</SelectContent>
           </Select>
           <Select value={sort} onValueChange={setSort}>
             <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>

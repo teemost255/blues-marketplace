@@ -19,12 +19,14 @@ export interface LoginFormProps {
   redirectTo?: string;
   title?: string;
   subtitle?: string;
+  adminOnly?: boolean;
 }
 
 export function LoginForm({
   redirectTo = "/dashboard",
   title = "Sign in",
   subtitle = "Welcome back. Please enter your details.",
+  adminOnly = false,
 }: LoginFormProps) {
   const navigate = useNavigate();
   const { user, role, loading } = useAuth();
@@ -33,6 +35,7 @@ export function LoginForm({
   const [submitting, setSubmitting] = useState(false);
 
   const resolveRedirect = () => {
+    if (adminOnly) return role === "admin" ? "/admin" : "/dashboard";
     if (redirectTo !== "/dashboard") return redirectTo;
     if (role === "admin") return "/admin";
     return "/dashboard";

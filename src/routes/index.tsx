@@ -74,6 +74,17 @@ function Landing() {
   });
 
   const [email, setEmail] = useState("");
+  const { data: categories } = useQuery({
+    queryKey: ["listing-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("listing_categories").select("name").order("name");
+      if (error) throw error;
+      return (data ?? []).map((row: any) => row.name);
+    },
+  });
+
+  const categoryOptions = categories ?? LISTING_CATEGORIES;
+
   const subscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.includes("@")) return toast.error("Enter a valid email");
@@ -151,8 +162,12 @@ function Landing() {
       <section className="container mx-auto px-4 py-16">
         <SectionHead eyebrow="Browse" title="Popular categories" subtitle="Jump straight into the niches buyers love." />
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {LISTING_CATEGORIES.map((cat) => {
-            const meta = CATEGORY_META[cat];
+          {categoryOptions.map((cat) => {
+            const meta = CATEGORY_META[cat] ?? {
+              icon: Sparkles,
+              tint: "from-slate-500/10 to-slate-700/10",
+              blurb: "Explore this category",
+            };
             const Icon = meta.icon;
             return (
               <Link key={cat} to="/marketplace">

@@ -44,6 +44,16 @@ function DashboardOverview() {
     },
   });
 
+  const { data: categories } = useQuery({
+    queryKey: ["listing-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("listing_categories").select("name").order("name");
+      if (error) throw error;
+      return (data ?? []).map((row: any) => row.name);
+    },
+  });
+  const categoryOptions = categories ?? LISTING_CATEGORIES;
+
   return (
     <div className="p-4 sm:p-6 md:p-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -93,7 +103,7 @@ function DashboardOverview() {
         <Card className="p-5">
           <h2 className="mb-4 font-semibold">Shortcuts</h2>
           <div className="grid grid-cols-2 gap-2">
-            {LISTING_CATEGORIES.map((c) => (
+            {categoryOptions.map((c) => (
               <Link key={c} to="/marketplace" className="rounded-lg border bg-muted/30 p-3 text-sm transition-colors hover:bg-secondary">
                 <div className="font-medium">{c}</div>
                 <div className="mt-0.5 text-xs text-muted-foreground">Browse</div>

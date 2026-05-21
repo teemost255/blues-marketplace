@@ -11,6 +11,8 @@ export function SiteFooter() {
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <Link to="/marketplace" className="hover:text-foreground">Marketplace</Link>
+          <Link to="/terms" className="hover:text-foreground">Terms</Link>
+          <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
           <Link to="/login" className="hover:text-foreground">Sign in</Link>
           <Link to="/register" className="hover:text-foreground">Register</Link>
         </div>
