@@ -34,10 +34,29 @@ function getCookie(cookieHeader: string | null, name: string) {
     .trim() || null;
 }
 
-async function resolveSessionDestination(token: string) {
+function normalizeRole(role: unknown): "admin" | "moderator" | "user" | null {
+  if (role === "admin" || role === "moderator" || role === "user") return role;
+  return null;
+}
+
+function getRoleFromClaims(claims: Record<string, unknown>): "admin" | "moderator" | "user" | null {
+  return (
+    normalizeRole(claims.role) ||
+    normalizeRole(claims.app_role) ||
+    normalizeRole(claims.user_role) ||
+    normalizeRole(claims["x-hasura-role"])
+  );
+}
+
+async function resolveUserRole(token: string) {
   const { data, error } = await supabaseAdmin.auth.getClaims(token);
   if (error || !data?.claims?.sub) {
     return null;
+  }
+
+  const claimRole = getRoleFromClaims(data.claims as Record<string, unknown>);
+  if (claimRole) {
+    return claimRole;
   }
 
   const userId = data.claims.sub;
@@ -50,17 +69,16 @@ async function resolveSessionDestination(token: string) {
     return null;
   }
 
-  const hasStaffRole = roles.some(
-    (row: { role: string }) => row.role === "admin" || row.role === "moderator",
-  );
-
-  if (hasStaffRole) {
-    return "/admin";
+  if (roles.some((row: { role: string }) => row.role === "admin")) {
+    return "admin";
   }
 
-  const hasUserRole = roles.some((row: { role: string }) => row.role === "user");
-  if (hasUserRole) {
-    return "/dashboard";
+  if (roles.some((row: { role: string }) => row.role === "moderator")) {
+    return "moderator";
+  }
+
+  if (roles.some((row: { role: string }) => row.role === "user")) {
+    return "user";
   }
 
   return null;
@@ -71,33 +89,38 @@ const authRedirectMiddleware = createMiddleware().server(async ({ next, request 
   const pathname = url.pathname;
   const acceptHeader = request.headers.get("accept") ?? "";
   const isHtmlRequest = acceptHeader.includes("text/html");
+  const token = getCookie(request.headers.get("cookie"), AUTH_TOKEN_COOKIE_NAME);
+  const role = token ? await resolveUserRole(token) : null;
+  const isAuthPage = pathname === "/login" || pathname === "/register";
+
+  if (pathname.startsWith("/admin")) {
+    if (!token || !role) {
+      throw redirect({ to: "/login" });
+    }
+
+    if (role !== "admin" && role !== "moderator") {
+      return new Response("Forbidden", { status: 403 });
+    }
+
+    return next();
+  }
 
   if (!isHtmlRequest || pathname.startsWith("/api")) {
     return next();
   }
 
-  const token = getCookie(request.headers.get("cookie"), AUTH_TOKEN_COOKIE_NAME);
-  const destination = token ? await resolveSessionDestination(token) : null;
-  const isAuthPage = pathname === "/login" || pathname === "/register";
-
-  if (destination) {
-    if (isAuthPage || pathname === "/") {
-      throw redirect({ to: destination });
-    }
-
-    if (pathname.startsWith("/admin") && destination === "/dashboard") {
-      throw redirect({ to: "/dashboard" });
-    }
-
-    if (pathname.startsWith("/dashboard") && destination === "/admin") {
-      throw redirect({ to: "/admin" });
-    }
-
-    return next();
+  if (isAuthPage && role) {
+    const destination = role === "admin" || role === "moderator" ? "/admin" : "/dashboard";
+    throw redirect({ to: destination });
   }
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/dashboard")) {
+  if (pathname.startsWith("/dashboard") && !role) {
     throw redirect({ to: "/login" });
+  }
+
+  if (pathname === "/" && role) {
+    const destination = role === "admin" || role === "moderator" ? "/admin" : "/dashboard";
+    throw redirect({ to: destination });
   }
 
   return next();
