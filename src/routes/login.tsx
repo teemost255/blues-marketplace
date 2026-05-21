@@ -9,6 +9,12 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/lib/auth";
+import {
+  authenticateAdmin,
+  storeAdminSession,
+  getAdminSession,
+  checkIsAdminEmail,
+} from "@/lib/admin-auth";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -52,20 +58,55 @@ export function LoginForm({
     e.preventDefault();
     setSubmitting(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      if (adminOnly) {
+        // Admin login flow
+        const result = await authenticateAdmin({
+          email,
+          password,
+        });
 
-    setSubmitting(false);
+        if (!result.success) {
+          setSubmitting(false);
+          return toast.error(result.error || "Authentication failed");
+        }
 
-    if (error) {
-      return toast.error(error.message);
-    }
+        // Store admin session
+        if (result.admin) {
+          storeAdminSession(result.admin);
+          toast.success("Welcome admin!");
+          navigate({ to: "/admin" });
+        }
+      } else {
+        // Regular user login flow - block admin emails
+        const isAdmin = await checkIsAdminEmail(email);
+        if (isAdmin) {
+          setSubmitting(false);
+          return toast.error(
+            "Admin accounts cannot use this login. Please use the admin login page."
+          );
+        }
 
-    toast.success("Welcome back!");
-    if (role !== null) {
-      navigate({ to: resolveRedirect() });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          setSubmitting(false);
+          return toast.error(error.message);
+        }
+
+        toast.success("Welcome back!");
+        if (role !== null) {
+          navigate({ to: resolveRedirect() });
+        }
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setSubmitting(false);
     }
   };
 
