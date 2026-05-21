@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { getAdminSession } from "@/lib/admin-auth";
 
 export const Route = createFileRoute("/admin/settings")({
   component: AdminSettings,
@@ -70,7 +71,10 @@ function AdminSettings() {
     setSupport({ email: data.support?.email ?? "", whatsapp: data.support?.whatsapp ?? "" });
   }, [data]);
 
-  if (role !== "admin") {
+  const adminSession = getAdminSession();
+  const isAdmin = role === "admin" || !!adminSession;
+
+  if (!isAdmin) {
     return <div className="p-8 text-muted-foreground">Admins only.</div>;
   }
 
