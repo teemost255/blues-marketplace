@@ -70,10 +70,6 @@ function AdminSettings() {
     setSupport({ email: data.support?.email ?? "", whatsapp: data.support?.whatsapp ?? "" });
   }, [data]);
 
-  if (role !== "admin") {
-    return <div className="p-8 text-muted-foreground">Admins only.</div>;
-  }
-
   const save = async (key: string, value: any) => {
     const { error } = await supabase.from("site_settings").upsert({ key, value, updated_at: new Date().toISOString(), updated_by: user?.id });
     if (error) return toast.error(error.message);
