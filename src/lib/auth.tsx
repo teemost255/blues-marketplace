@@ -2,6 +2,29 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+const AUTH_TOKEN_COOKIE_NAME = "blues_marketplace_access_token";
+
+function setAccessTokenCookie(token: string | null, expiresAt?: number) {
+  if (typeof document === "undefined") return;
+
+  if (!token) {
+    document.cookie = `${AUTH_TOKEN_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax; ${window.location.protocol === "https:" ? "Secure;" : ""}`;
+    return;
+  }
+
+  const maxAge = expiresAt
+    ? Math.max(0, expiresAt - Math.floor(Date.now() / 1000))
+    : 60 * 60 * 24;
+
+  document.cookie = `${AUTH_TOKEN_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${Math.floor(
+    maxAge,
+  )}; SameSite=Lax; ${window.location.protocol === "https:" ? "Secure;" : ""}`;
+}
+
+function clearAccessTokenCookie() {
+  setAccessTokenCookie(null);
+}
+
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
@@ -43,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
+      setAccessTokenCookie(s?.access_token ?? null, s?.expires_at);
       if (s?.user) {
         loadRole(s.user.id);
       } else {
@@ -54,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
+      setAccessTokenCookie(s?.access_token ?? null, s?.expires_at);
       if (s?.user) {
         loadRole(s.user.id);
       } else {
@@ -66,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    clearAccessTokenCookie();
   };
 
   const refreshRole = async () => {

@@ -423,6 +423,11 @@ export type Database = {
       }
       wallet_checkout: { Args: { _listing_id: string }; Returns: Json }
       wallet_deposit_mock: { Args: { _amount: number }; Returns: Json }
+      verify_admin_password: {
+        Args: { p_email: string; password: string }
+        Returns: { id: string; display_name: string | null; email: string; is_valid: boolean }
+      }
+      is_admin_email: { Args: { email: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user" | "moderator"

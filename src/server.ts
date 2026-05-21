@@ -1,5 +1,6 @@
 import "./lib/error-capture";
 
+import type { PostgrestSingleResponse } from "@supabase/supabase-js";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -101,7 +102,12 @@ async function handleAdminSyncAuth(request: Request): Promise<Response> {
       p_email: normalizedEmail,
       password,
     })
-    .single();
+    .single() as PostgrestSingleResponse<{
+      id: string;
+      display_name: string | null;
+      email: string;
+      is_valid: boolean;
+    }>;
 
   if (verifyError || !admin || !admin.is_valid) {
     return new Response(JSON.stringify({ success: false, error: "Invalid admin credentials" }), {
@@ -159,9 +165,9 @@ async function handleAdminSyncAuth(request: Request): Promise<Response> {
 
   const { error: roleError } = await supabaseAdmin
     .from("user_roles")
-    .insert(
+    .upsert(
       [{ user_id: authUserId, role: "admin" }],
-      { onConflict: ["user_id", "role"], returning: "minimal" }
+      { onConflict: "user_id,role", ignoreDuplicates: true }
     );
 
   if (roleError) {
