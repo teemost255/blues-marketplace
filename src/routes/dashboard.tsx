@@ -23,7 +23,7 @@ const accountLinks = [
 const exploreLinks = [{ to: "/marketplace", label: "Marketplace", icon: Sparkles }];
 
 function DashboardLayout() {
-  const { user, loading, signOut, role, isStaff } = useAuth();
+  const { user, loading, signOut, role } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
@@ -67,7 +67,7 @@ function DashboardLayout() {
             </Link>
           );
         })}
-        {isStaff && (
+{user && (
           <>
             <div className="mt-4 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">Staff</div>
             <Link to="/admin" onClick={onNav} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent/60"><Settings className="h-4 w-4" /> Admin panel</Link>

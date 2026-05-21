@@ -17,7 +17,7 @@ export const Route = createFileRoute("/admin/settings")({
 });
 
 function AdminSettings() {
-  const { role, user } = useAuth();
+  const { user } = useAuth();
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["site-settings"],

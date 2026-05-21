@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useAdminPermissions } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/admin/users")({
   component: AdminUsers,
@@ -30,8 +29,7 @@ type Row = {
 
 function AdminUsers() {
   const qc = useQueryClient();
-  const { role: myRole, user: me } = useAuth();
-  const { isAdmin, rejectModeratorAction } = useAdminPermissions();
+  const { user: me } = useAuth();
   const [q, setQ] = useState("");
 
   const { data } = useQuery({
@@ -65,16 +63,7 @@ function AdminUsers() {
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin-users"] });
 
-  const ensureAdmin = () => {
-    if (!isAdmin) {
-      rejectModeratorAction();
-      return false;
-    }
-    return true;
-  };
-
   const setRoleFor = async (userId: string, nextRole: "admin" | "moderator" | null) => {
-    if (!ensureAdmin()) return;
     await supabase.from("user_roles").delete().eq("user_id", userId).in("role", ["admin", "moderator"]);
     if (nextRole) {
       const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: nextRole });
@@ -86,7 +75,6 @@ function AdminUsers() {
   };
 
   const setVerified = async (userId: string, v: boolean) => {
-    if (!ensureAdmin()) return;
     const { error } = await supabase.from("profiles").update({ is_verified: v }).eq("id", userId);
     if (error) return toast.error(error.message);
     await audit(v ? "verify" : "unverify", userId);
@@ -95,7 +83,6 @@ function AdminUsers() {
   };
 
   const setStatus = async (userId: string, status: "active" | "suspended" | "banned", reason?: string) => {
-    if (!ensureAdmin()) return;
     const { error } = await supabase
       .from("profiles")
       .update({ status, suspension_reason: status === "active" ? null : reason ?? null })
@@ -154,22 +141,20 @@ function AdminUsers() {
                 <Badge variant={statusVariant as any}>{u.status}</Badge>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                <Button variant="outline" size="sm" disabled={!isAdmin} className="w-full sm:w-auto" onClick={() => setVerified(u.id, !u.is_verified)}>
+                <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setVerified(u.id, !u.is_verified)}>
                   <BadgeCheck className="mr-1 h-4 w-4" /> {u.is_verified ? "Unverify" : "Verify"}
                 </Button>
                 {u.status === "active" ? (
-                  <SuspendDialog disabled={!isAdmin} onConfirm={(reason) => setStatus(u.id, "suspended", reason)} />
+                  <SuspendDialog onConfirm={(reason) => setStatus(u.id, "suspended", reason)} />
                 ) : (
-                  <Button variant="outline" size="sm" disabled={!isAdmin} className="w-full sm:w-auto" onClick={() => setStatus(u.id, "active")}>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setStatus(u.id, "active")}>
                     <Play className="mr-1 h-4 w-4" /> Reactivate
                   </Button>
                 )}
                 <Button
                   variant="outline" size="sm"
-                  disabled={!isAdmin}
                   className="w-full text-destructive hover:text-destructive sm:w-auto"
                   onClick={() => {
-                    if (!isAdmin) return rejectModeratorAction();
                     if (confirm(`Ban ${u.display_name ?? "this user"}? They will lose access immediately.`)) {
                       setStatus(u.id, "banned", "Banned by staff");
                     }
@@ -177,12 +162,10 @@ function AdminUsers() {
                 >
                   <Ban className="mr-1 h-4 w-4" /> Ban
                 </Button>
-                {isAdmin && (
-                  <RoleMenu
+                <RoleMenu
                     current={userIsAdmin ? "admin" : userIsMod ? "moderator" : "user"}
                     onChange={(r) => setRoleFor(u.id, r === "user" ? null : r)}
                   />
-                )}
               </div>
             </Card>
           );

@@ -10,22 +10,19 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useAdminPermissions } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/admin/tickets")({
   component: AdminTickets,
 });
 
 function AdminTickets() {
-  const { isStaff, loading } = useAuth();
-  const { isAdmin, rejectModeratorAction } = useAdminPermissions();
+  const { loading } = useAuth();
   const qc = useQueryClient();
   const [replyOpen, setReplyOpen] = useState<string | null>(null);
   const [reply, setReply] = useState("");
 
   const { data } = useQuery({
     queryKey: ["admin-tickets"],
-    enabled: isStaff,
     queryFn: async () => {
       const { data } = await supabase.from("support_tickets").select("*").order("created_at", { ascending: false }).limit(200);
       return data ?? [];
@@ -33,18 +30,8 @@ function AdminTickets() {
   });
 
   if (loading) return <div className="p-8 text-muted-foreground">Loading...</div>;
-  if (!isStaff) return <div className="p-8"><h1 className="text-xl font-semibold">Staff only</h1><Button asChild className="mt-3"><Link to="/dashboard">Back</Link></Button></div>;
-
-  const ensureAdmin = () => {
-    if (!isAdmin) {
-      rejectModeratorAction();
-      return false;
-    }
-    return true;
-  };
 
   const sendReply = async (id: string, status: string) => {
-    if (!ensureAdmin()) return;
     const { error } = await supabase.from("support_tickets").update({ admin_reply: reply, status }).eq("id", id);
     if (error) return toast.error(error.message);
     const t = (data ?? []).find((x) => x.id === id);
@@ -55,7 +42,6 @@ function AdminTickets() {
   };
 
   const setStatus = async (id: string, status: string) => {
-    if (!ensureAdmin()) return;
     const { error } = await supabase.from("support_tickets").update({ status }).eq("id", id);
     if (error) return toast.error(error.message);
     qc.invalidateQueries({ queryKey: ["admin-tickets"] });
@@ -72,7 +58,7 @@ function AdminTickets() {
                 <div className="font-semibold">{t.subject}</div>
                 <div className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString()} · Priority {t.priority}</div>
               </div>
-              <Select value={t.status} onValueChange={(v) => setStatus(t.id, v)} disabled={!isAdmin}>
+              <Select value={t.status} onValueChange={(v) => setStatus(t.id, v)}>
                 <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="open">Open</SelectItem>
@@ -88,15 +74,15 @@ function AdminTickets() {
             )}
             {replyOpen === t.id ? (
               <div className="mt-4 space-y-2">
-                <Textarea rows={3} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Type a reply..." disabled={!isAdmin} />
+                <Textarea rows={3} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Type a reply..." />
                 <div className="flex gap-2">
-                  <Button size="sm" disabled={!isAdmin} onClick={() => sendReply(t.id, "in_progress")}>Send reply</Button>
-                  <Button size="sm" variant="outline" disabled={!isAdmin} onClick={() => sendReply(t.id, "resolved")}>Send & resolve</Button>
+                  <Button size="sm" onClick={() => sendReply(t.id, "in_progress")}>Send reply</Button>
+                  <Button size="sm" variant="outline" onClick={() => sendReply(t.id, "resolved")}>Send & resolve</Button>
                   <Button size="sm" variant="ghost" onClick={() => { setReplyOpen(null); setReply(""); }}>Cancel</Button>
                 </div>
               </div>
             ) : (
-              <Button size="sm" variant="outline" className="mt-3" disabled={!isAdmin} onClick={() => { setReplyOpen(t.id); setReply(t.admin_reply ?? ""); }}>Reply</Button>
+              <Button size="sm" variant="outline" className="mt-3" onClick={() => { setReplyOpen(t.id); setReply(t.admin_reply ?? ""); }}>Reply</Button>
             )}
           </Card>
         ))}

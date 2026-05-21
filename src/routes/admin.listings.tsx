@@ -13,7 +13,6 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useAdminPermissions } from "@/lib/admin-guard";
 import { LISTING_CATEGORIES } from "@/lib/categories";
 
 export const Route = createFileRoute("/admin/listings")({
@@ -36,7 +35,6 @@ const blank: Listing = { title: "", description: "", price: 0, category: "Facebo
 function AdminListings() {
   const qc = useQueryClient();
   const { user } = useAuth();
-  const { isAdmin, rejectModeratorAction } = useAdminPermissions();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Listing>(blank);
 
@@ -62,16 +60,7 @@ function AdminListings() {
   const openNew = () => { setForm(blank); setOpen(true); };
   const openEdit = (l: any) => { setForm({ ...l }); setOpen(true); };
 
-  const ensureAdmin = () => {
-    if (!isAdmin) {
-      rejectModeratorAction();
-      return false;
-    }
-    return true;
-  };
-
   const save = async () => {
-    if (!ensureAdmin()) return;
     const payload = { ...form, price: Number(form.price), stock: Number(form.stock), created_by: user?.id };
     if (form.id) {
       const { id, ...update } = payload as any;
@@ -87,7 +76,6 @@ function AdminListings() {
   };
 
   const remove = async (id: string) => {
-    if (!ensureAdmin()) return;
     if (!confirm("Delete this listing?")) return;
     const { error } = await supabase.from("listings").delete().eq("id", id);
     if (error) return toast.error(error.message);
@@ -101,7 +89,7 @@ function AdminListings() {
         <h1 className="text-2xl font-bold tracking-tight">Listings</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button disabled={!isAdmin} onClick={openNew}><Plus className="mr-1 h-4 w-4" /> New listing</Button>
+            <Button onClick={openNew}><Plus className="mr-1 h-4 w-4" /> New listing</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>{form.id ? "Edit" : "Create"} listing</DialogTitle></DialogHeader>
@@ -137,8 +125,8 @@ function AdminListings() {
               <div className="text-xs text-muted-foreground">{l.category} · {l.is_active ? "active" : "inactive"} · stock {l.stock}</div>
             </div>
             <div className="font-semibold">₦{Number(l.price).toLocaleString()}</div>
-            <Button variant="ghost" size="icon" disabled={!isAdmin} onClick={() => openEdit(l)}><Pencil className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" disabled={!isAdmin} onClick={() => remove(l.id)}><Trash2 className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => openEdit(l)}><Pencil className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => remove(l.id)}><Trash2 className="h-4 w-4" /></Button>
           </Card>
         ))}
         {(!data || data.length === 0) && (
