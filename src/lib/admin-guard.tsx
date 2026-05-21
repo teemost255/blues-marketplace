@@ -19,7 +19,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
         navigate({ to: "/dashboard" });
       } else if (!user && !adminSession) {
         // Not authenticated at all
-        navigate({ to: "/adminlogin" });
+        navigate({ to: "/login" });
       }
     }
   }, [loading, user, role, isStaff, adminSession, navigate]);
@@ -39,7 +39,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
           <button
             type="button"
             className="mt-6 inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
-            onClick={() => navigate({ to: "/adminlogin" })}
+            onClick={() => navigate({ to: "/login" })}
           >
             Sign in
           </button>
@@ -87,7 +87,7 @@ export function useAdminPermissions() {
 
   const signOutAdmin = () => {
     clearAdminSession();
-    window.location.href = "/adminlogin";
+    window.location.href = "/login";
   };
 
   return {

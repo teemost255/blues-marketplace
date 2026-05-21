@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Save, Megaphone, Headphones, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -64,6 +64,12 @@ function AdminSettings() {
     qc.invalidateQueries({ queryKey: ["listing-categories"] });
   };
 
+  const [adminSession, setAdminSession] = useState<any>(null);
+
+  useEffect(() => {
+    setAdminSession(getAdminSession());
+  }, []);
+
   useEffect(() => {
     if (!data) return;
     setHero({ headline: data.hero?.headline ?? "", subheadline: data.hero?.subheadline ?? "" });
@@ -71,7 +77,6 @@ function AdminSettings() {
     setSupport({ email: data.support?.email ?? "", whatsapp: data.support?.whatsapp ?? "" });
   }, [data]);
 
-  const adminSession = getAdminSession();
   const isAdmin = role === "admin" || !!adminSession;
 
   if (!isAdmin) {

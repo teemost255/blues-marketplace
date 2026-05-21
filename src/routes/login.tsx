@@ -25,14 +25,12 @@ export interface LoginFormProps {
   redirectTo?: string;
   title?: string;
   subtitle?: string;
-  adminOnly?: boolean;
 }
 
 export function LoginForm({
   redirectTo = "/dashboard",
   title = "Sign in",
   subtitle = "Welcome back. Please enter your details.",
-  adminOnly = false,
 }: LoginFormProps) {
   const navigate = useNavigate();
   const { user, role, loading } = useAuth();
@@ -41,9 +39,8 @@ export function LoginForm({
   const [submitting, setSubmitting] = useState(false);
 
   const resolveRedirect = () => {
-    if (adminOnly) return role === "admin" ? "/admin" : "/dashboard";
-    if (redirectTo !== "/dashboard") return redirectTo;
     if (role === "admin") return "/admin";
+    if (redirectTo !== "/dashboard") return redirectTo;
     return "/dashboard";
   };
 
@@ -59,8 +56,11 @@ export function LoginForm({
     setSubmitting(true);
 
     try {
-      if (adminOnly) {
-        // Admin login flow
+      // Check if email is admin email
+      const isAdminEmail = await checkIsAdminEmail(email);
+
+      if (isAdminEmail) {
+        // Try admin login flow
         const result = await authenticateAdmin({
           email,
           password,
@@ -78,15 +78,7 @@ export function LoginForm({
           navigate({ to: "/admin" });
         }
       } else {
-        // Regular user login flow - block admin emails
-        const isAdmin = await checkIsAdminEmail(email);
-        if (isAdmin) {
-          setSubmitting(false);
-          return toast.error(
-            "Admin accounts cannot use this login. Please use the admin login page."
-          );
-        }
-
+        // Regular user login flow
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -218,17 +210,15 @@ export function LoginForm({
             </Button>
           </form>
 
-          {!adminOnly && (
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link
-                to="/register"
-                className="font-medium text-accent hover:underline"
-              >
-                Register
-              </Link>
-            </p>
-          )}
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="font-medium text-accent hover:underline"
+            >
+              Register
+            </Link>
+          </p>
         </Card>
       </div>
     </div>
