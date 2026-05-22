@@ -14,7 +14,6 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as AdminloginRouteImport } from './routes/adminlogin'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MarketplaceIndexRouteImport } from './routes/marketplace/index'
@@ -57,11 +56,6 @@ const LoginRoute = LoginRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminloginRoute = AdminloginRouteImport.update({
-  id: '/adminlogin',
-  path: '/adminlogin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -158,7 +152,6 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/adminlogin': typeof AdminloginRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -183,7 +176,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/adminlogin': typeof AdminloginRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/register': typeof RegisterRoute
@@ -209,7 +201,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/adminlogin': typeof AdminloginRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -237,7 +228,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/adminlogin'
     | '/dashboard'
     | '/login'
     | '/privacy'
@@ -262,7 +252,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/adminlogin'
     | '/login'
     | '/privacy'
     | '/register'
@@ -287,7 +276,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
-    | '/adminlogin'
     | '/dashboard'
     | '/login'
     | '/privacy'
@@ -314,7 +302,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  AdminloginRoute: typeof AdminloginRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -359,13 +346,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/adminlogin': {
-      id: '/adminlogin'
-      path: '/adminlogin'
-      fullPath: '/adminlogin'
-      preLoaderRoute: typeof AdminloginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -546,7 +526,6 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  AdminloginRoute: AdminloginRoute,
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
