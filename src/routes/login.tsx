@@ -9,10 +9,6 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/lib/auth";
-import {
-  authenticateAdmin,
-  checkIsAdminEmail,
-} from "@/lib/admin-auth";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -31,63 +27,35 @@ export function LoginForm({
   subtitle = "Welcome back. Please enter your details.",
 }: LoginFormProps) {
   const navigate = useNavigate();
-  const { user, role, loading } = useAuth();
+  const { user, role } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const resolveRedirect = () => {
-    if (role === "admin") return "/admin";
+    if (role === "admin" || role === "moderator") return "/admin";
     if (redirectTo !== "/dashboard") return redirectTo;
     return "/dashboard";
   };
 
   useEffect(() => {
-    if (!user) return;
-    if (role === null) return;
-
+    if (!user || role === null) return;
     navigate({ to: resolveRedirect() });
   }, [user, role, navigate, redirectTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-
     try {
-      // Check if email is admin email
-      const isAdminEmail = await checkIsAdminEmail(email);
-
-      if (isAdminEmail) {
-        // Try admin login flow
-        const result = await authenticateAdmin({
-          email,
-          password,
-        });
-
-        if (!result.success) {
-          setSubmitting(false);
-          return toast.error(result.error || "Authentication failed");
-        }
-
-        toast.success("Welcome admin!");
-        navigate({ to: "/admin" });
-      } else {
-        // Regular user login flow
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          setSubmitting(false);
-          return toast.error(error.message);
-        }
-
-        toast.success("Welcome back!");
-        if (role !== null) {
-          navigate({ to: resolveRedirect() });
-        }
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
       }
+      toast.success("Welcome back!");
     } catch (err) {
       console.error("Login error:", err);
       toast.error("An unexpected error occurred");

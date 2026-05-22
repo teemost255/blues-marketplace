@@ -15,7 +15,7 @@ import { useAuth } from "@/lib/auth";
 import { NotificationBell } from "@/components/NotificationBell";
 
 export function SiteHeader() {
-  const { user, role, signOut } = useAuth();
+  const { user, isStaff, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
