@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useAdminPermissions } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/admin/users")({
   component: AdminUsers,
@@ -30,6 +31,7 @@ type Row = {
 function AdminUsers() {
   const qc = useQueryClient();
   const { user: me } = useAuth();
+  const { isAdmin } = useAdminPermissions();
   const [q, setQ] = useState("");
 
   const { data } = useQuery({
