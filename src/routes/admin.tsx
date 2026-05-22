@@ -29,11 +29,13 @@ const allNavLinks = [
 ];
 
 function AdminLayout() {
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
   const adminEmail = user?.email;
+  const isAdmin = role === "admin";
+  const navLinks = allNavLinks.filter((l) => isAdmin || !l.adminOnly);
 
   const handleSignOut = async () => {
     await signOut();
@@ -45,7 +47,7 @@ function AdminLayout() {
         <Link to="/admin" onClick={onNav} className="flex items-center gap-2 font-semibold text-foreground">
           <ShieldCheck className="h-5 w-5" /> Admin panel
         </Link>
-        <div className="mt-3 text-xs text-muted-foreground">Admin · {adminEmail}</div>
+        <div className="mt-3 text-xs text-muted-foreground capitalize">{role} · {adminEmail}</div>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3">
         {navLinks.map((link) => {
