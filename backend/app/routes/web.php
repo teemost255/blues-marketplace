@@ -2,17 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 
-$frontendViews = [
-    '/' => 'pages.index',
-    '/login' => 'pages.login',
-    '/register' => 'pages.register',
-    '/privacy' => 'pages.privacy',
-    '/terms' => 'pages.terms',
-];
+use App\Http\Controllers\HomeController;
 
-foreach ($frontendViews as $route => $view) {
-    Route::view($route, $view);
-}
+Route::get('/', [HomeController::class, 'index']);
+
+Route::view('/login', 'pages.login');
+Route::view('/register', 'pages.register');
+Route::view('/privacy', 'pages.privacy');
+Route::view('/terms', 'pages.terms');
 
 Route::view('/adminlogin', 'pages.login');
 
@@ -32,8 +29,5 @@ Route::view('/admin/tickets', 'pages.admin', ['section' => 'tickets']);
 Route::view('/admin/transactions', 'pages.admin', ['section' => 'transactions']);
 Route::view('/admin/users', 'pages.admin', ['section' => 'users']);
 
-Route::view('/marketplace', 'pages.marketplace', ['section' => 'index']);
-
-Route::get('/marketplace/{id}', function ($id) {
-    return view('pages.marketplace', ['section' => 'show', 'id' => $id]);
-});
+Route::get('/marketplace', [HomeController::class, 'marketplaceIndex']);
+Route::get('/marketplace/{id}', [HomeController::class, 'marketplaceShow']);

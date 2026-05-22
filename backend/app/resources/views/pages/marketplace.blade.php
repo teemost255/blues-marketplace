@@ -1,4 +1,16 @@
 @extends('layouts.app')
+@section('title', 'Marketplace')
+@section('content')
+<div class="container mx-auto px-4 py-12">
+  <h1 class="text-2xl font-bold">Marketplace</h1>
+  @if(isset($section) && $section === 'show')
+    <p>Showing listing ID: {{ $id ?? 'n/a' }}</p>
+  @else
+    <p>Listing index — add server-side listing loops later.</p>
+  @endif
+</div>
+@endsection
+@extends('layouts.app')
 
 @section('title', $section === 'show' ? "Product #{$id} — BluesMarketplace" : 'Marketplace — BluesMarketplace')
 

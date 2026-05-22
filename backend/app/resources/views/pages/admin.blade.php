@@ -1,4 +1,12 @@
 @extends('layouts.app')
+@section('title', 'Admin')
+@section('content')
+<div class="container mx-auto px-4 py-12">
+  <h1 class="text-2xl font-bold">Admin Area</h1>
+  <p>Section: {{ $section ?? 'overview' }}</p>
+</div>
+@endsection
+@extends('layouts.app')
 
 @section('title', 'Admin — BluesMarketplace')
 

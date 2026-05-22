@@ -1,4 +1,25 @@
 @extends('layouts.app')
+@section('title', 'Login')
+@section('content')
+<div class="container mx-auto px-4 py-20">
+  <div class="mx-auto max-w-md rounded-lg bg-card p-8">
+    <h2 class="text-2xl font-bold mb-4">Sign in</h2>
+    <form method="POST" action="/login">
+      @csrf
+      <div class="mb-4">
+        <label class="block text-sm">Email</label>
+        <input name="email" type="email" class="mt-1 w-full rounded-md border px-3 py-2" />
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm">Password</label>
+        <input name="password" type="password" class="mt-1 w-full rounded-md border px-3 py-2" />
+      </div>
+      <div class="flex justify-end"><button class="rounded-md bg-primary px-4 py-2 text-primary-foreground">Sign in</button></div>
+    </form>
+  </div>
+</div>
+@endsection
+@extends('layouts.app')
 
 @section('title', 'Login — BluesMarketplace')
 

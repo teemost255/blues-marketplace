@@ -1,4 +1,14 @@
 @extends('layouts.app')
+@section('title', 'Terms')
+@section('content')
+<div class="container mx-auto px-4 py-12">
+  <div class="prose max-w-none bg-card p-8 rounded">
+    <h1>Terms of Service</h1>
+    <p>Basic terms text. Replace with legal terms.</p>
+  </div>
+</div>
+@endsection
+@extends('layouts.app')
 
 @section('title', 'Terms of Service — BluesMarketplace')
 

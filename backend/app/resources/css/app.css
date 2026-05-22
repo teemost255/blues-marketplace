@@ -219,3 +219,5 @@
   animation: spin-slow 40s linear infinite;
   pointer-events: none;
 }
+
+@import './frontend-extras.css';
