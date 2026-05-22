@@ -114,8 +114,8 @@ function AdminLayout() {
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-foreground">Admin dashboard</h1>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span>Admin · {adminEmail}</span>
-                    <span className="rounded-full bg-secondary/10 px-2 py-1 text-xs font-semibold text-secondary-foreground">Admin</span>
+                    <span className="capitalize">{role} · {adminEmail}</span>
+                    <span className="rounded-full bg-secondary/10 px-2 py-1 text-xs font-semibold capitalize text-secondary-foreground">{role}</span>
                   </div>
                 </div>
               </div>
