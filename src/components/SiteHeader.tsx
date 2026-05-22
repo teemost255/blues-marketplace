@@ -48,7 +48,7 @@ export function SiteHeader() {
                 {user && (
                   <>
                     <Link to="/dashboard" onClick={() => setOpen(false)} className="block rounded-md px-3 py-2 text-sm hover:bg-secondary">Dashboard</Link>
-                    {user && <Link to="/admin" onClick={() => setOpen(false)} className="block rounded-md px-3 py-2 text-sm hover:bg-secondary">Admin</Link>}
+                    {isStaff && <Link to="/admin" onClick={() => setOpen(false)} className="block rounded-md px-3 py-2 text-sm hover:bg-secondary">Admin</Link>}
                   </>
                 )}
               </nav>
@@ -87,7 +87,7 @@ export function SiteHeader() {
                 <DropdownMenuLabel className="truncate">{user.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild><Link to="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dashboard</Link></DropdownMenuItem>
-                {user && <DropdownMenuItem asChild><Link to="/admin"><ShieldCheck className="mr-2 h-4 w-4" />Admin</Link></DropdownMenuItem>}
+                {isStaff && <DropdownMenuItem asChild><Link to="/admin"><ShieldCheck className="mr-2 h-4 w-4" />Admin</Link></DropdownMenuItem>}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()}><LogOut className="mr-2 h-4 w-4" />Sign out</DropdownMenuItem>
               </DropdownMenuContent>
