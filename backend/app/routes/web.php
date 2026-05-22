@@ -29,7 +29,7 @@ $frontendRoutes = [
 
 foreach ($frontendRoutes as $route) {
     Route::view($route, 'welcome');
-} '/login',
+}  [ '/login',
     '/register',
     '/privacy',
     '/terms',
