@@ -68,6 +68,66 @@ export type Database = {
         }
         Relationships: []
       }
+      admins_users: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string
+          id: string
+          is_active: boolean
+          last_login: string | null
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email: string
+          id?: string
+          is_active?: boolean
+          last_login?: string | null
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean
+          last_login?: string | null
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      listing_categories: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       listings: {
         Row: {
           category: string
@@ -106,30 +166,6 @@ export type Database = {
           price?: number
           stock?: number
           title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      listing_categories: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          name?: string
           updated_at?: string
         }
         Relationships: []
@@ -421,13 +457,18 @@ export type Database = {
         }
         Returns: boolean
       }
-      wallet_checkout: { Args: { _listing_id: string }; Returns: Json }
-      wallet_deposit_mock: { Args: { _amount: number }; Returns: Json }
+      is_admin_or_moderator: { Args: never; Returns: boolean }
       verify_admin_password: {
         Args: { p_email: string; password: string }
-        Returns: { id: string; display_name: string | null; email: string; is_valid: boolean }
+        Returns: {
+          display_name: string
+          email: string
+          id: string
+          is_valid: boolean
+        }[]
       }
-      is_admin_email: { Args: { email: string }; Returns: boolean }
+      wallet_checkout: { Args: { _listing_id: string }; Returns: Json }
+      wallet_deposit_mock: { Args: { _amount: number }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user" | "moderator"
