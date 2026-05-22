@@ -4,19 +4,28 @@ import { Activity, FileText, LayoutDashboard, Menu, Settings, ShieldCheck, Shopp
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
+import { AdminGuard } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/admin")({
-  component: AdminLayout,
+  component: AdminLayoutGuarded,
 });
 
-const navLinks = [
-  { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
-  { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/listings", label: "Listings", icon: ShoppingBag },
-  { to: "/admin/transactions", label: "Transactions", icon: Activity },
-  { to: "/admin/tickets", label: "Tickets", icon: Ticket },
-  { to: "/admin/audit", label: "Audit", icon: FileText },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
+function AdminLayoutGuarded() {
+  return (
+    <AdminGuard>
+      <AdminLayout />
+    </AdminGuard>
+  );
+}
+
+const allNavLinks = [
+  { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true, adminOnly: false },
+  { to: "/admin/users", label: "Users", icon: Users, adminOnly: false },
+  { to: "/admin/listings", label: "Listings", icon: ShoppingBag, adminOnly: false },
+  { to: "/admin/transactions", label: "Transactions", icon: Activity, adminOnly: true },
+  { to: "/admin/tickets", label: "Tickets", icon: Ticket, adminOnly: false },
+  { to: "/admin/audit", label: "Audit", icon: FileText, adminOnly: true },
+  { to: "/admin/settings", label: "Settings", icon: Settings, adminOnly: true },
 ];
 
 function AdminLayout() {
