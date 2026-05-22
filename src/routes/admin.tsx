@@ -4,27 +4,38 @@ import { Activity, FileText, LayoutDashboard, Menu, Settings, ShieldCheck, Shopp
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
+import { AdminGuard } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/admin")({
-  component: AdminLayout,
+  component: AdminLayoutGuarded,
 });
 
-const navLinks = [
-  { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
-  { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/listings", label: "Listings", icon: ShoppingBag },
-  { to: "/admin/transactions", label: "Transactions", icon: Activity },
-  { to: "/admin/tickets", label: "Tickets", icon: Ticket },
-  { to: "/admin/audit", label: "Audit", icon: FileText },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
+function AdminLayoutGuarded() {
+  return (
+    <AdminGuard>
+      <AdminLayout />
+    </AdminGuard>
+  );
+}
+
+const allNavLinks = [
+  { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true, adminOnly: false },
+  { to: "/admin/users", label: "Users", icon: Users, adminOnly: false },
+  { to: "/admin/listings", label: "Listings", icon: ShoppingBag, adminOnly: false },
+  { to: "/admin/transactions", label: "Transactions", icon: Activity, adminOnly: true },
+  { to: "/admin/tickets", label: "Tickets", icon: Ticket, adminOnly: false },
+  { to: "/admin/audit", label: "Audit", icon: FileText, adminOnly: true },
+  { to: "/admin/settings", label: "Settings", icon: Settings, adminOnly: true },
 ];
 
 function AdminLayout() {
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
   const adminEmail = user?.email;
+  const isAdmin = role === "admin";
+  const navLinks = allNavLinks.filter((l) => isAdmin || !l.adminOnly);
 
   const handleSignOut = async () => {
     await signOut();
@@ -36,7 +47,7 @@ function AdminLayout() {
         <Link to="/admin" onClick={onNav} className="flex items-center gap-2 font-semibold text-foreground">
           <ShieldCheck className="h-5 w-5" /> Admin panel
         </Link>
-        <div className="mt-3 text-xs text-muted-foreground">Admin · {adminEmail}</div>
+        <div className="mt-3 text-xs text-muted-foreground capitalize">{role} · {adminEmail}</div>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3">
         {navLinks.map((link) => {
@@ -103,8 +114,8 @@ function AdminLayout() {
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-foreground">Admin dashboard</h1>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span>Admin · {adminEmail}</span>
-                    <span className="rounded-full bg-secondary/10 px-2 py-1 text-xs font-semibold text-secondary-foreground">Admin</span>
+                    <span className="capitalize">{role} · {adminEmail}</span>
+                    <span className="rounded-full bg-secondary/10 px-2 py-1 text-xs font-semibold capitalize text-secondary-foreground">{role}</span>
                   </div>
                 </div>
               </div>

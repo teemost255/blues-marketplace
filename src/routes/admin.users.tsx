@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useAdminPermissions } from "@/lib/admin-guard";
 
 export const Route = createFileRoute("/admin/users")({
   component: AdminUsers,
@@ -30,6 +31,7 @@ type Row = {
 function AdminUsers() {
   const qc = useQueryClient();
   const { user: me } = useAuth();
+  const { isAdmin } = useAdminPermissions();
   const [q, setQ] = useState("");
 
   const { data } = useQuery({
@@ -151,21 +153,25 @@ function AdminUsers() {
                     <Play className="mr-1 h-4 w-4" /> Reactivate
                   </Button>
                 )}
-                <Button
-                  variant="outline" size="sm"
-                  className="w-full text-destructive hover:text-destructive sm:w-auto"
-                  onClick={() => {
-                    if (confirm(`Ban ${u.display_name ?? "this user"}? They will lose access immediately.`)) {
-                      setStatus(u.id, "banned", "Banned by staff");
-                    }
-                  }}
-                >
-                  <Ban className="mr-1 h-4 w-4" /> Ban
-                </Button>
-                <RoleMenu
-                    current={userIsAdmin ? "admin" : userIsMod ? "moderator" : "user"}
-                    onChange={(r) => setRoleFor(u.id, r === "user" ? null : r)}
-                  />
+                {isAdmin && (
+                  <>
+                    <Button
+                      variant="outline" size="sm"
+                      className="w-full text-destructive hover:text-destructive sm:w-auto"
+                      onClick={() => {
+                        if (confirm(`Ban ${u.display_name ?? "this user"}? They will lose access immediately.`)) {
+                          setStatus(u.id, "banned", "Banned by staff");
+                        }
+                      }}
+                    >
+                      <Ban className="mr-1 h-4 w-4" /> Ban
+                    </Button>
+                    <RoleMenu
+                      current={userIsAdmin ? "admin" : userIsMod ? "moderator" : "user"}
+                      onChange={(r) => setRoleFor(u.id, r === "user" ? null : r)}
+                    />
+                  </>
+                )}
               </div>
             </Card>
           );
