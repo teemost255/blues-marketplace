@@ -13,7 +13,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      navigate({ to: "/login" });
+      navigate({ to: "/adminlogin" });
     } else if (!isStaff) {
       navigate({ to: "/dashboard" });
     }
@@ -80,7 +80,7 @@ export function useAdminPermissions() {
 
   const signOutAdmin = () => {
     clearAdminSession();
-    window.location.href = "/login";
+    window.location.href = "/adminlogin";
   };
 
   return {
