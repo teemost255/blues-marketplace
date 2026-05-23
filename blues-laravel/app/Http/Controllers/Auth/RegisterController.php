@@ -40,6 +40,6 @@ class RegisterController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard')->with('success', 'Welcome to BluesMarketplace!');
+        return redirect()->route('dashboard.index')->with('success', 'Welcome to BluesMarketplace!');
     }
 }

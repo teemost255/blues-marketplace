@@ -1,0 +1,129 @@
+Internal Server Error
+
+Copy as Markdown
+Symfony\Component\Routing\Exception\RouteNotFoundException
+vendor/laravel/framework/src/Illuminate/Routing/UrlGenerator.php:534
+Route [dashboard] not defined.
+
+LARAVEL
+12.60.2
+PHP
+8.2.23
+UNHANDLED
+CODE 0
+500
+POST
+http://84ce12ca-bc5f-4f0c-b1e6-71fa958afcfe-00-16s0oc97hsml5.picard.replit.dev/register
+
+Exception trace
+2 vendor frames
+
+Illuminate\Routing\Redirector->route(string)
+app/Http/Controllers/Auth/RegisterController.php:43
+
+38        Wallet::create(['user_id' => $user->id, 'balance' => 0]);
+39
+40        Auth::login($user);
+41        $request->session()->regenerate();
+42
+43        return redirect()->route('dashboard')->with('success', 'Welcome to BluesMarketplace!');
+44    }
+45}
+46
+47 vendor frames
+
+Illuminate\Foundation\Application->handleRequest(object(Illuminate\Http\Request))
+public/index.php:20
+
+1 vendor frame
+
+Queries
+1-6 of 6
+pgsql
+select * from "sessions" where "id" = 'PpM7UeBxi1V1YSWZViEnkKrrS6Ar27uqMhztC0Xm' limit 1
+10.61ms
+pgsql
+select count(*) as aggregate from "users" where "email" = 'Agboolasamul09@gmail.com'
+1.52ms
+pgsql
+insert into "users" ("name", "email", "password", "updated_at", "created_at") values ('Teemost', 'Agboolasamul09@gmail.com', 'y$ypyElBVxF3Cq7fJs39L7yuCZJOq9JT.gI4CDH9yH10nYY9qVWBOMS', '2026-05-23 18:48:47', '2026-05-23 18:48:47') returning "id"
+3.76ms
+pgsql
+insert into "profiles" ("user_id", "display_name", "referral_code", "updated_at", "created_at") values (1, 'Teemost', 'VC25ARMF', '2026-05-23 18:48:47', '2026-05-23 18:48:47') returning "id"
+4.17ms
+pgsql
+insert into "wallets" ("user_id", "balance", "updated_at", "created_at") values (1, 0, '2026-05-23 18:48:47', '2026-05-23 18:48:47') returning "id"
+3.29ms
+pgsql
+delete from "sessions" where "id" = 'PpM7UeBxi1V1YSWZViEnkKrrS6Ar27uqMhztC0Xm'
+2.82ms
+Headers
+host
+84ce12ca-bc5f-4f0c-b1e6-71fa958afcfe-00-16s0oc97hsml5.picard.replit.dev
+user-agent
+Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+content-length
+170
+accept
+text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+en-US,en;q=0.9
+cache-control
+max-age=0
+content-type
+application/x-www-form-urlencoded
+cookie
+XSRF-TOKEN=eyJpdiI6ImVmRDY2ZFRBL2l2QXptUVdFcFRERHc9PSIsInZhbHVlIjoiSmIvbUxzNHV6dk9BZnNGaUdPWHNUUVdNR0dReEdhbmpRRmVtYndLbzE5ZWlINVJRbzV1R2w0NHlOZlkrcU1QcGNiRVZ6dW1PaUlxUlJRMS8zcndwVUZLN1NtaTducVI3L3g3VTFSUGw2L0I0NTA5d050UWhOS08wdHYxcHZVRVciLCJtYWMiOiJiOTMyZWI0YTAyZTRlYWMxMGY5YTU0YjdmNzAyNmViZjgyNjNlYTkyODU3MjA3ZGQ5ZTE1YjE2MTYzNGU0ZGM3IiwidGFnIjoiIn0%3D; bluesmarketplace-session=eyJpdiI6InhZQXlWUDMycmRoSlZFcXNvRkZWaXc9PSIsInZhbHVlIjoiUytCSUE4SzVoaWg3QklJaGdRcVk0SmdSNHZKUi96WWcweTl6VDVHZkcvRmU0Tng2UWZMek1JMjg1bGpQWUl2ZXFRMnM5NCtaVDZLNGZvd092eHNMdnJHbU9qSitVTTh4dm9WOFFSU3ZwQzV5eUpJa0NFVmZKcEdOZDU0cUpET2ciLCJtYWMiOiI3ZjZkNjEzMGUyZWJlNTE4YTM3Y2JkOTg5NzQzOGQwNDI3ZGJmYTBhNmM2YjZlNDYyZTYzMWI1NmIxYmJlNWEzIiwidGFnIjoiIn0%3D
+dnt
+1
+origin
+null
+sec-ch-ua
+"Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"Android"
+sec-fetch-dest
+document
+sec-fetch-mode
+navigate
+sec-fetch-site
+cross-site
+sec-fetch-user
+?1
+upgrade-insecure-requests
+1
+x-forwarded-for
+105.113.12.216, 10.81.9.94, 10.28.37.18, 127.0.0.1
+x-forwarded-host
+84ce12ca-bc5f-4f0c-b1e6-71fa958afcfe-00-16s0oc97hsml5.picard.replit.dev
+x-forwarded-proto
+https
+x-replit-user-bio
+x-replit-user-id
+x-replit-user-name
+x-replit-user-profile-image
+x-replit-user-roles
+x-replit-user-teams
+x-replit-user-url
+Body
+{
+    "_token": "1QbdwU1cc6XRkqgSvpjUGVnviCg74vSBBAG0IZ75",
+    "name": "Teemost",
+    "email": "Agboolasamul09@gmail.com",
+    "password": "Oluwanifemi255@gmail",
+    "password_confirmation": "Oluwanifemi255@gmail"
+}
+Routing
+controller
+App\Http\Controllers\Auth\RegisterController@register
+route name
+register.post
+middleware
+web
+Routing parameters
+// No routing parameters
+Made with ReplitBuild yours free →
