@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
+import { authenticateAdmin, storeAdminSession, getAdminSession } from "@/lib/admin-auth";
 
 export const Route = createFileRoute("/adminlogin")({
   component: AdminLogin,
@@ -16,33 +15,27 @@ export const Route = createFileRoute("/adminlogin")({
 
 function AdminLogin() {
   const navigate = useNavigate();
-  const { user, role, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (loading || !user || role === null) return;
-    if (role === "admin" || role === "moderator") {
-      navigate({ to: "/admin" });
-    } else if (role === "user") {
-      navigate({ to: "/dashboard" });
-    }
-  }, [loading, user, role, navigate]);
+    const session = getAdminSession();
+    if (session) navigate({ to: "/admin" });
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.toLowerCase().trim(),
-        password,
-      });
-      if (error) {
-        toast.error(error.message);
+      const { session, error } = await authenticateAdmin(email, password);
+      if (error || !session) {
+        toast.error(error ?? "Authentication failed");
         return;
       }
-      toast.success("Welcome back!");
+      storeAdminSession(session);
+      toast.success(`Welcome, ${session.display_name ?? session.email}!`);
+      navigate({ to: "/admin" });
     } catch (err) {
       console.error("Admin login error:", err);
       toast.error("An unexpected error occurred");
@@ -61,16 +54,12 @@ function AdminLogin() {
           <ShieldCheck className="h-5 w-5" /> BluesMarketplace Admin
         </Link>
         <div>
-          <h2 className="text-3xl font-bold leading-tight">
-            Admin portal.
-          </h2>
+          <h2 className="text-3xl font-bold leading-tight">Admin portal.</h2>
           <p className="mt-3 text-white/80">
-            Sign in with your admin or moderator credentials to manage the platform.
+            Sign in with your admin credentials to manage the platform.
           </p>
         </div>
-        <div className="text-sm text-white/60">
-          Restricted access · Staff only
-        </div>
+        <div className="text-sm text-white/60">Restricted access · Staff only</div>
       </div>
 
       <div className="flex items-center justify-center p-6">

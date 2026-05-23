@@ -4,7 +4,8 @@ import { Activity, FileText, LayoutDashboard, Menu, Settings, ShieldCheck, Shopp
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
-import { AdminGuard } from "@/lib/admin-guard";
+import { AdminGuard, useAdminPermissions } from "@/lib/admin-guard";
+import { getAdminSession } from "@/lib/admin-auth";
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayoutGuarded,
@@ -30,15 +31,22 @@ const allNavLinks = [
 
 function AdminLayout() {
   const { user, role, signOut } = useAuth();
+  const { signOutAdmin, isAdmin: isAdminViaSession } = useAdminPermissions();
+  const adminSession = typeof window !== "undefined" ? getAdminSession() : null;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
-  const adminEmail = user?.email;
-  const isAdmin = role === "admin";
+  const adminEmail = user?.email ?? adminSession?.email ?? "";
+  const displayRole = role ?? (adminSession ? "admin" : "");
+  const isAdmin = role === "admin" || isAdminViaSession;
   const navLinks = allNavLinks.filter((l) => isAdmin || !l.adminOnly);
 
   const handleSignOut = async () => {
-    await signOut();
+    if (adminSession) {
+      signOutAdmin();
+    } else {
+      await signOut();
+    }
   };
 
   const SidebarContent = ({ onNav }: { onNav?: () => void }) => (
@@ -47,7 +55,7 @@ function AdminLayout() {
         <Link to="/admin" onClick={onNav} className="flex items-center gap-2 font-semibold text-foreground">
           <ShieldCheck className="h-5 w-5" /> Admin panel
         </Link>
-        <div className="mt-3 text-xs text-muted-foreground capitalize">{role} · {adminEmail}</div>
+        <div className="mt-3 text-xs text-muted-foreground capitalize">{displayRole} · {adminEmail}</div>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3">
         {navLinks.map((link) => {
@@ -114,8 +122,8 @@ function AdminLayout() {
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-foreground">Admin dashboard</h1>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span className="capitalize">{role} · {adminEmail}</span>
-                    <span className="rounded-full bg-secondary/10 px-2 py-1 text-xs font-semibold capitalize text-secondary-foreground">{role}</span>
+                    <span className="capitalize">{displayRole} · {adminEmail}</span>
+                    <span className="rounded-full bg-secondary/10 px-2 py-1 text-xs font-semibold capitalize text-secondary-foreground">{displayRole}</span>
                   </div>
                 </div>
               </div>
