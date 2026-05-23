@@ -37,7 +37,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd blues-laravel && php artisan serve --host=0.0.0.0 --port=5000"
+args = "npx vite dev"
 waitForPort = 5000
 
 [[ports]]

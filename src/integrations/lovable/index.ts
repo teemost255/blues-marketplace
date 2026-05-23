@@ -11,7 +11,7 @@ export const lovable = {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider === "lovable" ? "google" : provider,
         options: {
-          redirectTo: opts?.redirect_uri ?? window.location.origin,
+          redirectTo: opts?.redirect_uri ?? (typeof window !== "undefined" ? window.location.origin : "/"),
           queryParams: opts?.extraParams,
         },
       });
@@ -21,7 +21,7 @@ export const lovable = {
       }
 
       if (data?.url) {
-        window.location.href = data.url;
+        if (typeof window !== "undefined") window.location.href = data.url;
         return { redirected: true };
       }
 
