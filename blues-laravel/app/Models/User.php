@@ -9,7 +9,7 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    protected $fillable = ['name', 'email', 'password'];
+    protected $fillable = ['name', 'email', 'password', 'status'];
     protected $hidden   = ['password', 'remember_token'];
 
     protected function casts(): array {
@@ -27,4 +27,8 @@ class User extends Authenticatable
     public function getWalletBalance(): float {
         return $this->wallet?->balance ?? 0.00;
     }
+
+    public function isBanned(): bool    { return $this->status === 'banned'; }
+    public function isSuspended(): bool { return $this->status === 'suspended'; }
+    public function isActive(): bool    { return $this->status === 'active'; }
 }

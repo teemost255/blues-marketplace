@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'BluesMarketplace') — Buy Digital Accounts</title>
-    <meta name="description" content="@yield('meta_description', 'BluesMarketplace — Buy verified Facebook, Instagram, TikTok accounts and second phone numbers.')">
+    <title>@yield('title', 'Blues Marketplace') — Buy Digital Accounts</title>
+    <meta name="description" content="@yield('meta_description', 'Blues Marketplace — Buy verified Facebook, Instagram, TikTok accounts and second phone numbers.')">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -39,7 +39,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
                 </div>
-                <span class="font-bold text-white text-lg">Blues<span class="text-brand">Market</span></span>
+                <span class="font-bold text-white text-lg">Blues <span class="text-brand">Marketplace</span></span>
             </a>
 
             {{-- Nav links --}}
@@ -95,7 +95,7 @@
                     <div class="w-7 h-7 bg-brand rounded-lg flex items-center justify-center">
                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     </div>
-                    <span class="font-bold text-white">Blues<span class="text-brand">Market</span></span>
+                    <span class="font-bold text-white">Blues <span class="text-brand">Marketplace</span></span>
                 </div>
                 <p class="text-slate-400 text-sm leading-relaxed max-w-sm">The trusted marketplace for verified digital accounts — Facebook, Instagram, TikTok, and second phone numbers.</p>
             </div>
@@ -120,7 +120,7 @@
             </div>
         </div>
         <div class="border-t border-slate-800 mt-8 pt-6 text-center text-xs text-slate-500">
-            &copy; {{ date('Y') }} BluesMarketplace. All rights reserved.
+            &copy; {{ date('Y') }} Blues Marketplace. All rights reserved.
         </div>
     </div>
 </footer>

@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\AdminRegisterController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\ListingsController;
+use App\Http\Controllers\Admin\CategoriesController;
 use App\Http\Controllers\Admin\TransactionsController;
 use App\Http\Controllers\Admin\TicketsController;
 use App\Http\Controllers\Admin\AuditController;
@@ -71,14 +72,33 @@ Route::post('/admin/logout', [AdminLoginController::class,    'logout'])->name('
 // ── Admin Panel ───────────────────────────────────────────────────────────────
 Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name('admin.')->group(function () {
     Route::get('/',              [AdminDashboardController::class,'index'])->name('dashboard');
-    Route::get('/users',         [UsersController::class,        'index'])->name('users');
-    Route::delete('/users/{user}',[UsersController::class,       'destroy'])->name('users.destroy');
-    Route::get('/listings',      [ListingsController::class,     'index'])->name('listings');
-    Route::post('/listings',     [ListingsController::class,     'store'])->name('listings.store');
-    Route::delete('/listings/{listing}',[ListingsController::class,'destroy'])->name('listings.destroy');
-    Route::get('/transactions',  [TransactionsController::class, 'index'])->name('transactions');
-    Route::get('/tickets',       [TicketsController::class,      'index'])->name('tickets');
-    Route::post('/tickets/{ticket}/reply',[TicketsController::class,'reply'])->name('tickets.reply');
-    Route::get('/audit',         [AuditController::class,        'index'])->name('audit');
-    Route::get('/settings',      [SettingsController::class,     'index'])->name('settings');
+
+    // Users
+    Route::get('/users',                        [UsersController::class, 'index'])->name('users');
+    Route::post('/users',                       [UsersController::class, 'store'])->name('users.store');
+    Route::post('/users/{user}/status',         [UsersController::class, 'updateStatus'])->name('users.status');
+    Route::post('/users/{user}/wallet',         [UsersController::class, 'walletAdjust'])->name('users.wallet');
+    Route::get('/users/{user}/dashboard',       [UsersController::class, 'impersonateDashboard'])->name('impersonate.dashboard');
+    Route::delete('/users/{user}',              [UsersController::class, 'destroy'])->name('users.destroy');
+
+    // Listings
+    Route::get('/listings',                     [ListingsController::class, 'index'])->name('listings');
+    Route::post('/listings',                    [ListingsController::class, 'store'])->name('listings.store');
+    Route::get('/listings/{listing}/edit',      [ListingsController::class, 'edit'])->name('listings.edit');
+    Route::post('/listings/{listing}',          [ListingsController::class, 'update'])->name('listings.update');
+    Route::delete('/listings/{listing}',        [ListingsController::class, 'destroy'])->name('listings.destroy');
+
+    // Categories
+    Route::get('/categories',                   [CategoriesController::class, 'index'])->name('categories');
+    Route::post('/categories',                  [CategoriesController::class, 'store'])->name('categories.store');
+    Route::post('/categories/{category}',       [CategoriesController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{category}',     [CategoriesController::class, 'destroy'])->name('categories.destroy');
+
+    // Transactions, Tickets, Audit, Settings
+    Route::get('/transactions',                 [TransactionsController::class, 'index'])->name('transactions');
+    Route::get('/tickets',                      [TicketsController::class,      'index'])->name('tickets');
+    Route::post('/tickets/{ticket}/reply',      [TicketsController::class,      'reply'])->name('tickets.reply');
+    Route::get('/audit',                        [AuditController::class,        'index'])->name('audit');
+    Route::get('/settings',                     [SettingsController::class,     'index'])->name('settings');
+    Route::post('/settings',                    [SettingsController::class,     'update'])->name('settings.update');
 });

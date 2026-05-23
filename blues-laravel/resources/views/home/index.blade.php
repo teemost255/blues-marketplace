@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'BluesMarketplace — Buy Verified Digital Accounts')
+@section('title', 'Blues Marketplace — Buy Verified Digital Accounts')
 
 @push('head')
 <style>
