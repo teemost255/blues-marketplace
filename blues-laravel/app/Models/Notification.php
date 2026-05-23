@@ -2,8 +2,8 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
-class Profile extends Model
+class Notification extends Model
 {
-    protected $fillable = ['user_id', 'username', 'display_name', 'avatar_url', 'status', 'referral_code'];
+    protected $fillable = ['user_id', 'title', 'message', 'is_read', 'type'];
     public function user() { return $this->belongsTo(User::class); }
 }
