@@ -14,6 +14,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AdminregisterRouteImport } from './routes/adminregister'
 import { Route as AdminloginRouteImport } from './routes/adminlogin'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -57,6 +58,11 @@ const LoginRoute = LoginRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminregisterRoute = AdminregisterRouteImport.update({
+  id: '/adminregister',
+  path: '/adminregister',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminloginRoute = AdminloginRouteImport.update({
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/adminlogin': typeof AdminloginRoute
+  '/adminregister': typeof AdminregisterRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/adminlogin': typeof AdminloginRoute
+  '/adminregister': typeof AdminregisterRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/register': typeof RegisterRoute
@@ -210,6 +218,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/adminlogin': typeof AdminloginRoute
+  '/adminregister': typeof AdminregisterRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -238,6 +247,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/adminlogin'
+    | '/adminregister'
     | '/dashboard'
     | '/login'
     | '/privacy'
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/adminlogin'
+    | '/adminregister'
     | '/login'
     | '/privacy'
     | '/register'
@@ -288,6 +299,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/adminlogin'
+    | '/adminregister'
     | '/dashboard'
     | '/login'
     | '/privacy'
@@ -315,6 +327,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AdminloginRoute: typeof AdminloginRoute
+  AdminregisterRoute: typeof AdminregisterRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -359,6 +372,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/adminregister': {
+      id: '/adminregister'
+      path: '/adminregister'
+      fullPath: '/adminregister'
+      preLoaderRoute: typeof AdminregisterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/adminlogin': {
@@ -547,6 +567,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AdminloginRoute: AdminloginRoute,
+  AdminregisterRoute: AdminregisterRoute,
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,

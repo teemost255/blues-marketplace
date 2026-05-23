@@ -41,6 +41,51 @@ export function clearAdminSession(): void {
   }
 }
 
+export async function registerAdmin(
+  email: string,
+  password: string,
+  displayName: string | null = null
+): Promise<{ session: AdminSession | null; error: string | null }> {
+  try {
+    const { data, error } = await supabase.rpc("register_admin", {
+      p_email: email.toLowerCase().trim(),
+      p_password: password,
+      p_display_name: displayName,
+    });
+
+    if (error) {
+      console.error("register_admin error:", error);
+      return { session: null, error: "Registration failed" };
+    }
+
+    const rows = data as Array<{
+      id: string;
+      display_name: string | null;
+      email: string;
+      success: boolean;
+      error_message: string | null;
+    }> | null;
+
+    const result = rows?.[0];
+    if (!result?.success) {
+      return { session: null, error: result?.error_message ?? "Registration failed" };
+    }
+
+    return {
+      session: {
+        id: result.id,
+        email: result.email,
+        display_name: result.display_name,
+        isValid: true,
+      },
+      error: null,
+    };
+  } catch (err) {
+    console.error("registerAdmin error:", err);
+    return { session: null, error: "An unexpected error occurred" };
+  }
+}
+
 export async function authenticateAdmin(
   email: string,
   password: string

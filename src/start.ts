@@ -86,8 +86,8 @@ const authRedirectMiddleware = createMiddleware().server(async ({ next, request 
   const token = getCookie(request.headers.get("cookie"), AUTH_TOKEN_COOKIE_NAME);
   const adminSession = getCookie(request.headers.get("cookie"), ADMIN_COOKIE_NAME);
 
-  // Admin login page: allow everyone, but redirect already-authenticated admins
-  if (pathname === "/adminlogin") {
+  // Admin auth pages: allow everyone, but redirect already-authenticated admins
+  if (pathname === "/adminlogin" || pathname === "/adminregister") {
     if (adminSession) {
       throw redirect({ to: "/admin" });
     }
