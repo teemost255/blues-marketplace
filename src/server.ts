@@ -1,9 +1,7 @@
 import "./lib/error-capture";
 
-import type { PostgrestSingleResponse } from "@supabase/supabase-js";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -52,8 +50,6 @@ function isCatastrophicSsrErrorBody(body: string, responseStatus: number): boole
   );
 }
 
-// h3 swallows in-handler throws into a normal 500 Response with body
-// {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
@@ -78,6 +74,15 @@ async function handleAdminSyncAuth(request: Request): Promise<Response> {
     });
   }
 
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL;
+  if (!serviceRoleKey || !supabaseUrl) {
+    return new Response(JSON.stringify({ success: false, error: "Admin sync not configured" }), {
+      status: 503,
+      headers: jsonHeaders,
+    });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -96,27 +101,25 @@ async function handleAdminSyncAuth(request: Request): Promise<Response> {
     });
   }
 
-  const normalizedEmail = email.toLowerCase();
-  const { data: admin, error: verifyError } = await supabaseAdmin
-    .rpc("verify_admin_password", {
-      p_email: normalizedEmail,
-      password,
-    })
-    .single() as PostgrestSingleResponse<{
-      id: string;
-      display_name: string | null;
-      email: string;
-      is_valid: boolean;
-    }>;
+  const { createClient } = await import("@supabase/supabase-js");
+  const admin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
-  if (verifyError || !admin || !admin.is_valid) {
+  const normalizedEmail = email.toLowerCase();
+
+  const { data: verifyData, error: verifyError } = await admin
+    .rpc("verify_admin_password", { p_email: normalizedEmail, password })
+    .single() as { data: { id: string; display_name: string | null; email: string; is_valid: boolean } | null; error: unknown };
+
+  if (verifyError || !verifyData || !verifyData.is_valid) {
     return new Response(JSON.stringify({ success: false, error: "Invalid admin credentials" }), {
       status: 401,
       headers: jsonHeaders,
     });
   }
 
-  const { data: userList, error: listError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+  const { data: userList, error: listError } = await admin.auth.admin.listUsers({ perPage: 1000 });
   if (listError) {
     console.error("Admin sync listUsers error:", listError);
     return new Response(JSON.stringify({ success: false, error: "Unable to sync admin user" }), {
@@ -125,14 +128,12 @@ async function handleAdminSyncAuth(request: Request): Promise<Response> {
     });
   }
 
-  const existingAuthUser = userList.users.find((user: any) => user.email?.toLowerCase() === normalizedEmail);
+  const existingAuthUser = userList.users.find((u: { email?: string }) => u.email?.toLowerCase() === normalizedEmail);
   let authUserId: string | undefined;
 
   if (existingAuthUser) {
     authUserId = existingAuthUser.id;
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(authUserId, {
-      password,
-    });
+    const { error: updateError } = await admin.auth.admin.updateUserById(authUserId, { password });
     if (updateError) {
       console.error("Admin sync updateUserById error:", updateError);
       return new Response(JSON.stringify({ success: false, error: "Unable to update admin auth user" }), {
@@ -141,7 +142,7 @@ async function handleAdminSyncAuth(request: Request): Promise<Response> {
       });
     }
   } else {
-    const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: createData, error: createError } = await admin.auth.admin.createUser({
       email: normalizedEmail,
       password,
       email_confirm: true,
@@ -163,12 +164,9 @@ async function handleAdminSyncAuth(request: Request): Promise<Response> {
     });
   }
 
-  const { error: roleError } = await supabaseAdmin
+  const { error: roleError } = await admin
     .from("user_roles")
-    .upsert(
-      [{ user_id: authUserId, role: "admin" }],
-      { onConflict: "user_id,role", ignoreDuplicates: true }
-    );
+    .upsert([{ user_id: authUserId, role: "admin" }], { onConflict: "user_id,role", ignoreDuplicates: true });
 
   if (roleError) {
     console.error("Admin sync user_roles error:", roleError);
