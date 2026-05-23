@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\ListingsController;
 use App\Http\Controllers\Admin\CategoriesController;
+use App\Http\Controllers\Admin\ModeratorsController;
 use App\Http\Controllers\Admin\TransactionsController;
 use App\Http\Controllers\Admin\TicketsController;
 use App\Http\Controllers\Admin\AuditController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Admin\SettingsController;
 // Public imports
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\PagesController;
@@ -45,6 +47,12 @@ Route::post('/login',   [LoginController::class,    'login'])->name('login.post'
 Route::post('/logout',  [LoginController::class,    'logout'])->name('logout');
 Route::get('/register', [RegisterController::class, 'show'])->name('register');
 Route::post('/register',[RegisterController::class, 'register'])->name('register.post');
+
+// Forgot / Reset Password
+Route::get('/forgot-password',  [ForgotPasswordController::class, 'showForgotForm'])->name('forgot-password');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendReset'])->name('forgot-password.send');
+Route::get('/reset-password',   [ForgotPasswordController::class, 'showResetForm'])->name('reset-password');
+Route::post('/reset-password',  [ForgotPasswordController::class, 'resetPassword'])->name('reset-password.update');
 
 // ── User Dashboard ────────────────────────────────────────────────────────────
 Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->name('dashboard.')->group(function () {
@@ -77,6 +85,7 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::get('/users',                        [UsersController::class, 'index'])->name('users');
     Route::post('/users',                       [UsersController::class, 'store'])->name('users.store');
     Route::post('/users/{user}/status',         [UsersController::class, 'updateStatus'])->name('users.status');
+    Route::post('/users/{user}/password',       [UsersController::class, 'changePassword'])->name('users.password');
     Route::post('/users/{user}/wallet',         [UsersController::class, 'walletAdjust'])->name('users.wallet');
     Route::get('/users/{user}/dashboard',       [UsersController::class, 'impersonateDashboard'])->name('impersonate.dashboard');
     Route::delete('/users/{user}',              [UsersController::class, 'destroy'])->name('users.destroy');
@@ -93,6 +102,12 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::post('/categories',                  [CategoriesController::class, 'store'])->name('categories.store');
     Route::post('/categories/{category}',       [CategoriesController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}',     [CategoriesController::class, 'destroy'])->name('categories.destroy');
+
+    // Moderators
+    Route::get('/moderators',                   [ModeratorsController::class, 'index'])->name('moderators');
+    Route::post('/moderators',                  [ModeratorsController::class, 'store'])->name('moderators.store');
+    Route::post('/moderators/{admin}/role',     [ModeratorsController::class, 'assignRole'])->name('moderators.role');
+    Route::delete('/moderators/{admin}',        [ModeratorsController::class, 'destroy'])->name('moderators.destroy');
 
     // Transactions, Tickets, Audit, Settings
     Route::get('/transactions',                 [TransactionsController::class, 'index'])->name('transactions');

@@ -52,6 +52,15 @@ class UsersController extends Controller
         return back()->with('success', "User {$user->name} has been {$labels[$status]}.");
     }
 
+    public function changePassword(Request $request, User $user)
+    {
+        $request->validate([
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+        $user->update(['password' => Hash::make($request->new_password)]);
+        return back()->with('success', "Password for {$user->name} updated successfully.");
+    }
+
     public function walletAdjust(Request $request, User $user)
     {
         $request->validate([
