@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/admin/audit")({
   component: AdminAudit,
@@ -19,12 +19,7 @@ function AdminAudit() {
   const { data } = useQuery({
     queryKey: ["admin-audit"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("admin_audit_log")
-        .select("id,actor_id,action,target_type,target_id,meta,created_at")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      return data ?? [];
+      return await api.get("/api/admin/audit");
     },
   });
 

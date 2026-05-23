@@ -17,7 +17,7 @@ import {
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { LISTING_CATEGORIES } from "@/lib/categories";
 
 export const Route = createFileRoute("/")({
@@ -43,33 +43,24 @@ function Landing() {
   const { data: featured } = useQuery({
     queryKey: ["featured-listings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("listings").select("id,title,price,category,image_url")
-        .eq("is_active", true).order("created_at", { ascending: false }).limit(6);
-      if (error) throw error;
-      return data ?? [];
+      const result = await api.get("/api/listings?limit=6&active_only=true");
+      return result.rows ?? [];
     },
   });
 
   const { data: recent } = useQuery({
     queryKey: ["recent-listings"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("listings").select("id,title,price,category,created_at")
-        .eq("is_active", true).order("created_at", { ascending: false }).limit(5);
-      return data ?? [];
+      const result = await api.get("/api/listings?limit=5&active_only=true");
+      return result.rows ?? [];
     },
   });
 
   const { data: stats } = useQuery({
     queryKey: ["home-stats"],
     queryFn: async () => {
-      const [{ count: listings }, { count: users }, { count: orders }] = await Promise.all([
-        supabase.from("listings").select("*", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("profiles").select("*", { count: "exact", head: true }),
-        supabase.from("purchases").select("*", { count: "exact", head: true }),
-      ]);
-      return { listings: listings ?? 0, users: users ?? 0, orders: orders ?? 0 };
+      const stats = await api.get("/api/admin/stats").catch(() => ({ listings: 0, users: 0, purchases: 0 }));
+      return { listings: stats.listings ?? 0, users: stats.users ?? 0, orders: stats.purchases ?? 0 };
     },
   });
 
@@ -77,9 +68,7 @@ function Landing() {
   const { data: categories } = useQuery({
     queryKey: ["listing-categories"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("listing_categories").select("name").order("name");
-      if (error) throw error;
-      return (data ?? []).map((row: any) => row.name);
+      return await api.get("/api/categories");
     },
   });
 

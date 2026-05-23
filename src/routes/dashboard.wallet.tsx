@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/dashboard/wallet")({
@@ -26,8 +26,7 @@ function WalletPage() {
     queryKey: ["wallet", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("wallets").select("balance").eq("user_id", user!.id).maybeSingle();
-      return data ?? { balance: 0 };
+      return await api.get("/api/wallet");
     },
   });
 
@@ -35,8 +34,7 @@ function WalletPage() {
     queryKey: ["wtx", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("wallet_transactions").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(50);
-      return data ?? [];
+      return await api.get("/api/wallet/transactions");
     },
   });
 
@@ -44,9 +42,13 @@ function WalletPage() {
     const n = Number(amount);
     if (!n || n < 100) return toast.error("Minimum ₦100");
     setLoading(true);
-    const { error } = await supabase.rpc("wallet_deposit_mock", { _amount: n });
+    try {
+      await api.post("/api/wallet/deposit", { amount: n });
+    } catch (err: any) {
+      setLoading(false);
+      return toast.error(err.message || "Deposit failed");
+    }
     setLoading(false);
-    if (error) return toast.error(error.message);
     toast.success(`₦${n.toLocaleString()} added (test mode)`);
     setAmount(""); setOpen(false);
     qc.invalidateQueries({ queryKey: ["wallet"] });

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Users, Package, Wallet, ShoppingBag } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminOverview,
@@ -12,13 +12,7 @@ function AdminOverview() {
   const { data } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [u, l, p] = await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("listings").select("id", { count: "exact", head: true }),
-        supabase.from("purchases").select("amount,status"),
-      ]);
-      const revenue = (p.data ?? []).filter((x) => x.status === "completed").reduce((s, x) => s + Number(x.amount), 0);
-      return { users: u.count ?? 0, listings: l.count ?? 0, purchases: p.data?.length ?? 0, revenue };
+      return await api.get("/api/admin/stats");
     },
   });
 

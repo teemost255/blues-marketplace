@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/dashboard/notifications")({
@@ -20,21 +20,23 @@ function Notifications() {
     queryKey: ["notifications", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("notifications").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(100);
-      return data ?? [];
+      return await api.get("/api/notifications");
     },
   });
 
   const markRead = async (id: string) => {
-    await supabase.from("notifications").update({ read: true }).eq("id", id);
+    await api.put(`/api/notifications/${id}/read`);
     qc.invalidateQueries({ queryKey: ["notifications"] });
   };
 
   const markAllRead = async () => {
-    const { error } = await supabase.from("notifications").update({ read: true }).eq("user_id", user!.id).eq("read", false);
-    if (error) return toast.error(error.message);
-    toast.success("All read");
-    qc.invalidateQueries({ queryKey: ["notifications"] });
+    try {
+      await api.put("/api/notifications/read-all");
+      toast.success("All read");
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed");
+    }
   };
 
   const unread = (data ?? []).filter((n) => !n.read).length;

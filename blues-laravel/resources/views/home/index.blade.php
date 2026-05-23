@@ -123,7 +123,7 @@
         </h1>
 
         <p class="text-xl text-slate-400 max-w-2xl mx-auto mb-10" style="animation:slide-up .7s ease .2s both">
-            Facebook, Instagram, TikTok accounts &amp; second phone numbers —
+            Social Media accounts &amp; Virtual Numbers —
             <span class="text-white font-medium">all verified, delivered instantly.</span>
         </p>
 
@@ -192,7 +192,7 @@
 ═══════════════════════════════════════════════════════ --}}
 <div class="bg-slate-900 border-b border-slate-800 py-3 overflow-hidden">
     <div class="marquee-track select-none">
-        @foreach(array_fill(0, 2, ['Facebook Accounts','Instagram Accounts','TikTok Accounts','2nd Phone Numbers','Verified Profiles','Aged Accounts','High Followers','Business Pages','Creator Accounts','Phone Verified']) as $chunk)
+        @foreach(array_fill(0, 2, ['Facebook Accounts','Instagram Accounts','TikTok Accounts','Twitter Accounts','Telegram Accounts','Virtual Numbers','Verified Profiles','Aged Accounts','High Followers','Business Pages','Creator Accounts','Phone Verified']) as $chunk)
         @foreach($chunk as $item)
         <span class="inline-flex items-center gap-2 mx-8 text-slate-500 text-sm font-medium whitespace-nowrap">
             <span class="w-1.5 h-1.5 rounded-full bg-brand/60"></span>
@@ -210,15 +210,17 @@
     <div class="text-center mb-14 reveal">
         <span class="text-xs font-bold text-brand uppercase tracking-widest">What We Offer</span>
         <h2 class="text-4xl font-bold text-white mt-2 mb-3">Browse by Category</h2>
-        <p class="text-slate-400 max-w-lg mx-auto">Choose from our four core product types — every account is hand-verified before listing.</p>
+        <p class="text-slate-400 max-w-lg mx-auto">Social Media accounts, Virtual Numbers — every account is hand-verified before listing.</p>
     </div>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
         @php
         $catData = [
-            'Facebook'    => ['cls'=>'fb',  'border'=>'border-blue-500/25',  'ring'=>'ring-blue-500/40',  'icon_bg'=>'bg-blue-500/15',  'label_color'=>'text-blue-300',  'desc'=>'Aged & new FB accounts, pages, business',   'path'=>'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z'],
-            'Instagram'   => ['cls'=>'ig',  'border'=>'border-pink-500/25',  'ring'=>'ring-pink-500/40',  'icon_bg'=>'bg-pink-500/15',  'label_color'=>'text-pink-300',  'desc'=>'High-follower & niche IG profiles',            'path'=>'M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37zm1.5-4.87h.01M6.5 19.5h11a3 3 0 003-3v-11a3 3 0 00-3-3h-11a3 3 0 00-3 3v11a3 3 0 003 3z'],
-            'TikTok'      => ['cls'=>'tt',  'border'=>'border-purple-500/25','ring'=>'ring-purple-500/40','icon_bg'=>'bg-purple-500/15','label_color'=>'text-purple-300','desc'=>'Creator & brand TikTok accounts',               'path'=>'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3'],
-            '2nd Numbers' => ['cls'=>'num', 'border'=>'border-emerald-500/25','ring'=>'ring-emerald-500/40','icon_bg'=>'bg-emerald-500/15','label_color'=>'text-emerald-300','desc'=>'Virtual & physical second phone numbers', 'path'=>'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z'],
+            'Facebook'       => ['cls'=>'fb',   'border'=>'border-blue-500/25',   'ring'=>'ring-blue-500/40',   'icon_bg'=>'bg-blue-500/15',   'label_color'=>'text-blue-300',   'desc'=>'Aged & new FB accounts, pages, business',    'path'=>'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z'],
+            'Instagram'      => ['cls'=>'ig',   'border'=>'border-pink-500/25',   'ring'=>'ring-pink-500/40',   'icon_bg'=>'bg-pink-500/15',   'label_color'=>'text-pink-300',   'desc'=>'High-follower & niche IG profiles',             'path'=>'M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37zm1.5-4.87h.01M6.5 19.5h11a3 3 0 003-3v-11a3 3 0 00-3-3h-11a3 3 0 00-3 3v11a3 3 0 003 3z'],
+            'TikTok'         => ['cls'=>'tt',   'border'=>'border-purple-500/25', 'ring'=>'ring-purple-500/40', 'icon_bg'=>'bg-purple-500/15', 'label_color'=>'text-purple-300', 'desc'=>'Creator & brand TikTok accounts',                'path'=>'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3'],
+            'Twitter'        => ['cls'=>'tw',   'border'=>'border-sky-500/25',    'ring'=>'ring-sky-500/40',    'icon_bg'=>'bg-sky-500/15',    'label_color'=>'text-sky-300',    'desc'=>'Aged Twitter/X accounts with followers',       'path'=>'M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z'],
+            'Telegram'       => ['cls'=>'tg',   'border'=>'border-cyan-500/25',   'ring'=>'ring-cyan-500/40',   'icon_bg'=>'bg-cyan-500/15',   'label_color'=>'text-cyan-300',   'desc'=>'Telegram accounts & channel memberships',      'path'=>'M21.198 2.433a2.242 2.242 0 00-1.022.215l-16.5 7.5a2.25 2.25 0 00.126 4.238l3.218 1.07 1.675 5.025a.75.75 0 001.373.142l2.116-3.527 4.29 3.206a2.25 2.25 0 003.496-1.39l2.997-15a2.25 2.25 0 00-2.769-2.479z'],
+            'Virtual Numbers'=> ['cls'=>'num',  'border'=>'border-emerald-500/25','ring'=>'ring-emerald-500/40','icon_bg'=>'bg-emerald-500/15','label_color'=>'text-emerald-300','desc'=>'Virtual & physical second phone numbers',       'path'=>'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z'],
         ];
         @endphp
         @foreach($categories as $i => $cat)
@@ -435,6 +437,170 @@
                 <button onclick="testiNext()" class="w-9 h-9 rounded-full border border-slate-600 hover:border-brand text-slate-400 hover:text-white flex items-center justify-center transition-all">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+{{-- ═══════════════════════════════════════════════════════
+     MOBILE APP PREVIEW
+═══════════════════════════════════════════════════════ --}}
+<section class="relative overflow-hidden py-24 bg-slate-900">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_60%_80%_at_70%_50%,rgba(14,165,233,0.08),transparent_70%)]"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_40%_60%_at_30%_50%,rgba(99,102,241,0.06),transparent_60%)]"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col lg:flex-row items-center gap-16">
+
+            {{-- Left: copy --}}
+            <div class="flex-1 text-center lg:text-left reveal-left">
+                <span class="text-xs font-bold text-brand uppercase tracking-widest">Always With You</span>
+                <h2 class="text-4xl font-bold text-white mt-3 mb-4 leading-tight">
+                    Your Marketplace,<br>
+                    <span class="shimmer-text">In Your Pocket</span>
+                </h2>
+                <p class="text-slate-400 text-lg mb-8 max-w-lg">
+                    Browse, buy, and manage your digital accounts from anywhere. Our mobile-optimised platform gives you the full experience on any screen.
+                </p>
+                <div class="space-y-4 mb-10">
+                    @foreach([
+                        ['icon'=>'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z','color'=>'text-brand','bg'=>'bg-brand/10','title'=>'Instant wallet top-up','desc'=>'Fund your wallet in seconds via Paystack'],
+                        ['icon'=>'M13 10V3L4 14h7v7l9-11h-7z','color'=>'text-yellow-400','bg'=>'bg-yellow-400/10','title'=>'One-tap purchases','desc'=>'Buy & receive credentials in under a minute'],
+                        ['icon'=>'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9','color'=>'text-purple-400','bg'=>'bg-purple-400/10','title'=>'Real-time notifications','desc'=>'Order updates delivered instantly'],
+                    ] as $feat)
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl {{ $feat['bg'] }} flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 {{ $feat['color'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $feat['icon'] }}"/></svg>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-white text-sm">{{ $feat['title'] }}</p>
+                            <p class="text-slate-400 text-xs">{{ $feat['desc'] }}</p>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                <a href="{{ route('marketplace') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors">
+                    Open Marketplace
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                </a>
+            </div>
+
+            {{-- Right: realistic phone mockup --}}
+            <div class="flex-shrink-0 reveal flex justify-center">
+                {{-- Phone outer shell --}}
+                <div class="relative" style="width:280px">
+                    {{-- Drop shadow glow --}}
+                    <div class="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-b from-brand via-purple-500 to-pink-500 rounded-[50px]"></div>
+
+                    {{-- Phone body --}}
+                    <div class="relative bg-slate-900 rounded-[44px] border-[7px] border-slate-700 shadow-2xl overflow-hidden" style="height:580px">
+
+                        {{-- Status bar --}}
+                        <div class="bg-slate-950 px-5 pt-3 pb-2 flex items-center justify-between">
+                            <span class="text-white text-[10px] font-semibold">9:41</span>
+                            <div class="absolute left-1/2 -translate-x-1/2 top-0 w-24 h-5 bg-slate-950 rounded-b-2xl"></div>
+                            <div class="flex items-center gap-1">
+                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M1.5 8.5a13 13 0 0121 0M5 12a10 10 0 0114 0M8.5 15.5a6 6 0 017 0M12 19h.01"/></svg>
+                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M2 17h20v-6a2 2 0 00-2-2H4a2 2 0 00-2 2v6zM2 17v2h20v-2M22 9V7a2 2 0 00-2-2h-1"/></svg>
+                            </div>
+                        </div>
+
+                        {{-- Screen content --}}
+                        <div class="bg-slate-900 h-full overflow-hidden">
+                            {{-- App header --}}
+                            <div class="bg-slate-800/80 backdrop-blur border-b border-slate-700 px-4 py-3 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-6 h-6 rounded-lg bg-brand flex items-center justify-center">
+                                        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    </div>
+                                    <span class="text-white text-xs font-bold">BluesMarket</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-6 h-6 rounded-full bg-brand/20 flex items-center justify-center">
+                                        <svg class="w-3 h-3 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                    </div>
+                                    <div class="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center">
+                                        <svg class="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Hero micro --}}
+                            <div class="px-4 py-4 bg-gradient-to-br from-brand/20 to-purple-500/10">
+                                <p class="text-slate-400 text-[9px] font-medium mb-0.5">FEATURED</p>
+                                <p class="text-white text-sm font-bold mb-2">Verified Social Accounts</p>
+                                <div class="flex gap-1.5">
+                                    @foreach(['FB','IG','TT','X','TG'] as $p)
+                                    <span class="text-[8px] font-bold px-2 py-0.5 rounded-full border border-slate-600 text-slate-300 bg-slate-800">{{ $p }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            {{-- Wallet strip --}}
+                            <div class="mx-4 mt-3 bg-gradient-to-r from-brand to-indigo-600 rounded-xl px-3 py-2.5 flex items-center justify-between">
+                                <div>
+                                    <p class="text-sky-100 text-[8px] font-medium">Wallet Balance</p>
+                                    <p class="text-white text-sm font-extrabold">₦12,500.00</p>
+                                </div>
+                                <div class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                </div>
+                            </div>
+
+                            {{-- Category pills --}}
+                            <div class="px-4 mt-3">
+                                <div class="flex gap-1.5 overflow-x-hidden">
+                                    @foreach([['Facebook','border-blue-500/40 text-blue-300 bg-blue-500/10'],['Instagram','border-pink-500/40 text-pink-300 bg-pink-500/10'],['TikTok','border-purple-500/40 text-purple-300 bg-purple-500/10'],['Twitter','border-sky-500/40 text-sky-300 bg-sky-500/10'],['Virtual No.','border-emerald-500/40 text-emerald-300 bg-emerald-500/10']] as [$name,$cls])
+                                    <span class="text-[7px] font-semibold px-2 py-1 rounded-full border {{ $cls }} whitespace-nowrap">{{ $name }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            {{-- Listing cards --}}
+                            <div class="px-4 mt-3 space-y-2">
+                                <p class="text-slate-500 text-[9px] font-semibold uppercase tracking-wider mb-2">Featured Listings</p>
+                                @foreach([
+                                    ['🟦','1k FB Page','Facebook','₦2,500','bg-blue-500/10'],
+                                    ['🟪','IG 5K Followers','Instagram','₦4,800','bg-pink-500/10'],
+                                    ['🔷','Virtual SIM','Virtual Numbers','₦1,200','bg-emerald-500/10'],
+                                ] as [$emoji,$title,$cat,$price,$bg])
+                                <div class="flex items-center justify-between bg-slate-800 rounded-xl px-3 py-2.5 border border-slate-700">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-lg {{ $bg }} flex items-center justify-center text-sm">{{ $emoji }}</div>
+                                        <div>
+                                            <p class="text-white text-[10px] font-semibold leading-tight">{{ $title }}</p>
+                                            <p class="text-slate-500 text-[8px]">{{ $cat }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-white text-[10px] font-bold">{{ $price }}</p>
+                                        <span class="text-[7px] font-bold text-brand bg-brand/10 px-1.5 py-0.5 rounded-md">Buy</span>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+
+                            {{-- Bottom nav bar --}}
+                            <div class="absolute bottom-0 left-0 right-0 bg-slate-800/95 backdrop-blur border-t border-slate-700 px-3 py-2 flex items-center justify-around">
+                                @foreach([
+                                    ['M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6','text-brand'],
+                                    ['M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z','text-slate-500'],
+                                    ['M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z','text-slate-500'],
+                                    ['M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z','text-slate-500'],
+                                ] as [$path,$color])
+                                <button class="flex flex-col items-center gap-0.5">
+                                    <svg class="w-4 h-4 {{ $color }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $path }}"/></svg>
+                                </button>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Side buttons --}}
+                    <div class="absolute -right-2 top-24 w-1 h-8 bg-slate-600 rounded-full"></div>
+                    <div class="absolute -left-2 top-20 w-1 h-6 bg-slate-600 rounded-full"></div>
+                    <div class="absolute -left-2 top-28 w-1 h-10 bg-slate-600 rounded-full"></div>
+                    <div class="absolute -left-2 top-40 w-1 h-10 bg-slate-600 rounded-full"></div>
+                </div>
             </div>
         </div>
     </div>

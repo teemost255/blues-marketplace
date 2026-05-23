@@ -32,6 +32,9 @@ use App\Http\Controllers\User\SupportController;
 use App\Http\Controllers\User\ProfileController;
 
 // ── Public ────────────────────────────────────────────────────────────────────
+// Paystack webhook (no CSRF)
+Route::post('/paystack/webhook', [WalletController::class, 'webhook'])->name('paystack.webhook')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 Route::get('/',          [HomeController::class,        'index'])->name('home');
 Route::get('/terms',     [PagesController::class,       'terms'])->name('terms');
 Route::get('/privacy',   [PagesController::class,       'privacy'])->name('privacy');
@@ -57,8 +60,9 @@ Route::post('/reset-password',  [ForgotPasswordController::class, 'resetPassword
 // ── User Dashboard ────────────────────────────────────────────────────────────
 Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->name('dashboard.')->group(function () {
     Route::get('/',             [DashboardController::class,    'index'])->name('index');
-    Route::get('/wallet',       [WalletController::class,       'index'])->name('wallet');
-    Route::post('/wallet',      [WalletController::class,       'deposit'])->name('wallet.deposit');
+    Route::get('/wallet',             [WalletController::class, 'index'])->name('wallet');
+    Route::post('/wallet/initiate',   [WalletController::class, 'initiate'])->name('wallet.initiate');
+    Route::get('/wallet/callback',    [WalletController::class, 'callback'])->name('wallet.callback');
     Route::get('/orders',       [OrdersController::class,       'index'])->name('orders');
     Route::get('/wishlist',     [WishlistController::class,     'index'])->name('wishlist');
     Route::post('/wishlist',    [WishlistController::class,     'store'])->name('wishlist.store');

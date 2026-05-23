@@ -4,7 +4,7 @@ import { Activity, Heart, ShoppingBag, Sparkles, TrendingUp, Wallet } from "luci
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { LISTING_CATEGORIES } from "@/lib/categories";
 
@@ -18,38 +18,22 @@ function DashboardOverview() {
     queryKey: ["my-stats", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data: purchases } = await supabase
-        .from("purchases")
-        .select("amount,status,created_at,listing_id")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
-      const list = purchases ?? [];
-      const total = list.reduce((s, p) => s + Number(p.amount), 0);
-      const completed = list.filter((p) => p.status === "completed").length;
-      const pending = list.filter((p) => p.status === "pending").length;
-      return { count: list.length, total, completed, pending, recent: list.slice(0, 5) };
+      return await api.get("/api/purchases/stats");
     },
   });
 
   const { data: featured } = useQuery({
     queryKey: ["recommended"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("listings")
-        .select("id,title,price,category,image_url")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(3);
-      return data ?? [];
+      const result = await api.get("/api/listings?limit=3&active_only=true");
+      return result.rows ?? [];
     },
   });
 
   const { data: categories } = useQuery({
     queryKey: ["listing-categories"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("listing_categories").select("name").order("name");
-      if (error) throw error;
-      return (data ?? []).map((row: any) => row.name);
+      return await api.get("/api/categories");
     },
   });
   const categoryOptions = categories ?? LISTING_CATEGORIES;

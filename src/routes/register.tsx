@@ -9,8 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 
@@ -59,39 +58,10 @@ function Register() {
     if (form.password !== form.confirm) return toast.error("Passwords do not match");
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(form.username)) return toast.error("Username: 3-20 letters, numbers, underscores");
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: {
-          display_name: form.name,
-          username: form.username,
-          phone: form.phone,
-          country: form.country,
-          referral_code: form.referral || null,
-        },
-      },
-    });
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    toast.success("Account created! Check your inbox to verify your email.");
-  };
-
-  const handleGoogle = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      // Use origin so Lovable/Google redirect back to the app root for handling
-      redirect_uri: window.location.origin,
-    });
-
-    if (result.error) {
-      toast.error("Google sign-in failed");
-      return;
-    }
-
-    if (!result.redirected) {
-      toast.success("Signed in with Google");
-      navigate({ to: "/dashboard" });
+    try {
+      window.location.href = "/__replauthuser";
+    } finally {
+      setLoading(false);
     }
   };
 

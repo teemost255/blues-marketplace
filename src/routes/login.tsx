@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
@@ -47,41 +45,12 @@ export function LoginForm({
     e.preventDefault();
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.toLowerCase().trim(),
-        password,
-      });
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-      toast.success("Welcome back!");
+      window.location.href = "/__replauthuser";
     } catch (err) {
       console.error("Login error:", err);
       toast.error("An unexpected error occurred");
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleGoogle = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      // Use origin as the OAuth redirect URI so the SDK can handle the callback
-      redirect_uri: window.location.origin,
-    });
-
-    if (result.error) {
-      toast.error("Google sign-in failed");
-      return;
-    }
-
-    // If the provider didn't perform a full-page redirect (tokens returned inline),
-    // navigate to the desired destination so the UI updates immediately.
-    if (!result.redirected) {
-      toast.success("Signed in with Google");
-      if (role !== null) {
-        navigate({ to: resolveRedirect() });
-      }
     }
   };
 

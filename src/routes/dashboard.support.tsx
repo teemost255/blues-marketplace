@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/dashboard/support")({
@@ -37,17 +37,17 @@ function Support() {
     queryKey: ["tickets", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("support_tickets").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
-      return data ?? [];
+      return await api.get("/api/tickets/my");
     },
   });
 
   const submit = async () => {
     if (subject.trim().length < 3 || message.trim().length < 10) return toast.error("Add a subject and a longer message");
-    const { error } = await supabase.from("support_tickets").insert({
-      user_id: user!.id, subject: subject.trim(), message: message.trim(), priority,
-    });
-    if (error) return toast.error(error.message);
+    try {
+      await api.post("/api/tickets", { subject: subject.trim(), message: message.trim(), priority });
+    } catch (err: any) {
+      return toast.error(err.message || "Failed to submit ticket");
+    }
     toast.success("Ticket submitted — we'll reply soon.");
     setSubject(""); setMessage(""); setPriority("normal"); setOpen(false);
     qc.invalidateQueries({ queryKey: ["tickets"] });

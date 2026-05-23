@@ -3,70 +3,133 @@
 @section('page-title', 'My Wallet')
 
 @section('content')
+
+{{-- Flash messages --}}
+@if(session('success'))
+<div class="mb-6 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl px-4 py-3 flex items-center gap-2 text-sm">
+    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+    {{ session('success') }}
+</div>
+@endif
+@if(session('error'))
+<div class="mb-6 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">{{ session('error') }}</div>
+@endif
+@if(session('info'))
+<div class="mb-6 bg-brand/10 border border-brand/30 text-brand rounded-xl px-4 py-3 text-sm">{{ session('info') }}</div>
+@endif
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     {{-- Balance card --}}
-    <div class="lg:col-span-1 bg-gradient-to-br from-brand to-brand-dark rounded-2xl p-6 text-white">
-        <p class="text-sky-100 text-sm font-medium mb-1">Available Balance</p>
-        <p class="text-4xl font-extrabold">${{ number_format($wallet->balance, 2) }}</p>
-        <p class="text-sky-200 text-xs mt-3">Funds ready to use in the marketplace</p>
+    <div class="lg:col-span-1 bg-gradient-to-br from-brand to-brand-dark rounded-2xl p-6 text-white relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/5"></div>
+        <div class="absolute -right-4 bottom-4 w-20 h-20 rounded-full bg-white/5"></div>
+        <div class="relative">
+            <div class="flex items-center gap-2 mb-4">
+                <svg class="w-5 h-5 text-sky-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                <p class="text-sky-100 text-sm font-medium">Available Balance</p>
+            </div>
+            <p class="text-4xl font-extrabold tracking-tight">₦{{ number_format($wallet->balance, 2) }}</p>
+            <p class="text-sky-200 text-xs mt-3">Funds ready to use in the marketplace</p>
+        </div>
     </div>
 
-    {{-- Top up form --}}
+    {{-- Paystack Top-up --}}
     <div class="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-2xl p-6">
-        <h2 class="font-semibold text-white mb-4">Top Up Wallet</h2>
-        <form method="POST" action="{{ route('dashboard.wallet.deposit') }}" class="flex flex-col sm:flex-row gap-3">
-            @csrf
-            <div class="flex-1">
-                <label class="block text-xs text-slate-400 mb-1.5">Amount (USD)</label>
-                <div class="relative">
-                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">$</span>
-                    <input type="number" name="amount" min="1" max="10000" step="0.01" placeholder="0.00" required
-                        class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-7 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand text-sm @error('amount') border-red-500 @enderror">
-                </div>
-                @error('amount')<p class="text-red-400 text-xs mt-1">{{ $message }}</p>@enderror
+        <div class="flex items-center gap-2 mb-5">
+            <div class="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+                <svg class="w-4 h-4 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             </div>
-            <div class="flex items-end">
-                <button type="submit" class="bg-brand hover:bg-brand-dark text-white font-semibold px-6 py-3 rounded-lg text-sm transition-colors whitespace-nowrap">Add Funds</button>
+            <h2 class="font-semibold text-white">Fund Wallet via Paystack</h2>
+        </div>
+
+        @if($paystackPublicKey)
+        <form method="POST" action="{{ route('dashboard.wallet.initiate') }}" id="topup-form">
+            @csrf
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-1">
+                    <label class="block text-xs text-slate-400 mb-1.5">Amount (₦)</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-sm">₦</span>
+                        <input type="number" name="amount" id="amount-input"
+                            min="{{ $minDeposit }}" max="{{ $maxDeposit }}" step="1"
+                            placeholder="{{ number_format($minDeposit, 0) }}" required
+                            class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-8 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand text-sm @error('amount') border-red-500 @enderror">
+                    </div>
+                    @error('amount')
+                    <p class="text-red-400 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                    <p class="text-slate-500 text-xs mt-1">Min: ₦{{ number_format($minDeposit, 0) }} · Max: ₦{{ number_format($maxDeposit, 0) }}</p>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="bg-brand hover:bg-brand-dark text-white font-semibold px-6 py-3 rounded-lg text-sm transition-colors whitespace-nowrap flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        Pay with Paystack
+                    </button>
+                </div>
+            </div>
+            {{-- Quick amounts --}}
+            <div class="flex flex-wrap gap-2 mt-3">
+                @foreach([500, 1000, 2000, 5000, 10000] as $preset)
+                <button type="button" onclick="document.getElementById('amount-input').value='{{ $preset }}'"
+                    class="bg-slate-700 hover:bg-brand/20 hover:border-brand/40 border border-transparent text-slate-300 hover:text-brand text-xs font-medium px-3 py-1.5 rounded-lg transition-all">
+                    ₦{{ number_format($preset, 0) }}
+                </button>
+                @endforeach
             </div>
         </form>
-        <div class="flex gap-2 mt-3">
-            @foreach([10, 25, 50, 100] as $preset)
-            <button type="button" onclick="document.querySelector('[name=amount]').value='{{ $preset }}'" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">${{ $preset }}</button>
-            @endforeach
+
+        <div class="mt-4 pt-4 border-t border-slate-700 flex items-center gap-2 text-xs text-slate-500">
+            <svg class="w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            Secured by Paystack · Card, Bank Transfer, USSD accepted · Balance credited instantly
         </div>
+        @else
+        <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-xl px-4 py-4 text-sm flex items-start gap-2">
+            <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Payment gateway is not configured yet. Please contact support.</span>
+        </div>
+        @endif
     </div>
 </div>
 
 {{-- Transaction history --}}
 <div class="bg-slate-800 border border-slate-700 rounded-xl">
-    <div class="px-6 py-4 border-b border-slate-700">
+    <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
         <h2 class="font-semibold text-white">Transaction History</h2>
+        <span class="text-xs text-slate-500">{{ $transactions->total() }} total</span>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead><tr class="border-b border-slate-700 text-slate-400 text-xs uppercase">
                 <th class="px-6 py-3 text-left">Description</th>
+                <th class="px-6 py-3 text-left">Reference</th>
                 <th class="px-6 py-3 text-left">Type</th>
                 <th class="px-6 py-3 text-left">Amount</th>
                 <th class="px-6 py-3 text-left">Date</th>
             </tr></thead>
             <tbody>
             @forelse($transactions as $tx)
-                <tr class="border-b border-slate-700/50">
-                    <td class="px-6 py-3 text-slate-300">{{ $tx->description ?? ($tx->reference ?? '—') }}</td>
+                <tr class="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
+                    <td class="px-6 py-3 text-slate-300 max-w-[200px] truncate">{{ $tx->description ?? '—' }}</td>
+                    <td class="px-6 py-3 text-slate-500 font-mono text-xs">{{ $tx->reference ?? '—' }}</td>
                     <td class="px-6 py-3">
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium
                             {{ $tx->type === 'deposit' ? 'bg-green-900/50 text-green-400' : ($tx->type === 'purchase' ? 'bg-red-900/50 text-red-400' : 'bg-slate-700 text-slate-300') }}">
                             {{ ucfirst($tx->type) }}
                         </span>
                     </td>
-                    <td class="px-6 py-3 font-semibold {{ $tx->amount >= 0 ? 'text-green-400' : 'text-red-400' }}">
-                        {{ $tx->amount >= 0 ? '+' : '' }}${{ number_format(abs($tx->amount), 2) }}
+                    <td class="px-6 py-3 font-semibold {{ $tx->type === 'deposit' ? 'text-green-400' : 'text-red-400' }}">
+                        {{ $tx->type === 'deposit' ? '+' : '-' }}₦{{ number_format(abs($tx->amount), 2) }}
                     </td>
                     <td class="px-6 py-3 text-slate-400">{{ $tx->created_at->format('M j, Y g:ia') }}</td>
                 </tr>
             @empty
-                <tr><td colspan="4" class="px-6 py-10 text-center text-slate-500">No transactions yet</td></tr>
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center">
+                        <svg class="w-10 h-10 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        <p class="text-slate-500 text-sm">No transactions yet</p>
+                        <p class="text-slate-600 text-xs mt-1">Fund your wallet to get started</p>
+                    </td>
+                </tr>
             @endforelse
             </tbody>
         </table>

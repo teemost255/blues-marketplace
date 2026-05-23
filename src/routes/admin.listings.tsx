@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { LISTING_CATEGORIES } from "@/lib/categories";
 
@@ -41,18 +41,15 @@ function AdminListings() {
   const { data } = useQuery({
     queryKey: ["admin-listings"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("listings").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
+      const result = await api.get("/api/listings?active_only=false&limit=1000");
+      return result.rows ?? [];
     },
   });
 
   const { data: categories } = useQuery({
     queryKey: ["listing-categories"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("listing_categories").select("name").order("name");
-      if (error) throw error;
-      return (data ?? []).map((row: any) => row.name);
+      return await api.get("/api/categories");
     },
   });
   const listingCategories = categories ?? LISTING_CATEGORIES;
@@ -61,18 +58,17 @@ function AdminListings() {
   const openEdit = (l: any) => { setForm({ ...l }); setOpen(true); };
 
   const save = async () => {
-    const payload = { ...form, price: Number(form.price), stock: Number(form.stock), created_by: user?.id };
-    if (form.id) {
-      const { id, ...update } = payload as any;
-      const { error } = await supabase.from("listings").update(update).eq("id", form.id);
-      if (error) return toast.error(error.message);
-    } else {
-      const { error } = await supabase.from("listings").insert(payload);
-      if (error) return toast.error(error.message);
-    }
-    toast.success("Saved");
-    setOpen(false);
-    qc.invalidateQueries({ queryKey: ["admin-listings"] });
+    const payload = { ...form, price: Number(form.price), stock: Number(form.stock) };
+    try {
+      if (form.id) {
+        await api.put(`/api/listings/${form.id}`, payload);
+      } else {
+        await api.post("/api/listings", payload);
+      }
+      toast.success("Saved");
+      setOpen(false);
+      qc.invalidateQueries({ queryKey: ["admin-listings"] });
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const remove = async (id: string) => {

@@ -1,15 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { Megaphone, X } from "lucide-react";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 
 export function AnnouncementBanner() {
   const [dismissed, setDismissed] = useState(false);
   const { data } = useQuery({
     queryKey: ["announcement"],
     queryFn: async () => {
-      const { data } = await supabase.from("site_settings").select("value").eq("key", "announcement").maybeSingle();
-      return (data?.value ?? {}) as { enabled?: boolean; text?: string };
+      const val = await api.get("/api/settings/announcement");
+      return (val ?? {}) as { enabled?: boolean; text?: string };
     },
   });
 

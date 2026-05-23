@@ -67,6 +67,11 @@
                                 class="p-1.5 rounded text-slate-400 hover:text-green-400 hover:bg-slate-700 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                             </button>
+                            {{-- Change Password --}}
+                            <button onclick="openModal('modal-password-{{ $user->id }}')" title="Change password"
+                                class="p-1.5 rounded text-slate-400 hover:text-purple-400 hover:bg-slate-700 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                            </button>
                             {{-- Status --}}
                             <button onclick="openModal('modal-status-{{ $user->id }}')" title="Change status"
                                 class="p-1.5 rounded text-slate-400 hover:text-yellow-400 hover:bg-slate-700 transition-colors">
@@ -80,6 +85,33 @@
                         </div>
                     </td>
                 </tr>
+
+                {{-- Change Password Modal --}}
+                <div id="modal-password-{{ $user->id }}" class="modal-overlay" style="display:none;">
+                    <div class="modal-box">
+                        <div class="flex items-center justify-between mb-5">
+                            <h3 class="font-semibold text-white">Change Password — {{ $user->name }}</h3>
+                            <button onclick="closeModal('modal-password-{{ $user->id }}')" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+                        </div>
+                        <form method="POST" action="{{ route('admin.users.password', $user) }}" class="space-y-4">
+                            @csrf
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1.5">New Password</label>
+                                <input type="password" name="new_password" required placeholder="Min. 6 characters"
+                                    class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-brand">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1.5">Confirm New Password</label>
+                                <input type="password" name="new_password_confirmation" required placeholder="Re-enter password"
+                                    class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-brand">
+                            </div>
+                            <div class="flex gap-3 pt-1">
+                                <button type="submit" class="btn-primary" style="background:#7c3aed;">Update Password</button>
+                                <button type="button" onclick="closeModal('modal-password-{{ $user->id }}')" class="btn-primary" style="background:#475569;">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
                 {{-- Wallet Modal --}}
                 <div id="modal-wallet-{{ $user->id }}" class="modal-overlay" style="display:none;">

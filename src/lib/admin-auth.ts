@@ -1,7 +1,6 @@
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "./api";
 
 export const ADMIN_SESSION_KEY = "admin_session";
-export const ADMIN_COOKIE_NAME = "blues_admin_session";
 
 export interface AdminSession {
   id: string;
@@ -13,9 +12,6 @@ export interface AdminSession {
 export function storeAdminSession(session: AdminSession): void {
   try {
     localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
-    const maxAge = 60 * 60 * 24;
-    const secure = window.location.protocol === "https:" ? "; Secure" : "";
-    document.cookie = `${ADMIN_COOKIE_NAME}=${encodeURIComponent(session.id)}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
   } catch {
     // noop
   }
@@ -35,7 +31,6 @@ export function getAdminSession(): AdminSession | null {
 export function clearAdminSession(): void {
   try {
     localStorage.removeItem(ADMIN_SESSION_KEY);
-    document.cookie = `${ADMIN_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
   } catch {
     // noop
   }
@@ -47,42 +42,15 @@ export async function registerAdmin(
   displayName: string | null = null
 ): Promise<{ session: AdminSession | null; error: string | null }> {
   try {
-    const { data, error } = await supabase.rpc("register_admin", {
-      p_email: email.toLowerCase().trim(),
-      p_password: password,
-      p_display_name: displayName,
+    const data = await api.post("/api/admin/register", {
+      email: email.toLowerCase().trim(),
+      password,
+      display_name: displayName,
     });
-
-    if (error) {
-      console.error("register_admin error:", error);
-      return { session: null, error: "Registration failed" };
-    }
-
-    const rows = data as Array<{
-      id: string;
-      display_name: string | null;
-      email: string;
-      success: boolean;
-      error_message: string | null;
-    }> | null;
-
-    const result = rows?.[0];
-    if (!result?.success) {
-      return { session: null, error: result?.error_message ?? "Registration failed" };
-    }
-
-    return {
-      session: {
-        id: result.id,
-        email: result.email,
-        display_name: result.display_name,
-        isValid: true,
-      },
-      error: null,
-    };
-  } catch (err) {
-    console.error("registerAdmin error:", err);
-    return { session: null, error: "An unexpected error occurred" };
+    if (!data.ok) return { session: null, error: "Registration failed" };
+    return { session: data.session, error: null };
+  } catch (err: any) {
+    return { session: null, error: err.message || "Registration failed" };
   }
 }
 
@@ -91,39 +59,13 @@ export async function authenticateAdmin(
   password: string
 ): Promise<{ session: AdminSession | null; error: string | null }> {
   try {
-    const { data, error } = await supabase.rpc("verify_admin_password", {
-      p_email: email.toLowerCase().trim(),
+    const data = await api.post("/api/admin/login", {
+      email: email.toLowerCase().trim(),
       password,
     });
-
-    if (error) {
-      console.error("verify_admin_password error:", error);
-      return { session: null, error: "Authentication failed" };
-    }
-
-    const rows = data as Array<{
-      id: string;
-      display_name: string | null;
-      email: string;
-      is_valid: boolean;
-    }> | null;
-
-    const admin = rows?.[0];
-    if (!admin || !admin.is_valid) {
-      return { session: null, error: "Invalid credentials. Only admin accounts can sign in here." };
-    }
-
-    return {
-      session: {
-        id: admin.id,
-        email: admin.email,
-        display_name: admin.display_name,
-        isValid: true,
-      },
-      error: null,
-    };
-  } catch (err) {
-    console.error("authenticateAdmin error:", err);
-    return { session: null, error: "An unexpected error occurred" };
+    if (!data.ok) return { session: null, error: "Authentication failed" };
+    return { session: data.session, error: null };
+  } catch (err: any) {
+    return { session: null, error: err.message || "Authentication failed" };
   }
 }

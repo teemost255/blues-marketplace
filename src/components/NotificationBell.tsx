@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export function NotificationBell() {
@@ -13,8 +13,8 @@ export function NotificationBell() {
     enabled: !!user,
     refetchInterval: 30000,
     queryFn: async () => {
-      const { count } = await supabase.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", user!.id).eq("read", false);
-      return count ?? 0;
+      const data = await api.get("/api/notifications/unread-count");
+      return data.count ?? 0;
     },
   });
   if (!user) return null;

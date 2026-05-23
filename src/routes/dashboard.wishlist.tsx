@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/dashboard/wishlist")({
@@ -20,17 +20,16 @@ function Wishlist() {
     queryKey: ["wishlist", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data: w } = await supabase.from("wishlists").select("id,listing_id,created_at").eq("user_id", user!.id);
-      if (!w?.length) return [];
-      const ids = w.map((x) => x.listing_id);
-      const { data: listings } = await supabase.from("listings").select("id,title,price,category,image_url,is_active").in("id", ids);
-      return (w ?? []).map((x) => ({ ...x, listing: listings?.find((l) => l.id === x.listing_id) }));
+      return await api.get("/api/wishlist");
     },
   });
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("wishlists").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await api.delete(`/api/wishlist/${id}`);
+    } catch (err: any) {
+      return toast.error(err.message || "Failed to remove");
+    }
     toast.success("Removed from wishlist");
     qc.invalidateQueries({ queryKey: ["wishlist"] });
   };

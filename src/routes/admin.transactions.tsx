@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/admin/transactions")({
   component: AdminTransactions,
@@ -12,13 +12,7 @@ function AdminTransactions() {
   const { data } = useQuery({
     queryKey: ["admin-transactions"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("purchases")
-        .select("id,amount,status,created_at,user_id,listing:listings(title)")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data ?? [];
+      return await api.get("/api/admin/transactions");
     },
   });
 

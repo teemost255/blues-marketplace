@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useAdminPermissions } from "@/lib/admin-guard";
 
@@ -37,62 +37,34 @@ function AdminUsers() {
   const { data } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async (): Promise<Row[]> => {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id,display_name,created_at,status,is_verified,suspension_reason")
-        .order("created_at", { ascending: false });
-      const { data: roles } = await supabase.from("user_roles").select("user_id,role");
-      const roleMap = new Map<string, string[]>();
-      (roles ?? []).forEach((r) => {
-        const arr = roleMap.get(r.user_id) ?? [];
-        arr.push(r.role);
-        roleMap.set(r.user_id, arr);
-      });
-      return (profiles ?? []).map((p: any) => ({ ...p, roles: roleMap.get(p.id) ?? [] }));
+      return await api.get("/api/admin/users");
     },
   });
-
-  const audit = async (action: string, targetId: string, meta: Record<string, any> = {}) => {
-    if (!me) return;
-    await supabase.from("admin_audit_log").insert({
-      actor_id: me.id,
-      action,
-      target_type: "user",
-      target_id: targetId,
-      meta,
-    });
-  };
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin-users"] });
 
   const setRoleFor = async (userId: string, nextRole: "admin" | "moderator" | null) => {
-    await supabase.from("user_roles").delete().eq("user_id", userId).in("role", ["admin", "moderator"]);
-    if (nextRole) {
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: nextRole });
-      if (error) return toast.error(error.message);
-    }
-    await audit("role_set", userId, { role: nextRole ?? "user" });
-    toast.success("Role updated");
-    refresh();
+    try {
+      await api.put(`/api/admin/users/${userId}/role`, { role: nextRole ?? "user" });
+      toast.success("Role updated");
+      refresh();
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const setVerified = async (userId: string, v: boolean) => {
-    const { error } = await supabase.from("profiles").update({ is_verified: v }).eq("id", userId);
-    if (error) return toast.error(error.message);
-    await audit(v ? "verify" : "unverify", userId);
-    toast.success(v ? "Verified" : "Verification removed");
-    refresh();
+    try {
+      await api.put(`/api/admin/users/${userId}/verify`, { is_verified: v });
+      toast.success(v ? "Verified" : "Verification removed");
+      refresh();
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const setStatus = async (userId: string, status: "active" | "suspended" | "banned", reason?: string) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ status, suspension_reason: status === "active" ? null : reason ?? null })
-      .eq("id", userId);
-    if (error) return toast.error(error.message);
-    await audit(`status_${status}`, userId, { reason });
-    toast.success(`User ${status}`);
-    refresh();
+    try {
+      await api.put(`/api/admin/users/${userId}/status`, { status, suspension_reason: reason });
+      toast.success(`User ${status}`);
+      refresh();
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const filtered = (data ?? []).filter((u) =>
