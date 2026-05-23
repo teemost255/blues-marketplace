@@ -91,11 +91,18 @@ const authRedirectMiddleware = createMiddleware().server(async ({ next, request 
   const isHtmlRequest = acceptHeader.includes("text/html");
   const token = getCookie(request.headers.get("cookie"), AUTH_TOKEN_COOKIE_NAME);
   const role = token ? await resolveUserRole(token) : null;
-  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/adminlogin";
+
+  if (pathname === "/adminlogin") {
+    if (role === "admin" || role === "moderator") {
+      throw redirect({ to: "/admin" });
+    }
+    return next();
+  }
 
   if (pathname.startsWith("/admin")) {
     if (!token || !role) {
-      throw redirect({ to: "/login" });
+      throw redirect({ to: "/adminlogin" });
     }
 
     if (role !== "admin" && role !== "moderator") {
