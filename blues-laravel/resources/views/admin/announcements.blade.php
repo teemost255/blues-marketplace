@@ -7,16 +7,32 @@
 
     {{-- Compose form --}}
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
-        <div class="flex items-center gap-3 mb-6">
-            <div class="w-9 h-9 rounded-lg bg-brand/20 flex items-center justify-center">
-                <svg class="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
-                </svg>
+        <div class="flex items-center justify-between gap-3 mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-brand/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-white">Send Announcement</h2>
+                    <p class="text-xs text-slate-400">Broadcast a message to all {{ $userCount }} registered users</p>
+                </div>
             </div>
-            <div>
-                <h2 class="font-semibold text-white">Send Announcement</h2>
-                <p class="text-xs text-slate-400">Broadcast a message to all {{ $userCount }} registered users</p>
-            </div>
+            {{-- SMTP status badge --}}
+            @if($smtpConfigured)
+                <a href="{{ route('admin.settings') }}" title="From: {{ $fromAddress }}"
+                   class="flex items-center gap-1.5 bg-green-500/10 border border-green-500/25 text-green-400 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-green-500/20 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Email ready
+                </a>
+            @else
+                <a href="{{ route('admin.settings') }}"
+                   class="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-amber-500/20 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                    SMTP not set up
+                </a>
+            @endif
         </div>
 
         <form method="POST" action="{{ route('admin.announcements.store') }}" class="space-y-5">

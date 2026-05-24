@@ -19,9 +19,13 @@
         </div>
         @endif
 
+        {{-- Fallback link shown only when SMTP is not configured --}}
         @if(session('reset_link'))
-        <div class="bg-brand/10 border border-brand/30 rounded-xl px-4 py-3 mb-5">
-            <p class="text-xs font-semibold text-brand mb-2">Your password reset link (valid for 60 minutes):</p>
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 mb-5">
+            <p class="text-xs font-semibold text-amber-400 mb-2 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                Email not configured — use this link directly (valid 60 min):
+            </p>
             <a href="{{ session('reset_link') }}" class="text-sky-300 text-xs break-all hover:underline">{{ session('reset_link') }}</a>
         </div>
         @endif
