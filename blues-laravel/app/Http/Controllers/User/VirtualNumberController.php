@@ -8,6 +8,7 @@ use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\LogsplugService;
 use App\Services\HeroSmsService;
+use App\Services\FiveSimService;
 use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,23 +17,25 @@ class VirtualNumberController extends Controller
 {
     public function index()
     {
-        $enabled           = Setting::get('virtual_number_enabled', '1') === '1';
-        $logsplugConfigured = (new LogsplugService())->isConfigured();
-        $heroSmsConfigured  = (new HeroSmsService())->isConfigured();
-        $configured         = $logsplugConfigured || $heroSmsConfigured;
+        $enabled             = Setting::get('virtual_number_enabled', '1') === '1';
+        $logsplugConfigured  = (new LogsplugService())->isConfigured();
+        $heroSmsConfigured   = (new HeroSmsService())->isConfigured();
+        $fiveSimConfigured   = (new FiveSimService())->isConfigured();
+        $configured          = $logsplugConfigured || $heroSmsConfigured || $fiveSimConfigured;
 
         $orders       = VirtualNumberOrder::where('user_id', auth()->id())->latest()->paginate(10);
         $wallet       = Wallet::firstOrCreate(['user_id' => auth()->id()], ['balance' => 0]);
 
         $commissionType  = Setting::get('vn_commission_type', 'flat');
         $commissionValue = (float) Setting::get('vn_commission_value', '0');
+        $usdToNgn        = (float) Setting::get('usd_to_ngn_rate', '1600');
 
         $activeOrders  = $orders->getCollection()->filter(fn($o) => $o->status === 'active');
         $historyOrders = $orders->getCollection()->filter(fn($o) => $o->status !== 'active');
 
         return view('dashboard.virtual-numbers', compact(
-            'enabled', 'configured', 'logsplugConfigured', 'heroSmsConfigured',
-            'orders', 'wallet', 'commissionType', 'commissionValue',
+            'enabled', 'configured', 'logsplugConfigured', 'heroSmsConfigured', 'fiveSimConfigured',
+            'orders', 'wallet', 'commissionType', 'commissionValue', 'usdToNgn',
             'activeOrders', 'historyOrders'
         ));
     }
@@ -43,6 +46,18 @@ class VirtualNumberController extends Controller
     {
         $server   = $request->get('server', 'server2');
         $provider = $request->get('provider', 'logsplug');
+
+        if ($provider === 'fivesim') {
+            $svc = new FiveSimService();
+            if (!$svc->isConfigured()) {
+                return response()->json(['success' => false, 'message' => '5SIM API not configured.']);
+            }
+            $result = $svc->getCountries();
+            if ($result['success']) {
+                return response()->json(['success' => true, 'data' => $result['data'], 'flow' => 'TWO_STEP']);
+            }
+            return response()->json(['success' => false, 'message' => $result['message']]);
+        }
 
         if ($provider === 'herosms') {
             $svc = new HeroSmsService();
@@ -86,6 +101,21 @@ class VirtualNumberController extends Controller
         $country  = $request->get('country');
         $provider = $request->get('provider', 'logsplug');
 
+        if ($provider === 'fivesim') {
+            $svc = new FiveSimService();
+            if (!$svc->isConfigured()) {
+                return response()->json(['success' => false, 'message' => '5SIM API not configured.']);
+            }
+            if (!$country) {
+                return response()->json(['success' => false, 'message' => 'Please select a country first.']);
+            }
+            $result = $svc->getServices($country);
+            if ($result['success']) {
+                return response()->json(['success' => true, 'data' => $result['data']]);
+            }
+            return response()->json(['success' => false, 'message' => $result['message']]);
+        }
+
         if ($provider === 'herosms') {
             $svc = new HeroSmsService();
             if (!$svc->isConfigured()) {
@@ -119,7 +149,7 @@ class VirtualNumberController extends Controller
         $provider = $request->input('provider', 'logsplug');
 
         $request->validate([
-            'provider'     => 'required|string|in:logsplug,herosms',
+            'provider'     => 'required|string|in:logsplug,herosms,fivesim',
             'server'       => 'nullable|string|in:server1,server2',
             'service_id'   => 'required|string',
             'country'      => 'nullable|string',
@@ -143,11 +173,59 @@ class VirtualNumberController extends Controller
             return back()->with('error', 'Insufficient wallet balance. Please top up your wallet.');
         }
 
+        if ($provider === 'fivesim') {
+            return $this->orderFiveSim($request, $wallet, $commission, $cost);
+        }
+
         if ($provider === 'herosms') {
             return $this->orderHeroSms($request, $wallet, $apiCost, $commission, $cost);
         }
 
         return $this->orderLogsplug($request, $wallet, $apiCost, $commission, $cost);
+    }
+
+    private function orderFiveSim(Request $request, Wallet $wallet, float $commission, float $cost)
+    {
+        $svc = new FiveSimService();
+        if (!$svc->isConfigured()) {
+            return back()->with('error', '5SIM is not configured yet.');
+        }
+
+        $result = $svc->orderNumber($request->country ?? '', $request->service_id);
+        if (!$result['success']) {
+            return back()->with('error', 'Could not get a number: ' . $result['message']);
+        }
+
+        $data        = $result['data'];
+        $serviceName = $request->service_name ?? $request->service_id;
+
+        DB::transaction(function () use ($data, $request, $cost, $wallet, $serviceName) {
+            $order = VirtualNumberOrder::create([
+                'user_id'           => auth()->id(),
+                'provider'          => 'fivesim',
+                'external_order_id' => (string)($data['order_id'] ?? ''),
+                'service'           => $serviceName,
+                'country'           => $request->country ?? '',
+                'phone_number'      => $data['number'] ?? null,
+                'cost'              => $cost,
+                'status'            => 'active',
+                'raw_response'      => json_encode($data),
+            ]);
+
+            if ($cost > 0) {
+                $wallet->decrement('balance', $cost);
+                WalletTransaction::create([
+                    'user_id'     => auth()->id(),
+                    'type'        => 'withdrawal',
+                    'amount'      => $cost,
+                    'description' => 'Virtual number (5SIM): ' . $serviceName,
+                    'reference'   => 'VN-' . $order->id . '-' . time(),
+                ]);
+            }
+        });
+
+        ReferralService::markPurchased(auth()->user()->fresh());
+        return back()->with('success', 'Virtual number ordered successfully! Check your active orders below.');
     }
 
     private function orderLogsplug(Request $request, Wallet $wallet, float $apiCost, float $commission, float $cost)
@@ -250,11 +328,41 @@ class VirtualNumberController extends Controller
             return response()->json(['success' => false, 'message' => 'No external order ID.']);
         }
 
+        if ($order->provider === 'fivesim') {
+            return $this->checkSmsFiveSim($order);
+        }
+
         if (in_array($order->provider, ['herosms', 'smspool'])) {
             return $this->checkSmsHeroSms($order);
         }
 
         return $this->checkSmsLogsplug($order);
+    }
+
+    private function checkSmsFiveSim(VirtualNumberOrder $order)
+    {
+        $svc    = new FiveSimService();
+        $result = $svc->checkSms($order->external_order_id);
+
+        if ($result['success']) {
+            $data   = $result['data'];
+            $sms    = $data['sms'] ?? null;
+
+            $newStatus = $data['status'] ?? $order->status;
+
+            $order->update([
+                'sms_code' => $sms ?: $order->sms_code,
+                'status'   => $newStatus,
+            ]);
+
+            return response()->json([
+                'success'  => true,
+                'sms_code' => $order->fresh()->sms_code,
+                'status'   => $order->fresh()->status,
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => $result['message']]);
     }
 
     private function checkSmsLogsplug(VirtualNumberOrder $order)
@@ -296,7 +404,6 @@ class VirtualNumberController extends Controller
 
         if ($result['success']) {
             $data   = $result['data'];
-            // 1=pending, 3=completed (STATUS_OK), 6=cancelled (STATUS_CANCEL)
             $status = (int)($data['status'] ?? 1);
             $sms    = $data['sms'] ?? null;
 
@@ -330,11 +437,35 @@ class VirtualNumberController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
+        if ($order->provider === 'fivesim') {
+            return $this->cancelFiveSim($order);
+        }
+
         if (in_array($order->provider, ['herosms', 'smspool'])) {
             return $this->cancelHeroSms($order);
         }
 
         return $this->cancelLogsplug($order);
+    }
+
+    private function cancelFiveSim(VirtualNumberOrder $order)
+    {
+        $svc    = new FiveSimService();
+        $result = ['success' => true, 'data' => []];
+
+        if ($order->external_order_id) {
+            $result = $svc->cancelOrder($order->external_order_id);
+        }
+
+        if ($result['success']) {
+            $order->update(['status' => 'cancelled']);
+            if ($order->cost > 0) {
+                $this->processRefund($order);
+            }
+            return back()->with('success', 'Order cancelled and wallet refunded.');
+        }
+
+        return back()->with('error', 'Could not cancel: ' . $result['message']);
     }
 
     private function cancelLogsplug(VirtualNumberOrder $order)

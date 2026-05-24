@@ -256,6 +256,38 @@
         </div>
     </div>
 
+    {{-- Virtual Numbers / 5SIM --}}
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-lg bg-indigo-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-white">Virtual Numbers — 5SIM (Server 2)</h2>
+                <p class="text-xs text-slate-400">API credentials for 5SIM virtual number provisioning. Prices are in USD and auto-converted to NGN.</p>
+            </div>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1.5">5SIM API Key</label>
+                <div class="relative">
+                    <input type="password" name="fivesim_api_key" id="fivesim-key-input" value="{{ $settings['fivesim_api_key'] }}"
+                        placeholder="Paste your 5SIM API key here" class="font-mono text-xs pr-10">
+                    <button type="button" onclick="toggleFiveSimKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">Found in your <a href="https://5sim.net/settings/security" target="_blank" class="text-indigo-400 hover:underline">5SIM dashboard → Security</a>. Keep this secret.</p>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1.5">USD → NGN Exchange Rate</label>
+                <input type="number" name="usd_to_ngn_rate" value="{{ $settings['usd_to_ngn_rate'] }}"
+                    min="1" step="1" placeholder="e.g. 1600" class="w-full">
+                <p class="text-xs text-slate-500 mt-1">Used to convert 5SIM USD prices to Naira for display and billing. Update when exchange rate changes.</p>
+            </div>
+        </div>
+    </div>
+
     {{-- Virtual Numbers — Commission & Toggle --}}
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
         <div class="flex items-center gap-3 mb-5">
@@ -477,6 +509,10 @@ function toggleLogsplugKey() {
 }
 function toggleHeroSmsKey() {
     const inp = document.getElementById('herosms-key-input');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+function toggleFiveSimKey() {
+    const inp = document.getElementById('fivesim-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 function toggleMailPassword() {

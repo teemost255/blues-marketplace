@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\VirtualNumberOrder;
 use App\Services\LogsplugService;
 use App\Services\HeroSmsService;
+use App\Services\FiveSimService;
 use Illuminate\Http\Request;
 
 class VirtualNumberOrdersController extends Controller
@@ -80,6 +81,20 @@ class VirtualNumberOrdersController extends Controller
         $result = $svc->getBalance();
         if ($result['success']) {
             $balance = $result['data']['balance'] ?? null;
+            return response()->json(['success' => true, 'balance' => $balance]);
+        }
+        return response()->json(['success' => false, 'message' => $result['message'] ?? 'Could not fetch balance.']);
+    }
+
+    public function fiveSimBalance()
+    {
+        $svc = new FiveSimService();
+        if (!$svc->isConfigured()) {
+            return response()->json(['success' => false, 'message' => '5SIM API not configured. Add your key in Settings.']);
+        }
+        $result = $svc->getBalance();
+        if ($result['success']) {
+            $balance = $result['data']['balance_usd'] ?? null;
             return response()->json(['success' => true, 'balance' => $balance]);
         }
         return response()->json(['success' => false, 'message' => $result['message'] ?? 'Could not fetch balance.']);

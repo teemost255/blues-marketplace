@@ -79,6 +79,12 @@
                 class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
                 🇷🇺 Server 1
             </button>
+            @if($fiveSimConfigured)
+            <button onclick="switchServer('fivesim')" id="stab-fivesim"
+                class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+                🔵 Server 2
+            </button>
+            @endif
             @if($heroSmsConfigured)
             <button onclick="switchServer('herosms')" id="stab-herosms"
                 class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
@@ -322,6 +328,7 @@ const COUNTRIES_URL  = '/dashboard/virtual-numbers/api/countries';
 const SERVICES_URL   = '/dashboard/virtual-numbers/api/services';
 let currentServer    = 'server2';
 let currentProvider  = 'logsplug';
+const USD_TO_NGN     = {{ $usdToNgn }};
 let allServices      = [];
 let walletBalance    = {{ $wallet->balance }};
 let pollInterval     = null;
@@ -353,7 +360,9 @@ function switchTab(tab) {
 // ── Server tab switch ─────────────────────────────────────────────────────────
 function switchServer(s) {
     currentServer   = s;
-    currentProvider = (s === 'herosms') ? 'herosms' : 'logsplug';
+    if (s === 'herosms')  currentProvider = 'herosms';
+    else if (s === 'fivesim') currentProvider = 'fivesim';
+    else currentProvider = 'logsplug';
     allServices     = [];
 
     document.querySelectorAll('.stab').forEach(b => {
@@ -372,8 +381,8 @@ function switchServer(s) {
     const cWrap = document.getElementById('country-select');
     cWrap.innerHTML = '<option value="">All Countries</option>';
 
-    // Both herosms and logsplug server2 support country selection
-    if (s === 'server2' || s === 'herosms') loadCountries();
+    // fivesim, herosms and logsplug server2 support country selection
+    if (s === 'server2' || s === 'herosms' || s === 'fivesim') loadCountries();
     else loadServices();
 }
 
@@ -398,6 +407,16 @@ async function loadCountries() {
                 data.data.forEach(c => {
                     const code = String(c.id ?? c.name);
                     countriesCache[code] = { name: c.name, iso: '' };
+                    const opt  = document.createElement('option');
+                    opt.value  = code;
+                    opt.textContent = c.name;
+                    sel.appendChild(opt);
+                });
+            } else if (currentProvider === 'fivesim') {
+                // 5SIM: [{code, name}]
+                data.data.forEach(c => {
+                    const code = c.code;
+                    countriesCache[code] = { name: c.name, iso: code.length === 2 ? code : '' };
                     const opt  = document.createElement('option');
                     opt.value  = code;
                     opt.textContent = c.name;
@@ -484,17 +503,25 @@ async function loadServices() {
         const data = await res.json();
 
         if (data.success && Array.isArray(data.data) && data.data.length) {
-            // Normalize Hero-SMS format to match Logsplug format
             if (currentProvider === 'herosms') {
                 const countryName = country ? (countriesCache[country]?.name || country) : 'All Countries';
                 allServices = data.data.map(s => ({
-                    // Hero-SMS getPrices returns [{serviceId, name, count, cost}]
                     serviceId:    String(s.serviceId ?? s.name ?? ''),
                     name:         s.name ?? '',
                     apiPrice:     parseFloat(s.cost ?? 0),
                     country:      countryName,
                     countryCode:  country || '',
                     _provider:    'herosms',
+                }));
+            } else if (currentProvider === 'fivesim') {
+                const countryName = country ? (countriesCache[country]?.name || country) : 'All Countries';
+                allServices = data.data.map(s => ({
+                    serviceId:    String(s.serviceId ?? ''),
+                    name:         s.name ?? '',
+                    apiPrice:     parseFloat(s.cost_ngn ?? 0),
+                    country:      countryName,
+                    countryCode:  country || '',
+                    _provider:    'fivesim',
                 }));
             } else {
                 allServices = data.data;
@@ -676,7 +703,7 @@ function openModal(serviceId, serviceName, price, country, countryCode) {
     }
 
     document.getElementById('f-provider').value   = currentProvider;
-    document.getElementById('f-server').value     = currentProvider === 'herosms' ? 'server2' : currentServer;
+    document.getElementById('f-server').value     = (currentProvider === 'herosms' || currentProvider === 'fivesim') ? 'server2' : currentServer;
     document.getElementById('f-service-id').value = serviceId;
     document.getElementById('f-country').value    = countryCode;
     document.getElementById('f-price').value      = price;

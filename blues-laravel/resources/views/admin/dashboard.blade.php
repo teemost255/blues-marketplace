@@ -76,7 +76,7 @@
 </div>
 
 {{-- API Balance Widgets --}}
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
     {{-- Logsplug Balance --}}
     <div id="logsplug-balance-card" class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -103,6 +103,38 @@
         <div class="flex items-center gap-3">
             <a href="{{ route('admin.settings') }}#virtual-numbers" class="text-xs text-purple-400 hover:underline">Configure →</a>
             <button onclick="refreshLogsplugBalance()" id="logsplug-refresh-btn"
+                class="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors" title="Refresh balance">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+        </div>
+    </div>
+
+    {{-- 5SIM Balance --}}
+    <div id="fivesim-balance-card" class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-900/40 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+            </div>
+            <div>
+                <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">5SIM API Wallet (Server 2)</p>
+                <p id="fivesim-balance-value" class="text-2xl font-bold text-white mt-0.5">
+                    @if($fiveSimBalance !== null)
+                        ${{ number_format((float)$fiveSimBalance, 4) }}
+                    @else —
+                    @endif
+                </p>
+                <p id="fivesim-balance-note" class="text-xs mt-0.5 {{ $fiveSimBalance !== null ? 'text-slate-500' : 'text-yellow-400' }}">
+                    @if($fiveSimBalance !== null)
+                        USD balance · loaded at {{ now()->format('H:i') }}
+                    @else
+                        {{ $fiveSimError ?? 'Could not load balance.' }}
+                    @endif
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('admin.settings') }}#virtual-numbers" class="text-xs text-indigo-400 hover:underline">Configure →</a>
+            <button onclick="refreshFiveSimBalance()" id="fivesim-refresh-btn"
                 class="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors" title="Refresh balance">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
             </button>
@@ -266,6 +298,40 @@ async function refreshLogsplugBalance() {
                 noteEl.textContent = 'Available in API wallet · updated just now';
                 document.getElementById('logsplug-balance-card').classList.remove('border-red-700/50');
             }
+        } else {
+            valueEl.textContent = '—';
+            noteEl.textContent = data.message || 'Could not load balance.';
+        }
+    } catch (e) {
+        valueEl.textContent = '—';
+        noteEl.textContent = 'Refresh failed. Check network.';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function refreshFiveSimBalance() {
+    const valueEl = document.getElementById('fivesim-balance-value');
+    const noteEl  = document.getElementById('fivesim-balance-note');
+    const btn     = document.getElementById('fivesim-refresh-btn');
+    if (!valueEl) return;
+
+    valueEl.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin align-middle"></span>';
+    noteEl.textContent = 'Refreshing…';
+    btn.disabled = true;
+
+    try {
+        const res  = await fetch('/admin/virtual-numbers/fivesim-balance', {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await res.json();
+
+        if (data.success && data.balance !== null && data.balance !== undefined) {
+            const balance = parseFloat(data.balance);
+            valueEl.textContent = isNaN(balance) ? data.balance : ('$' + balance.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+            noteEl.textContent = 'USD balance · updated just now';
+            document.getElementById('fivesim-balance-card').classList.remove('border-red-700/50');
         } else {
             valueEl.textContent = '—';
             noteEl.textContent = data.message || 'Could not load balance.';
