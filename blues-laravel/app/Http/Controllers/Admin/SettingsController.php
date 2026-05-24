@@ -20,7 +20,7 @@ class SettingsController extends Controller
             'max_deposit'              => Setting::get('max_deposit', '1000000'),
             'maintenance_mode'         => Setting::get('maintenance_mode', '0'),
             'logsplug_api_key'         => Setting::get('logsplug_api_key', ''),
-            'logsplug_api_url'         => Setting::get('logsplug_api_url', 'https://logsplug.com/api'),
+            'logsplug_api_url'         => Setting::get('logsplug_api_url', 'https://v2.api.logsplug.com/api/v2'),
             'virtual_number_enabled'   => Setting::get('virtual_number_enabled', '1'),
             'whatsapp_number'          => Setting::get('whatsapp_number', ''),
             'mail_mailer'              => Setting::get('mail_mailer', 'smtp'),
