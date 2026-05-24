@@ -206,7 +206,7 @@
             </div>
             <div>
                 <h2 class="font-semibold text-white">Virtual Numbers — Logsplug</h2>
-                <p class="text-xs text-slate-400">API credentials for virtual number provisioning</p>
+                <p class="text-xs text-slate-400">API credentials for Logsplug virtual number provisioning</p>
             </div>
         </div>
         <div class="space-y-4">
@@ -225,31 +225,69 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     </button>
                 </div>
-                <p class="text-xs text-slate-500 mt-1">Keep this secret. Used to authenticate all virtual number requests.</p>
+                <p class="text-xs text-slate-500 mt-1">Keep this secret. Used to authenticate all Logsplug requests.</p>
             </div>
-            {{-- Commission --}}
-            <div class="pt-4 border-t border-slate-700" id="virtual-numbers">
-                <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Platform Commission</p>
-                <p class="text-xs text-slate-400 mb-4">Added on top of the API price and deducted from the user's wallet. The API is always charged its original rate from the API wallet.</p>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1.5">Commission Type</label>
-                        <select name="vn_commission_type" id="vn-commission-type"
-                            class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500">
-                            <option value="flat"    {{ $settings['vn_commission_type'] === 'flat'    ? 'selected' : '' }}>Flat amount (₦)</option>
-                            <option value="percent" {{ $settings['vn_commission_type'] === 'percent' ? 'selected' : '' }}>Percentage (%)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1.5" id="vn-comm-label">
-                            {{ $settings['vn_commission_type'] === 'percent' ? 'Commission (%)' : 'Commission (₦)' }}
-                        </label>
-                        <input type="number" name="vn_commission_value" id="vn-commission-value"
-                            value="{{ $settings['vn_commission_value'] }}"
-                            min="0" step="0.01"
-                            placeholder="{{ $settings['vn_commission_type'] === 'percent' ? 'e.g. 10' : 'e.g. 50' }}">
-                        <p class="text-xs text-slate-500 mt-1">Set to 0 to charge no commission.</p>
-                    </div>
+        </div>
+    </div>
+
+    {{-- Virtual Numbers / SMSPool --}}
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-lg bg-cyan-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-white">Virtual Numbers — SMSPool</h2>
+                <p class="text-xs text-slate-400">API credentials for SMSPool virtual number provisioning</p>
+            </div>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1.5">SMSPool API Key</label>
+                <div class="relative">
+                    <input type="password" name="smspool_api_key" id="smspool-key-input" value="{{ $settings['smspool_api_key'] }}"
+                        placeholder="Paste your SMSPool API key here" class="font-mono text-xs pr-10">
+                    <button type="button" onclick="toggleSmsPoolKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">Found in your <a href="https://www.smspool.net/my/api" target="_blank" class="text-cyan-400 hover:underline">SMSPool dashboard</a>. Keep this secret.</p>
+            </div>
+        </div>
+    </div>
+
+    {{-- Virtual Numbers — Commission & Toggle --}}
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-lg bg-sky-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-white">Virtual Numbers — Commission & Controls</h2>
+                <p class="text-xs text-slate-400">Applies to all virtual number providers</p>
+            </div>
+        </div>
+        <div class="space-y-4" id="virtual-numbers">
+            <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Platform Commission</p>
+            <p class="text-xs text-slate-400 mb-4">Added on top of the API price and deducted from the user's wallet. The API is always charged its original rate from the API wallet.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">Commission Type</label>
+                    <select name="vn_commission_type" id="vn-commission-type"
+                        class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500">
+                        <option value="flat"    {{ $settings['vn_commission_type'] === 'flat'    ? 'selected' : '' }}>Flat amount (₦)</option>
+                        <option value="percent" {{ $settings['vn_commission_type'] === 'percent' ? 'selected' : '' }}>Percentage (%)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5" id="vn-comm-label">
+                        {{ $settings['vn_commission_type'] === 'percent' ? 'Commission (%)' : 'Commission (₦)' }}
+                    </label>
+                    <input type="number" name="vn_commission_value" id="vn-commission-value"
+                        value="{{ $settings['vn_commission_value'] }}"
+                        min="0" step="0.01"
+                        placeholder="{{ $settings['vn_commission_type'] === 'percent' ? 'e.g. 10' : 'e.g. 50' }}">
+                    <p class="text-xs text-slate-500 mt-1">Set to 0 to charge no commission.</p>
                 </div>
             </div>
 
@@ -435,6 +473,10 @@ function toggleSecret() {
 }
 function toggleLogsplugKey() {
     const inp = document.getElementById('logsplug-key-input');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+function toggleSmsPoolKey() {
+    const inp = document.getElementById('smspool-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 function toggleMailPassword() {

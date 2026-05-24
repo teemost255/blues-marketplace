@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class VirtualNumberOrder extends Model
 {
     protected $fillable = [
-        'user_id', 'external_order_id', 'service', 'country',
+        'user_id', 'provider', 'external_order_id', 'service', 'country',
         'phone_number', 'sms_code', 'cost', 'status', 'raw_response',
     ];
 
@@ -19,5 +19,15 @@ class VirtualNumberOrder extends Model
     public function getFormattedCostAttribute(): string
     {
         return '₦' . number_format($this->cost, 2);
+    }
+
+    public function isLogsplug(): bool
+    {
+        return $this->provider === 'logsplug';
+    }
+
+    public function isSmsPool(): bool
+    {
+        return $this->provider === 'smspool';
     }
 }

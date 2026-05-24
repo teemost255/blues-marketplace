@@ -42,6 +42,7 @@
                 <tr class="border-b border-slate-700 text-slate-400 text-xs uppercase bg-slate-800/80">
                     <th class="px-5 py-3 text-left">#</th>
                     <th class="px-5 py-3 text-left">User</th>
+                    <th class="px-5 py-3 text-left">Provider</th>
                     <th class="px-5 py-3 text-left">Service</th>
                     <th class="px-5 py-3 text-left">Phone Number</th>
                     <th class="px-5 py-3 text-left">SMS Code</th>
@@ -58,6 +59,21 @@
                     <td class="px-5 py-3">
                         <p class="text-white font-medium">{{ $order->user?->name ?? '—' }}</p>
                         <p class="text-xs text-slate-400">{{ $order->user?->email ?? '' }}</p>
+                    </td>
+                    <td class="px-5 py-3">
+                        @php
+                            $providerBadge = match($order->provider ?? 'logsplug') {
+                                'smspool'  => 'bg-cyan-900/50 text-cyan-300 border-cyan-700/50',
+                                default    => 'bg-purple-900/50 text-purple-300 border-purple-700/50',
+                            };
+                            $providerLabel = match($order->provider ?? 'logsplug') {
+                                'smspool'  => 'SMSPool',
+                                default    => 'Logsplug',
+                            };
+                        @endphp
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs border {{ $providerBadge }}">
+                            {{ $providerLabel }}
+                        </span>
                     </td>
                     <td class="px-5 py-3">
                         <span class="font-medium text-white capitalize">{{ $order->service }}</span>
@@ -135,7 +151,7 @@
                 </div>
 
             @empty
-                <tr><td colspan="9" class="px-6 py-12 text-center text-slate-500">No virtual number orders yet.</td></tr>
+                <tr><td colspan="10" class="px-6 py-12 text-center text-slate-500">No virtual number orders yet.</td></tr>
             @endforelse
             </tbody>
         </table>

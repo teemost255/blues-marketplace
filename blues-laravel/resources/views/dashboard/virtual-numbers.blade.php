@@ -74,7 +74,7 @@
 
     {{-- Server selector + filters --}}
     <div class="flex flex-wrap gap-3 mb-5">
-        {{-- Server tabs --}}
+        {{-- Server / Provider tabs --}}
         <div class="flex gap-1 bg-slate-800 border border-slate-700 rounded-xl p-1">
             <button onclick="switchServer('server2')" id="stab-server2"
                 class="stab px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand text-white transition-colors">
@@ -84,6 +84,12 @@
                 class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
                 🇷🇺 Server 1
             </button>
+            @if($smsPoolConfigured)
+            <button onclick="switchServer('smspool')" id="stab-smspool"
+                class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+                💬 SMSPool
+            </button>
+            @endif
         </div>
 
         {{-- Search --}}
@@ -280,6 +286,7 @@
 
         <form method="POST" action="{{ route('dashboard.virtual-numbers.order') }}" id="rent-form">
             @csrf
+            <input type="hidden" name="provider"     id="f-provider">
             <input type="hidden" name="server"       id="f-server">
             <input type="hidden" name="service_id"   id="f-service-id">
             <input type="hidden" name="country"      id="f-country">
@@ -316,6 +323,7 @@
 const COUNTRIES_URL  = '/dashboard/virtual-numbers/api/countries';
 const SERVICES_URL   = '/dashboard/virtual-numbers/api/services';
 let currentServer    = 'server2';
+let currentProvider  = 'logsplug';
 let allServices      = [];
 let walletBalance    = {{ $wallet->balance }};
 let pollInterval     = null;
@@ -346,19 +354,21 @@ function switchTab(tab) {
 
 // ── Server tab switch ─────────────────────────────────────────────────────────
 function switchServer(s) {
-    currentServer = s;
+    currentServer   = s;
+    currentProvider = (s === 'smspool') ? 'smspool' : 'logsplug';
+
     document.querySelectorAll('.stab').forEach(b => {
         b.classList.remove('bg-brand','text-white');
         b.classList.add('text-slate-400');
     });
     const active = document.getElementById('stab-' + s);
-    active.classList.add('bg-brand','text-white');
-    active.classList.remove('text-slate-400');
+    if (active) { active.classList.add('bg-brand','text-white'); active.classList.remove('text-slate-400'); }
 
     const cWrap = document.getElementById('country-select');
     cWrap.innerHTML = '<option value="">All Countries</option>';
 
-    if (s === 'server2') loadCountries();
+    // Both smspool and logsplug server2 support country selection
+    if (s === 'server2' || s === 'smspool') loadCountries();
     else loadServices();
 }
 
@@ -366,7 +376,8 @@ function switchServer(s) {
 async function loadCountries() {
     showState('loading');
     try {
-        const res  = await fetch(COUNTRIES_URL + '?server=' + currentServer, {
+        const url  = COUNTRIES_URL + '?server=' + currentServer + '&provider=' + currentProvider;
+        const res  = await fetch(url, {
             credentials: 'same-origin',
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         });
@@ -376,15 +387,30 @@ async function loadCountries() {
         if (data.success && data.data?.length) {
             const sel = document.getElementById('country-select');
             sel.innerHTML = '<option value="">— Select a country —</option>';
-            data.data.forEach(c => {
-                const code = c.code;   // numeric e.g. 1
-                const iso  = flagFromUrl(c.flag);
-                countriesCache[code] = { name: c.name, iso };
-                const opt  = document.createElement('option');
-                opt.value  = code;
-                opt.textContent = c.name;
-                sel.appendChild(opt);
-            });
+
+            if (currentProvider === 'smspool') {
+                // SMSPool: [{ID, name, region}]
+                data.data.forEach(c => {
+                    const code = String(c.ID ?? c.id ?? c.name);
+                    countriesCache[code] = { name: c.name, iso: '' };
+                    const opt  = document.createElement('option');
+                    opt.value  = code;
+                    opt.textContent = c.name;
+                    sel.appendChild(opt);
+                });
+            } else {
+                // Logsplug: [{code, name, flag}]
+                data.data.forEach(c => {
+                    const code = c.code;
+                    const iso  = flagFromUrl(c.flag);
+                    countriesCache[code] = { name: c.name, iso };
+                    const opt  = document.createElement('option');
+                    opt.value  = code;
+                    opt.textContent = c.name;
+                    sel.appendChild(opt);
+                });
+            }
+
             showState('empty', 'Select a country above to see available services.');
         } else {
             showState('empty', data.message || 'No countries returned.');
@@ -416,7 +442,8 @@ async function loadServices() {
     document.getElementById('svc-search').value = '';
 
     const country = document.getElementById('country-select').value;
-    const url = SERVICES_URL + '?server=' + currentServer + (country ? '&country=' + encodeURIComponent(country) : '');
+    let url = SERVICES_URL + '?server=' + currentServer + '&provider=' + currentProvider;
+    if (country) url += '&country=' + encodeURIComponent(country);
 
     try {
         const res  = await fetch(url, {
@@ -427,11 +454,24 @@ async function loadServices() {
         const data = await res.json();
 
         if (data.success && Array.isArray(data.data) && data.data.length) {
-            allServices = data.data;
+            // Normalize SMSPool format to match Logsplug format
+            if (currentProvider === 'smspool') {
+                const countryName = country ? (countriesCache[country]?.name || country) : 'International';
+                allServices = data.data.map(s => ({
+                    serviceId:    String(s.ID ?? s.id ?? s.short_name ?? ''),
+                    name:         s.name ?? s.Name ?? '',
+                    apiPrice:     parseFloat(s.price ?? s.Price ?? 0),
+                    country:      countryName,
+                    countryCode:  country || '',
+                    _provider:    'smspool',
+                }));
+            } else {
+                allServices = data.data;
+            }
             applyFilter();
         } else {
             allServices = [];
-            showState('empty', data.message || 'No services available for this country.');
+            showState('empty', data.message || 'No services available for this selection.');
         }
     } catch(e) {
         console.error('Services error:', e);
@@ -604,7 +644,8 @@ function openModal(serviceId, serviceName, price, country, countryCode) {
         btn.classList.remove('opacity-50','cursor-not-allowed');
     }
 
-    document.getElementById('f-server').value     = currentServer;
+    document.getElementById('f-provider').value   = currentProvider;
+    document.getElementById('f-server').value     = currentProvider === 'smspool' ? 'server2' : currentServer;
     document.getElementById('f-service-id').value = serviceId;
     document.getElementById('f-country').value    = countryCode;
     document.getElementById('f-price').value      = price;
