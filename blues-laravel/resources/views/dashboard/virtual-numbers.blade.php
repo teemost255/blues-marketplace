@@ -451,11 +451,13 @@ async function loadServices() {
         if (data.success && Array.isArray(data.data) && data.data.length) {
             // Normalize SMSPool format to match Logsplug format
             if (currentProvider === 'smspool') {
-                const countryName = country ? (countriesCache[country]?.name || country) : 'International';
+                const countryName = country ? (countriesCache[country]?.name || country) : 'All Countries';
                 allServices = data.data.map(s => ({
-                    serviceId:    String(s.ID ?? s.id ?? s.short_name ?? ''),
-                    name:         s.name ?? s.Name ?? '',
-                    apiPrice:     parseFloat(s.price ?? s.Price ?? 0),
+                    // SMSPool /service/retrieve_all returns {ID, name, favourite}
+                    // The purchase API accepts the service name or ID; use name
+                    serviceId:    String(s.name ?? s.ID ?? ''),
+                    name:         s.name ?? '',
+                    apiPrice:     0,          // price determined at order time by SMSPool
                     country:      countryName,
                     countryCode:  country || '',
                     _provider:    'smspool',

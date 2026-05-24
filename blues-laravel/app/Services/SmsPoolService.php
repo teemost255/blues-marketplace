@@ -20,46 +20,39 @@ class SmsPoolService
         return !empty($this->apiKey);
     }
 
-    private function headers(): array
+    private function client()
     {
-        return [
-            'Accept'        => 'application/json',
-            'Authorization' => 'Bearer ' . $this->apiKey,
-        ];
+        return Http::withOptions([
+            'curl' => [CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1],
+        ])->withHeaders([
+            'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept'          => 'application/json, text/plain, */*',
+            'Accept-Language' => 'en-US,en;q=0.9',
+            'Referer'         => 'https://www.smspool.net/',
+        ])->timeout(20);
     }
 
     private function get(string $endpoint, array $params = []): array
     {
-        // Send key both as query param and as Bearer header for maximum compatibility
         $params['key'] = $this->apiKey;
-
         try {
-            $response = Http::timeout(20)
-                ->withHeaders($this->headers())
-                ->get($this->baseUrl . $endpoint, $params);
-
+            $response = $this->client()->get($this->baseUrl . $endpoint, $params);
             return $this->parseResponse($response, 'GET ' . $endpoint);
         } catch (\Exception $e) {
-            Log::error('SmsPoolService GET error [' . $endpoint . ']: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Could not reach SMSPool. Please check your connection and try again.'];
+            Log::error('SmsPoolService GET [' . $endpoint . ']: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Could not reach SMSPool. Check your connection.'];
         }
     }
 
     private function post(string $endpoint, array $data = []): array
     {
-        // Send key in body AND as Bearer header
         $data['key'] = $this->apiKey;
-
         try {
-            $response = Http::timeout(20)
-                ->withHeaders($this->headers())
-                ->asForm()
-                ->post($this->baseUrl . $endpoint, $data);
-
+            $response = $this->client()->asForm()->post($this->baseUrl . $endpoint, $data);
             return $this->parseResponse($response, 'POST ' . $endpoint);
         } catch (\Exception $e) {
-            Log::error('SmsPoolService POST error [' . $endpoint . ']: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Could not reach SMSPool. Please check your connection and try again.'];
+            Log::error('SmsPoolService POST [' . $endpoint . ']: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Could not reach SMSPool. Check your connection.'];
         }
     }
 
@@ -68,61 +61,76 @@ class SmsPoolService
         $status = $response->status();
         $body   = $response->body();
 
-        Log::debug('SmsPool [' . $context . '] HTTP ' . $status . ': ' . substr($body, 0, 300));
+        Log::info('SmsPool [' . $context . '] HTTP ' . $status . ' | ' . substr($body, 0, 300));
 
         if ($response->successful()) {
+            // Balance endpoint returns a plain number string
+            if (is_numeric(trim($body))) {
+                return ['success' => true, 'data' => ['balance' => (float) trim($body)]];
+            }
+
             $json = $response->json();
 
             if (!is_array($json)) {
-                return ['success' => false, 'message' => 'Unexpected response from SMSPool.'];
+                return ['success' => false, 'message' => 'Unexpected SMSPool response: ' . substr($body, 0, 100)];
             }
 
-            // SMSPool error formats: {error: "..."} or {success: 0, message: "..."}
-            if (isset($json['error']) && $json['error']) {
-                $msg = is_string($json['error']) ? $json['error'] : ($json['message'] ?? 'SMSPool error.');
-                return ['success' => false, 'message' => $msg];
-            }
+            // {success: 0, errors: [...], message: "..."}
             if (isset($json['success']) && $json['success'] === 0) {
-                return ['success' => false, 'message' => $json['message'] ?? 'SMSPool request failed.'];
+                $msg = $json['message'] ?? '';
+                if (!$msg && isset($json['errors']) && is_array($json['errors'])) {
+                    $msg = implode(' ', array_column($json['errors'], 'message'));
+                }
+                return ['success' => false, 'message' => strip_tags($msg ?: 'SMSPool request failed.')];
+            }
+
+            // {error: "..."}
+            if (isset($json['error']) && $json['error']) {
+                return ['success' => false, 'message' => is_string($json['error']) ? $json['error'] : 'SMSPool error.'];
             }
 
             return ['success' => true, 'data' => $json];
         }
 
+        Log::warning('SmsPool [' . $context . '] HTTP ' . $status . ' body: ' . $body);
+
         if ($status === 401 || $status === 403) {
-            Log::warning('SmsPool auth error [' . $context . ']: ' . $body);
-            return ['success' => false, 'message' => 'SMSPool authentication failed. Please check your API key in Settings.'];
+            return ['success' => false, 'message' => 'SMSPool API key rejected (HTTP ' . $status . '). Please verify your key in Settings.'];
         }
-
         if ($status >= 500) {
-            return ['success' => false, 'message' => 'SMSPool is temporarily unavailable. Please try again shortly.'];
+            return ['success' => false, 'message' => 'SMSPool is temporarily unavailable. Try again shortly.'];
         }
 
-        return ['success' => false, 'message' => 'SMSPool request failed (HTTP ' . $status . '): ' . substr($body, 0, 100)];
+        return ['success' => false, 'message' => 'SMSPool request failed (HTTP ' . $status . ').'];
     }
+
+    // ── Public methods ─────────────────────────────────────────────────────────
 
     public function getBalance(): array
     {
-        return $this->get('/request/balance');
+        $result = $this->get('/request/balance');
+        if ($result['success'] && isset($result['data']['balance'])) {
+            return $result;
+        }
+        // Balance returns {"balance":"0.00"} JSON
+        return $result;
     }
 
     public function getCountries(): array
     {
-        return $this->get('/country');
+        return $this->get('/country/retrieve_all');
     }
 
     public function getServices(?string $country = null): array
     {
-        $params = [];
-        if ($country !== null && $country !== '') {
-            $params['country_id'] = $country;
-        }
-        return $this->get('/service', $params);
+        // SMSPool services are global; country filter is not supported on this endpoint
+        return $this->get('/service/retrieve_all');
     }
 
     public function orderNumber(string $country, string $service): array
     {
-        return $this->post('/order/sms', [
+        // pool omitted → SMSPool auto-selects the best available pool
+        return $this->post('/purchase/sms', [
             'country' => $country,
             'service' => $service,
         ]);
@@ -130,11 +138,11 @@ class SmsPoolService
 
     public function checkSms(string $orderId): array
     {
-        return $this->get('/pool/' . $orderId);
+        return $this->get('/sms/check', ['orderid' => $orderId]);
     }
 
     public function cancelOrder(string $orderId): array
     {
-        return $this->post('/order/cancel', ['orderid' => $orderId]);
+        return $this->get('/sms/cancel', ['orderid' => $orderId]);
     }
 }
