@@ -3,20 +3,35 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\{Wallet, WalletTransaction, Setting, Notification};
+use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Auth, Http, Log};
 
 class WalletController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user              = Auth::user();
         $wallet            = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
-        $transactions      = WalletTransaction::where('user_id', $user->id)->latest()->paginate(20);
         $paystackPublicKey = Setting::get('paystack_public_key', '');
         $minDeposit        = (float) Setting::get('min_deposit', '500');
         $maxDeposit        = (float) Setting::get('max_deposit', '1000000');
-        return view('dashboard.wallet', compact('wallet', 'transactions', 'paystackPublicKey', 'minDeposit', 'maxDeposit'));
+
+        $txQuery = WalletTransaction::where('user_id', $user->id)->latest();
+        if ($request->filled('type') && $request->type !== 'all') {
+            $txQuery->where('type', $request->type);
+        }
+        $transactions = $txQuery->paginate(20)->withQueryString();
+
+        $summary = [
+            'total_deposited' => WalletTransaction::where('user_id', $user->id)->where('type', 'deposit')->sum('amount'),
+            'total_spent'     => WalletTransaction::where('user_id', $user->id)->whereIn('type', ['purchase', 'withdrawal'])->sum('amount'),
+            'referral_earned' => WalletTransaction::where('user_id', $user->id)->where('type', 'referral_bonus')->sum('amount'),
+        ];
+
+        $activeType = $request->get('type', 'all');
+
+        return view('dashboard.wallet', compact('wallet', 'transactions', 'paystackPublicKey', 'minDeposit', 'maxDeposit', 'summary', 'activeType'));
     }
 
     public function initiate(Request $request)
@@ -96,6 +111,8 @@ class WalletController extends Controller
 
         $this->creditWallet($user->id, $amount, $reference, 'Wallet top-up via Paystack');
 
+        ReferralService::markDeposited($user->fresh());
+
         return redirect()->route('dashboard.wallet')
             ->with('success', '₦' . number_format($amount, 2) . ' has been added to your wallet!');
     }
@@ -124,6 +141,8 @@ class WalletController extends Controller
                 if ($userId) {
                     $amount = $data['amount'] / 100;
                     $this->creditWallet($userId, $amount, $reference, 'Wallet top-up via Paystack (webhook)');
+                    $user = \App\Models\User::find($userId);
+                    if ($user) ReferralService::markDeposited($user);
                 }
             }
         }
@@ -131,7 +150,7 @@ class WalletController extends Controller
         return response('OK', 200);
     }
 
-    private function creditWallet(int $userId, float $amount, string $reference, string $description): void
+    public function creditWallet(int $userId, float $amount, string $reference, string $description): void
     {
         $wallet = Wallet::firstOrCreate(['user_id' => $userId], ['balance' => 0]);
         $wallet->increment('balance', $amount);

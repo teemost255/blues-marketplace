@@ -146,6 +146,7 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
 
     Route::get('/virtual-numbers',                              [VirtualNumberOrdersController::class, 'index'])->name('virtual-numbers');
     Route::get('/virtual-numbers/logsplug-balance',            [VirtualNumberOrdersController::class, 'logsplugBalance'])->name('virtual-numbers.logsplug-balance');
+    Route::get('/virtual-numbers/export',                      [VirtualNumberOrdersController::class, 'exportCsv'])->name('virtual-numbers.export');
     Route::post('/virtual-numbers/{order}/status',             [VirtualNumberOrdersController::class, 'updateStatus'])->name('virtual-numbers.status');
     Route::delete('/virtual-numbers/{order}',                  [VirtualNumberOrdersController::class, 'destroy'])->name('virtual-numbers.destroy');
 

@@ -32,6 +32,7 @@
                 <th class="px-5 py-3 text-left">User</th>
                 <th class="px-5 py-3 text-left">Status</th>
                 <th class="px-5 py-3 text-left">Wallet</th>
+                <th class="px-5 py-3 text-left hidden md:table-cell">Last Login</th>
                 <th class="px-5 py-3 text-left">Joined</th>
                 <th class="px-5 py-3 text-left">Actions</th>
             </tr></thead>
@@ -53,6 +54,16 @@
                         <span class="status-{{ $user->status }}">{{ ucfirst($user->status) }}</span>
                     </td>
                     <td class="px-5 py-3 text-white font-medium">₦{{ number_format($user->wallet?->balance ?? 0, 2) }}</td>
+                    <td class="px-5 py-3 text-slate-400 text-xs hidden md:table-cell">
+                        @if($user->last_login_at)
+                            <span title="{{ $user->last_login_at->format('d M Y H:i') }}">{{ $user->last_login_at->diffForHumans() }}</span>
+                            @if($user->last_login_ip)
+                            <br><span class="text-slate-600 font-mono">{{ $user->last_login_ip }}</span>
+                            @endif
+                        @else
+                            <span class="text-slate-600">Never</span>
+                        @endif
+                    </td>
                     <td class="px-5 py-3 text-slate-400 text-xs">{{ $user->created_at->format('d M Y') }}</td>
                     <td class="px-5 py-3">
                         <div class="flex items-center gap-1">

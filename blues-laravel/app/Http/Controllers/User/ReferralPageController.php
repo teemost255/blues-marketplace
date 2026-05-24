@@ -19,6 +19,8 @@ class ReferralPageController extends Controller
         }
 
         $referralCount = User::where('referred_by', $user->id)->count();
+        $qualifiedCount = User::where('referred_by', $user->id)->where('referral_bonus_paid', true)->count();
+        $pendingCount   = User::where('referred_by', $user->id)->where('referral_bonus_paid', false)->count();
 
         $earnings = WalletTransaction::where('user_id', $user->id)
             ->where('type', 'referral_bonus')
@@ -38,7 +40,7 @@ class ReferralPageController extends Controller
         $tier2Threshold = (int)   Setting::get('referral_bonus_tier2_threshold', '6');
         $tier3Threshold = (int)   Setting::get('referral_bonus_tier3_threshold', '16');
 
-        $currentTier   = $referralCount >= $tier3Threshold ? 3 : ($referralCount >= $tier2Threshold ? 2 : 1);
+        $currentTier   = $qualifiedCount >= $tier3Threshold ? 3 : ($qualifiedCount >= $tier2Threshold ? 2 : 1);
         $currentBonus  = $currentTier === 3 ? $tier3Bonus : ($currentTier === 2 ? $tier2Bonus : $tier1Bonus);
 
         $nextThreshold = null;
@@ -48,11 +50,11 @@ class ReferralPageController extends Controller
         if ($currentTier === 1 && $tier2Threshold > 1) {
             $nextThreshold = $tier2Threshold;
             $nextBonus     = $tier2Bonus;
-            $progressPct   = min(99, round(($referralCount / $tier2Threshold) * 100));
+            $progressPct   = min(99, round(($qualifiedCount / $tier2Threshold) * 100));
         } elseif ($currentTier === 2) {
             $nextThreshold = $tier3Threshold;
             $nextBonus     = $tier3Bonus;
-            $progressPct   = min(99, round((($referralCount - $tier2Threshold) / ($tier3Threshold - $tier2Threshold)) * 100));
+            $progressPct   = min(99, round((($qualifiedCount - $tier2Threshold) / ($tier3Threshold - $tier2Threshold)) * 100));
         }
 
         $milestones = [
@@ -64,9 +66,9 @@ class ReferralPageController extends Controller
         $bonusRate = $currentBonus;
 
         return view('dashboard.referrals', compact(
-            'user', 'profile', 'referralCount', 'earnings', 'totalEarned',
-            'bonusRate', 'referrals', 'milestones', 'currentTier',
-            'currentBonus', 'nextThreshold', 'nextBonus', 'progressPct'
+            'user', 'profile', 'referralCount', 'qualifiedCount', 'pendingCount',
+            'earnings', 'totalEarned', 'bonusRate', 'referrals', 'milestones',
+            'currentTier', 'currentBonus', 'nextThreshold', 'nextBonus', 'progressPct'
         ));
     }
 }

@@ -9,14 +9,23 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    protected $fillable = ['name', 'email', 'password', 'status', 'email_notifications', 'referred_by'];
-    protected $hidden   = ['password', 'remember_token'];
+    protected $fillable = [
+        'name', 'email', 'password', 'status', 'email_notifications', 'referred_by',
+        'referral_deposited', 'referral_purchased', 'referral_bonus_paid',
+        'last_login_at', 'last_login_ip',
+    ];
+
+    protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array {
         return [
-            'email_verified_at'   => 'datetime',
-            'password'            => 'hashed',
-            'email_notifications' => 'boolean',
+            'email_verified_at'    => 'datetime',
+            'password'             => 'hashed',
+            'email_notifications'  => 'boolean',
+            'referral_deposited'   => 'boolean',
+            'referral_purchased'   => 'boolean',
+            'referral_bonus_paid'  => 'boolean',
+            'last_login_at'        => 'datetime',
         ];
     }
 
@@ -37,4 +46,14 @@ class User extends Authenticatable
     public function isBanned(): bool    { return $this->status === 'banned'; }
     public function isSuspended(): bool { return $this->status === 'suspended'; }
     public function isActive(): bool    { return $this->status === 'active'; }
+
+    public function referralQualificationStatus(): string
+    {
+        if ($this->referral_bonus_paid)  return 'qualified';
+        if (!$this->referred_by)         return 'none';
+        if ($this->referral_deposited && $this->referral_purchased) return 'qualified';
+        if ($this->referral_deposited)   return 'needs_purchase';
+        if ($this->referral_purchased)   return 'needs_deposit';
+        return 'pending';
+    }
 }

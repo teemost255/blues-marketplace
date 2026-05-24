@@ -18,6 +18,25 @@
 <div class="mb-6 bg-brand/10 border border-brand/30 text-brand rounded-xl px-4 py-3 text-sm">{{ session('info') }}</div>
 @endif
 
+{{-- Summary stats --}}
+<div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Total Funded</p>
+        <p class="text-xl font-bold text-green-400">₦{{ number_format($summary['total_deposited'], 2) }}</p>
+        <p class="text-xs text-slate-500 mt-0.5">All-time deposits</p>
+    </div>
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Total Spent</p>
+        <p class="text-xl font-bold text-red-400">₦{{ number_format($summary['total_spent'], 2) }}</p>
+        <p class="text-xs text-slate-500 mt-0.5">Purchases & VNs</p>
+    </div>
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Referral Earned</p>
+        <p class="text-xl font-bold text-purple-400">₦{{ number_format($summary['referral_earned'], 2) }}</p>
+        <p class="text-xs text-slate-500 mt-0.5">Bonus credited</p>
+    </div>
+</div>
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     {{-- Balance card --}}
     <div class="lg:col-span-1 bg-gradient-to-br from-brand to-brand-dark rounded-2xl p-6 text-white relative overflow-hidden">
@@ -93,9 +112,24 @@
 
 {{-- Transaction history --}}
 <div class="bg-slate-800 border border-slate-700 rounded-xl">
-    <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-        <h2 class="font-semibold text-white">Transaction History</h2>
-        <span class="text-xs text-slate-500">{{ $transactions->total() }} total</span>
+    <div class="px-6 py-4 border-b border-slate-700 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+        <h2 class="font-semibold text-white">Transaction History <span class="text-slate-500 font-normal text-sm">({{ $transactions->total() }})</span></h2>
+        <div class="flex items-center gap-1 flex-wrap">
+            @foreach([
+                ['key' => 'all',           'label' => 'All'],
+                ['key' => 'deposit',       'label' => 'Deposits'],
+                ['key' => 'purchase',      'label' => 'Purchases'],
+                ['key' => 'withdrawal',    'label' => 'Withdrawals'],
+                ['key' => 'referral_bonus','label' => 'Referral'],
+                ['key' => 'refund',        'label' => 'Refunds'],
+            ] as $tab)
+            <a href="{{ route('dashboard.wallet', ['type' => $tab['key']]) }}"
+                class="px-3 py-1 rounded-lg text-xs font-medium transition-colors
+                {{ ($activeType ?? 'all') === $tab['key'] ? 'bg-brand text-white' : 'bg-slate-700 text-slate-400 hover:text-white hover:bg-slate-600' }}">
+                {{ $tab['label'] }}
+            </a>
+            @endforeach
+        </div>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -112,13 +146,25 @@
                     <td class="px-6 py-3 text-slate-300 max-w-[200px] truncate">{{ $tx->description ?? '—' }}</td>
                     <td class="px-6 py-3 text-slate-500 font-mono text-xs">{{ $tx->reference ?? '—' }}</td>
                     <td class="px-6 py-3">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-medium
-                            {{ $tx->type === 'deposit' ? 'bg-green-900/50 text-green-400' : ($tx->type === 'purchase' ? 'bg-red-900/50 text-red-400' : 'bg-slate-700 text-slate-300') }}">
-                            {{ ucfirst($tx->type) }}
+                        @php
+                            $txColors = [
+                                'deposit'       => 'bg-green-900/50 text-green-400',
+                                'purchase'      => 'bg-red-900/50 text-red-400',
+                                'withdrawal'    => 'bg-red-900/50 text-red-400',
+                                'refund'        => 'bg-blue-900/50 text-blue-400',
+                                'referral_bonus'=> 'bg-purple-900/50 text-purple-400',
+                                'admin_credit'  => 'bg-yellow-900/50 text-yellow-400',
+                            ];
+                        @endphp
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $txColors[$tx->type] ?? 'bg-slate-700 text-slate-300' }}">
+                            {{ ucfirst(str_replace('_', ' ', $tx->type)) }}
                         </span>
                     </td>
-                    <td class="px-6 py-3 font-semibold {{ $tx->type === 'deposit' ? 'text-green-400' : 'text-red-400' }}">
-                        {{ $tx->type === 'deposit' ? '+' : '-' }}₦{{ number_format(abs($tx->amount), 2) }}
+                    @php
+                        $isCredit = in_array($tx->type, ['deposit','refund','referral_bonus','admin_credit']);
+                    @endphp
+                    <td class="px-6 py-3 font-semibold {{ $isCredit ? 'text-green-400' : 'text-red-400' }}">
+                        {{ $isCredit ? '+' : '-' }}₦{{ number_format(abs($tx->amount), 2) }}
                     </td>
                     <td class="px-6 py-3 text-slate-400">{{ $tx->created_at->format('M j, Y g:ia') }}</td>
                 </tr>

@@ -6,6 +6,7 @@ use App\Models\Setting;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\LogsplugService;
+use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -123,16 +124,18 @@ class VirtualNumberController extends Controller
 
             if ($cost > 0) {
                 $wallet->decrement('balance', $cost);
-                $desc = 'Virtual number: ' . $serviceName;
                 WalletTransaction::create([
                     'user_id'     => auth()->id(),
                     'type'        => 'withdrawal',
                     'amount'      => $cost,
-                    'description' => $desc,
+                    'description' => 'Virtual number: ' . $serviceName,
                     'reference'   => 'VN-' . $order->id . '-' . time(),
                 ]);
             }
         });
+
+        // Mark referral as purchased
+        ReferralService::markPurchased(auth()->user()->fresh());
 
         return back()->with('success', 'Virtual number ordered successfully! Check your active orders below.');
     }

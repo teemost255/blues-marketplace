@@ -4,14 +4,34 @@
 @section('content')
 
 {{-- Hero stats --}}
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center gap-4">
         <div class="w-12 h-12 rounded-xl bg-brand/10 flex items-center justify-center flex-shrink-0">
             <svg class="w-6 h-6 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </div>
         <div>
             <p class="text-2xl font-bold text-white">{{ $referralCount }}</p>
-            <p class="text-sm text-slate-400">Friends Referred</p>
+            <p class="text-sm text-slate-400">Total Referred</p>
+        </div>
+    </div>
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div>
+            <p class="text-2xl font-bold text-green-400">{{ $qualifiedCount }}</p>
+            <p class="text-sm text-slate-400">Qualified</p>
+            <p class="text-xs text-slate-500 mt-0.5">Funded + purchased</p>
+        </div>
+    </div>
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div>
+            <p class="text-2xl font-bold text-yellow-400">{{ $pendingCount }}</p>
+            <p class="text-sm text-slate-400">Pending</p>
+            <p class="text-xs text-slate-500 mt-0.5">Not yet qualified</p>
         </div>
     </div>
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center gap-4">
@@ -42,6 +62,15 @@
     </div>
 </div>
 
+{{-- How it works (new requirement callout) --}}
+<div class="bg-brand/5 border border-brand/20 rounded-xl px-5 py-4 mb-6 flex items-start gap-3">
+    <svg class="w-5 h-5 text-brand mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <div>
+        <p class="text-sm font-semibold text-white">How bonuses are earned</p>
+        <p class="text-xs text-slate-400 mt-0.5">Your referred friend must <strong class="text-slate-300">fund their wallet</strong> AND <strong class="text-slate-300">make at least one purchase</strong> before your bonus is credited. Referrals are marked <span class="text-yellow-400">Pending</span> until both conditions are met, then move to <span class="text-green-400">Qualified</span>.</p>
+    </div>
+</div>
+
 {{-- Milestone progress --}}
 <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
     <div class="flex items-center justify-between mb-5">
@@ -51,7 +80,7 @@
         </div>
         @if($nextThreshold)
         <span class="text-xs text-slate-400 bg-slate-700 rounded-lg px-3 py-1.5">
-            {{ $nextThreshold - $referralCount }} more to reach next tier
+            {{ max(0, $nextThreshold - $qualifiedCount) }} qualified referrals to next tier
         </span>
         @else
         <span class="text-xs text-yellow-400 bg-yellow-900/30 border border-yellow-700/30 rounded-lg px-3 py-1.5 font-semibold">
@@ -65,7 +94,7 @@
         @foreach($milestones as $m)
         @php
             $active  = $currentTier === $m['tier'];
-            $unlocked = $referralCount >= $m['threshold'];
+            $unlocked = $qualifiedCount >= $m['threshold'];
             $colors  = [
                 'amber'  => ['border-amber-600/60',  'bg-amber-900/20',  'text-amber-400',  'bg-amber-600'],
                 'slate'  => ['border-slate-400/40',  'bg-slate-700/30',  'text-slate-300',  'bg-slate-400'],
@@ -88,7 +117,7 @@
                     @if($active)<span class="text-xs bg-brand/20 text-brand px-1.5 py-0.5 rounded font-semibold">Current</span>@endif
                 </div>
             </div>
-            <p class="text-xs text-slate-400 mb-1">Unlock at <span class="{{ $unlocked ? $colors[2] : 'text-slate-300' }} font-semibold">{{ $m['threshold'] }} referral{{ $m['threshold'] !== 1 ? 's' : '' }}</span></p>
+            <p class="text-xs text-slate-400 mb-1">Unlock at <span class="{{ $unlocked ? $colors[2] : 'text-slate-300' }} font-semibold">{{ $m['threshold'] }} qualified referral{{ $m['threshold'] !== 1 ? 's' : '' }}</span></p>
             <p class="text-xl font-bold {{ $unlocked ? $colors[2] : 'text-slate-600' }}">
                 {{ $m['bonus'] > 0 ? '₦' . number_format($m['bonus'], 2) : '₦0.00' }}
             </p>
@@ -101,8 +130,8 @@
     @if($nextThreshold && $nextThreshold > 1)
     <div>
         <div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-            <span>{{ $referralCount }} referred</span>
-            <span>{{ $nextThreshold }} needed for next tier (+₦{{ number_format($nextBonus, 2) }})</span>
+            <span>{{ $qualifiedCount }} qualified</span>
+            <span>{{ $nextThreshold }} qualified needed for next tier (+₦{{ number_format($nextBonus, 2) }})</span>
         </div>
         <div class="w-full bg-slate-700 rounded-full h-2.5">
             <div class="bg-gradient-to-r from-brand to-sky-400 h-2.5 rounded-full transition-all duration-500"
@@ -182,7 +211,7 @@
             @foreach([
                 ['1', 'bg-brand',      'Copy your link',    'Share your unique referral link or code with friends.'],
                 ['2', 'bg-purple-500', 'Friend registers',  'They sign up using your link — it tracks automatically.'],
-                ['3', 'bg-green-500',  'You earn',          $currentBonus > 0 ? '₦' . number_format($currentBonus, 2) . ' added to your wallet instantly.' : 'A bonus is credited to your wallet.'],
+                ['3', 'bg-green-500',  'They fund & purchase', 'They must fund their wallet AND make a purchase to qualify your bonus.'],
                 ['4', 'bg-yellow-500', 'Level up',          'Hit milestones (6, 16 refs) to unlock bigger bonuses!'],
             ] as [$n, $c, $t, $d])
             <li class="flex gap-3">
@@ -202,7 +231,10 @@
     <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
             <h3 class="font-semibold text-white">Friends You Referred</h3>
-            <span class="text-xs text-slate-400">{{ $referralCount }} total</span>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded-full">{{ $qualifiedCount }} qualified</span>
+                <span class="text-xs text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded-full">{{ $pendingCount }} pending</span>
+            </div>
         </div>
         @if($referrals->isEmpty())
         <div class="text-center py-12">
@@ -212,15 +244,36 @@
         @else
         <ul class="divide-y divide-slate-700/50 max-h-80 overflow-y-auto">
             @foreach($referrals as $ref)
+            @php
+                $refStatus = $ref->referral_bonus_paid ? 'qualified'
+                    : ($ref->referral_deposited && $ref->referral_purchased ? 'qualified'
+                    : ($ref->referral_deposited ? 'needs_purchase'
+                    : ($ref->referral_purchased ? 'needs_deposit' : 'pending')));
+                $refLabel = match($refStatus) {
+                    'qualified'      => 'Qualified',
+                    'needs_purchase' => 'Funded, needs purchase',
+                    'needs_deposit'  => 'Purchased, needs funding',
+                    default          => 'Pending',
+                };
+                $refClass = match($refStatus) {
+                    'qualified'      => 'text-green-400 bg-green-900/30',
+                    'needs_purchase' => 'text-blue-400 bg-blue-900/30',
+                    'needs_deposit'  => 'text-blue-400 bg-blue-900/30',
+                    default          => 'text-yellow-400 bg-yellow-900/30',
+                };
+            @endphp
             <li class="flex items-center gap-3 px-6 py-3">
                 <div class="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold text-sm flex-shrink-0">
                     {{ strtoupper(substr($ref->name, 0, 1)) }}
                 </div>
                 <div class="min-w-0 flex-1">
-                    <p class="text-sm font-medium text-white truncate">{{ $ref->name }}</p>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="text-sm font-medium text-white">{{ $ref->name }}</p>
+                        <span class="text-xs px-1.5 py-0.5 rounded-full {{ $refClass }}">{{ $refLabel }}</span>
+                    </div>
                     <p class="text-xs text-slate-500">Joined {{ $ref->created_at->diffForHumans() }}</p>
                 </div>
-                @if($currentBonus > 0)
+                @if($refStatus === 'qualified' && $currentBonus > 0)
                 <span class="text-xs text-green-400 font-semibold flex-shrink-0">+₦{{ number_format($currentBonus, 2) }}</span>
                 @endif
             </li>

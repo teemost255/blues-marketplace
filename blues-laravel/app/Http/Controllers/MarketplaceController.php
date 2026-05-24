@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Listing, ListingCategory, Purchase, Wallet, WalletTransaction, Wishlist, Notification};
+use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,8 +18,8 @@ class MarketplaceController extends Controller
         }
         if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
-                $q->where('title', 'ilike', '%'.$request->search.'%')
-                  ->orWhere('description', 'ilike', '%'.$request->search.'%');
+                $q->where('title', 'like', '%'.$request->search.'%')
+                  ->orWhere('description', 'like', '%'.$request->search.'%');
             });
         }
         if ($request->filled('min_price')) {
@@ -107,7 +108,7 @@ class MarketplaceController extends Controller
         $hasDetails = !empty($listing->login_details);
         Notification::create([
             'user_id' => $user->id,
-            'title'   => 'Purchase Successful 🎉',
+            'title'   => 'Purchase Successful',
             'message' => 'Your purchase of "'.$listing->title.'" was successful. '.
                          ($hasDetails ? 'Your login details are ready — check My Orders.' : 'Check your orders for delivery details.'),
             'type'    => 'success',
@@ -147,6 +148,9 @@ class MarketplaceController extends Controller
                 'type'    => 'warning',
             ]);
         }
+
+        // Mark referral as purchased and check if bonus should be awarded
+        ReferralService::markPurchased($user->fresh());
 
         return redirect()->route('dashboard.orders')->with('success',
             $hasDetails
