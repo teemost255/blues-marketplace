@@ -505,11 +505,13 @@ function renderServices(list) {
 }
 
 function buildCard(s, countryName, emoji) {
-    const id      = s.serviceId ?? '';
-    const name    = s.name ?? id;
-    const price   = parseFloat(s.apiPrice ?? 0);
-    const country = s.country ?? countryName;
-    const code    = s.countryCode ?? '';
+    const id         = s.serviceId ?? '';
+    const name       = s.name ?? id;
+    const apiPrice   = parseFloat(s.apiPrice ?? 0);
+    const commission = calcCommission(apiPrice);
+    const total      = Math.round((apiPrice + commission) * 100) / 100;
+    const country    = s.country ?? countryName;
+    const code       = s.countryCode ?? '';
 
     // Deterministic popularity from service name hash
     const pop = ((id.split('').reduce((a,c) => a + c.charCodeAt(0), 0)) % 180) + 10;
@@ -531,13 +533,13 @@ function buildCard(s, countryName, emoji) {
         </div>
         <div>
             <span class="inline-block bg-brand/20 text-brand font-bold text-sm px-3 py-1 rounded-lg">
-                NGN ${price > 0 ? price.toLocaleString('en-NG', {minimumFractionDigits: 0, maximumFractionDigits: 2}) : 'Free'}
+                NGN ${total > 0 ? total.toLocaleString('en-NG', {minimumFractionDigits: 0, maximumFractionDigits: 2}) : 'Free'}
             </span>
         </div>
         <button onclick="openModalFromData(this)"
             data-id="${escHtml(id)}"
             data-name="${escHtml(name)}"
-            data-price="${price}"
+            data-price="${apiPrice}"
             data-country="${escHtml(country)}"
             data-code="${escHtml(code)}"
             class="rent-btn w-full py-2.5 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2">
