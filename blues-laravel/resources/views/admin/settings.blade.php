@@ -278,6 +278,65 @@
         </div>
     </div>
 
+    {{-- Promo Banner --}}
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-lg bg-yellow-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-white">Homepage Promo Banner</h2>
+                <p class="text-xs text-slate-400">Show a dismissible announcement bar at the top of the homepage</p>
+            </div>
+        </div>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-white font-medium">Enable Banner</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Show the banner to all visitors</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="promo_banner_enabled" id="promo-banner-toggle" value="1" {{ ($settings['promo_banner_enabled'] ?? '0') === '1' ? 'checked' : '' }} class="sr-only peer">
+                    <div id="promo-toggle-bg" class="w-11 h-6 rounded-full transition-all duration-200 relative" style="background:{{ ($settings['promo_banner_enabled'] ?? '0') === '1' ? '#0ea5e9' : '#475569' }}">
+                        <div id="promo-toggle-dot" class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200" style="transform:{{ ($settings['promo_banner_enabled'] ?? '0') === '1' ? 'translateX(1.25rem)' : 'translateX(0)' }}"></div>
+                    </div>
+                </label>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1.5">Banner Message</label>
+                <input type="text" name="promo_banner_text" value="{{ $settings['promo_banner_text'] ?? '' }}" placeholder="e.g. 🎉 Summer sale! Use code SUMMER20 for 20% off all listings." class="w-full">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1.5">Banner Color</label>
+                <select name="promo_banner_color" class="w-full max-w-xs bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand">
+                    <option value="brand"  {{ ($settings['promo_banner_color'] ?? 'brand') === 'brand'  ? 'selected' : '' }}>Blue (Brand)</option>
+                    <option value="green"  {{ ($settings['promo_banner_color'] ?? '')       === 'green'  ? 'selected' : '' }}>Green</option>
+                    <option value="yellow" {{ ($settings['promo_banner_color'] ?? '')       === 'yellow' ? 'selected' : '' }}>Yellow</option>
+                    <option value="red"    {{ ($settings['promo_banner_color'] ?? '')       === 'red'    ? 'selected' : '' }}>Red</option>
+                    <option value="purple" {{ ($settings['promo_banner_color'] ?? '')       === 'purple' ? 'selected' : '' }}>Purple</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    {{-- Low Balance Alert --}}
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-lg bg-orange-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-white">Low Wallet Balance Alert</h2>
+                <p class="text-xs text-slate-400">Send a notification when a user's balance drops below this amount after a purchase</p>
+            </div>
+        </div>
+        <div class="max-w-xs">
+            <label class="block text-xs text-slate-400 mb-1.5">Threshold Amount (₦)</label>
+            <input type="number" name="low_balance_threshold" value="{{ $settings['low_balance_threshold'] ?? '5' }}" min="0" step="0.01" placeholder="5.00">
+            <p class="text-xs text-slate-500 mt-1">Set to 0 to disable. Users will be notified when their balance falls below this value.</p>
+        </div>
+    </div>
+
     <button type="submit" class="btn-primary px-8 py-3 text-base">Save All Settings</button>
 </form>
 
@@ -314,6 +373,10 @@
 document.getElementById('maintenance-toggle').addEventListener('change', function() {
     document.getElementById('toggle-bg').style.background = this.checked ? '#dc2626' : '#475569';
     document.getElementById('toggle-dot').style.transform = this.checked ? 'translateX(1rem)' : 'translateX(0)';
+});
+document.getElementById('promo-banner-toggle').addEventListener('change', function() {
+    document.getElementById('promo-toggle-bg').style.background  = this.checked ? '#0ea5e9' : '#475569';
+    document.getElementById('promo-toggle-dot').style.transform  = this.checked ? 'translateX(1.25rem)' : 'translateX(0)';
 });
 function toggleSecret() {
     const inp = document.getElementById('secret-key-input');

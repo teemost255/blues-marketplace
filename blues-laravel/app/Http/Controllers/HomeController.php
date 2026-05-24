@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\{Listing, ListingCategory, User, Purchase};
+use App\Models\{Listing, ListingCategory, User, Purchase, Setting};
 
 class HomeController extends Controller
 {
@@ -26,7 +26,10 @@ class HomeController extends Controller
             'sales'      => Purchase::where('status', 'completed')->count(),
             'categories' => ListingCategory::count(),
         ];
-        $latestListings = Listing::where('is_active', true)->where('stock', '>', 0)->latest()->limit(6)->get();
-        return view('home.index', compact('categories', 'featuredListings', 'latestListings', 'stats', 'recentActivity'));
+        $latestListings   = Listing::where('is_active', true)->where('stock', '>', 0)->latest()->limit(6)->get();
+        $promoBannerEnabled = Setting::get('promo_banner_enabled', '0') === '1';
+        $promoBannerText    = Setting::get('promo_banner_text', '');
+        $promoBannerColor   = Setting::get('promo_banner_color', 'brand');
+        return view('home.index', compact('categories', 'featuredListings', 'latestListings', 'stats', 'recentActivity', 'promoBannerEnabled', 'promoBannerText', 'promoBannerColor'));
     }
 }

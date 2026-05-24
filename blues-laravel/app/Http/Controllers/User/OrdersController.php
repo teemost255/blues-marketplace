@@ -9,7 +9,7 @@ class OrdersController extends Controller
 {
     public function index()
     {
-        $orders = Purchase::with('listing')
+        $orders = Purchase::with(['listing', 'review'])
             ->where('user_id', Auth::id())
             ->latest()
             ->paginate(15);

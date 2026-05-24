@@ -56,6 +56,23 @@
     </div>
 </div>
 
+{{-- Revenue Chart --}}
+<div class="bg-slate-800 border border-slate-700 rounded-xl mb-6">
+    <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+        <div>
+            <h2 class="font-semibold text-white">Revenue — Last 30 Days</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Daily completed purchase revenue</p>
+        </div>
+        <div class="text-right">
+            <p class="text-xs text-slate-500">30-day total</p>
+            <p class="text-lg font-bold text-white">₦{{ number_format(array_sum($chartRevenue), 2) }}</p>
+        </div>
+    </div>
+    <div class="p-5">
+        <canvas id="revenueChart" style="max-height:220px"></canvas>
+    </div>
+</div>
+
 <div class="bg-slate-800 border border-slate-700 rounded-xl">
     <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
         <h2 class="font-semibold text-white">Recent Purchases</h2>
@@ -89,3 +106,60 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const ctx = document.getElementById('revenueChart').getContext('2d');
+const labels = @json($chartLabels);
+const revenue = @json($chartRevenue);
+const orders  = @json($chartOrders);
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels,
+        datasets: [{
+            label: 'Revenue (₦)',
+            data: revenue,
+            borderColor: '#0ea5e9',
+            backgroundColor: 'rgba(14,165,233,0.08)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3,
+            pointBackgroundColor: '#0ea5e9',
+        },{
+            label: 'Orders',
+            data: orders,
+            borderColor: '#a78bfa',
+            backgroundColor: 'rgba(167,139,250,0.05)',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            pointRadius: 2,
+            pointBackgroundColor: '#a78bfa',
+            yAxisID: 'y2',
+        }],
+    },
+    options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: { labels: { color: '#94a3b8', font: { size: 11 } } },
+            tooltip: {
+                backgroundColor: '#1e293b',
+                borderColor: '#334155',
+                borderWidth: 1,
+                titleColor: '#f1f5f9',
+                bodyColor: '#94a3b8',
+            },
+        },
+        scales: {
+            x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 10 } },
+            y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: { size: 10 }, callback: v => '₦'+v.toLocaleString() }, beginAtZero: true },
+            y2: { position: 'right', grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } }, beginAtZero: true },
+        },
+    },
+});
+</script>
+@endpush

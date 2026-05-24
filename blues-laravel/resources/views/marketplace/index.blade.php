@@ -25,8 +25,23 @@
             <option value="price_asc"  {{ request('sort') === 'price_asc'  ? 'selected' : '' }}>Price: Low to High</option>
             <option value="price_desc" {{ request('sort') === 'price_desc' ? 'selected' : '' }}>Price: High to Low</option>
         </select>
+        <div class="flex items-center gap-1.5">
+            <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₦</span>
+                <input type="number" name="min_price" value="{{ request('min_price') }}" placeholder="Min"
+                    min="0" step="0.01"
+                    class="bg-slate-800 border border-slate-700 rounded-lg pl-7 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand w-28">
+            </div>
+            <span class="text-slate-500 text-xs">—</span>
+            <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₦</span>
+                <input type="number" name="max_price" value="{{ request('max_price') }}" placeholder="Max"
+                    min="0" step="0.01"
+                    class="bg-slate-800 border border-slate-700 rounded-lg pl-7 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand w-28">
+            </div>
+        </div>
         <button type="submit" class="bg-brand hover:bg-brand-dark text-white font-medium px-5 py-2.5 rounded-lg text-sm transition-colors">Search</button>
-        @if(request()->hasAny(['search','category','sort']))
+        @if(request()->hasAny(['search','category','sort','min_price','max_price']))
             <a href="{{ route('marketplace') }}" class="border border-slate-600 hover:border-slate-500 text-slate-400 hover:text-white font-medium px-5 py-2.5 rounded-lg text-sm transition-colors">Clear</a>
         @endif
     </form>

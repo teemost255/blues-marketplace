@@ -15,6 +15,9 @@ use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\VirtualNumberOrdersController;
 use App\Http\Controllers\Admin\AnnouncementsController;
+use App\Http\Controllers\Admin\ReferralLeaderboardController;
+use App\Http\Controllers\Admin\ReviewsController as AdminReviewsController;
+use App\Http\Controllers\User\ReviewController;
 
 // Public imports
 use App\Http\Controllers\Auth\LoginController;
@@ -79,6 +82,7 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::get('/profile',      [ProfileController::class,      'index'])->name('profile');
     Route::post('/profile',     [ProfileController::class,      'update'])->name('profile.update');
     Route::post('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications');
+    Route::post('/orders/{purchase}/review', [ReviewController::class, 'store'])->name('orders.review');
 
     Route::get('/virtual-numbers',                  [VirtualNumberController::class, 'index'])->name('virtual-numbers');
     Route::post('/virtual-numbers/order',           [VirtualNumberController::class, 'order'])->name('virtual-numbers.order');
@@ -140,4 +144,8 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
 
     Route::get('/announcements',  [AnnouncementsController::class, 'index'])->name('announcements');
     Route::post('/announcements', [AnnouncementsController::class, 'store'])->name('announcements.store');
+
+    Route::get('/referrals',      [ReferralLeaderboardController::class, 'index'])->name('referrals');
+    Route::get('/reviews',        [AdminReviewsController::class,        'index'])->name('reviews');
+    Route::delete('/reviews/{review}', [AdminReviewsController::class,   'destroy'])->name('reviews.destroy');
 });

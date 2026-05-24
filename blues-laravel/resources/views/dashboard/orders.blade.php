@@ -17,6 +17,7 @@
                 <th class="px-6 py-3 text-left">Status</th>
                 <th class="px-6 py-3 text-left">Date</th>
                 <th class="px-6 py-3 text-left">Login Details</th>
+                <th class="px-6 py-3 text-left">Review</th>
             </tr></thead>
             <tbody>
             @forelse($orders as $order)
@@ -53,9 +54,28 @@
                             <span class="text-xs text-slate-600">—</span>
                         @endif
                     </td>
+                    <td class="px-6 py-4">
+                        @if($order->status === 'completed')
+                            @if($order->review)
+                                <div class="flex items-center gap-0.5">
+                                    @for($s = 1; $s <= 5; $s++)
+                                        <svg class="w-3.5 h-3.5 {{ $s <= $order->review->rating ? 'text-yellow-400' : 'text-slate-600' }}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                    @endfor
+                                </div>
+                            @else
+                                <button onclick="openRateModal('rate-{{ $order->id }}')"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-yellow-900/20 hover:bg-yellow-900/40 text-yellow-400 border border-yellow-700/30 rounded-lg text-xs font-medium transition-colors">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                    Rate
+                                </button>
+                            @endif
+                        @else
+                            <span class="text-xs text-slate-600">—</span>
+                        @endif
+                    </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="px-6 py-16 text-center text-slate-500">
+                <tr><td colspan="7" class="px-6 py-16 text-center text-slate-500">
                     <svg class="w-10 h-10 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                     <p class="font-medium">No orders yet.</p>
                     <a href="{{ route('marketplace') }}" class="text-brand hover:underline text-sm mt-1 inline-block">Browse the marketplace →</a>
@@ -118,7 +138,65 @@
     @endif
 @endforeach
 
+{{-- Rating Modals --}}
+@foreach($orders as $order)
+    @if($order->status === 'completed' && !$order->review)
+    <div id="rate-{{ $order->id }}"
+         class="rate-modal fixed inset-0 z-50 items-center justify-center p-4"
+         style="display:none; background:rgba(0,0,0,0.75);">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm shadow-2xl">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+                <div>
+                    <p class="text-white font-semibold text-sm">Rate Your Purchase</p>
+                    <p class="text-slate-400 text-xs mt-0.5 truncate max-w-[220px]">{{ $order->listing?->title ?? 'Order #'.$order->id }}</p>
+                </div>
+                <button onclick="closeRateModal('rate-{{ $order->id }}')" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <form method="POST" action="{{ route('orders.review', $order->id) }}" class="px-6 py-5">
+                @csrf
+                <p class="text-slate-400 text-xs mb-3">How would you rate this listing?</p>
+                <div class="flex items-center justify-center gap-2 mb-4" id="modal-stars-{{ $order->id }}">
+                    @for($s = 1; $s <= 5; $s++)
+                    <button type="button"
+                        onclick="setModalRating('{{ $order->id }}', {{ $s }})"
+                        class="modal-star-btn text-slate-600 hover:text-yellow-400 transition-colors"
+                        data-order="{{ $order->id }}" data-star="{{ $s }}">
+                        <svg class="w-9 h-9" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                    </button>
+                    @endfor
+                </div>
+                <input type="hidden" name="rating" id="modal-rating-{{ $order->id }}" required>
+                <textarea name="comment" rows="2" placeholder="Optional comment..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand mb-4 resize-none"></textarea>
+                <div class="flex gap-3">
+                    <button type="submit" class="flex-1 bg-brand hover:bg-brand-dark text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">Submit Review</button>
+                    <button type="button" onclick="closeRateModal('rate-{{ $order->id }}')"
+                        class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+@endforeach
+
 <script>
+function openRateModal(id) {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'flex'; }
+    document.body.style.overflow = 'hidden';
+}
+function closeRateModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+    document.body.style.overflow = '';
+}
+function setModalRating(orderId, n) {
+    document.getElementById('modal-rating-' + orderId).value = n;
+    document.querySelectorAll('[data-order="' + orderId + '"]').forEach((btn, i) => {
+        btn.classList.toggle('text-yellow-400', i < n);
+        btn.classList.toggle('text-slate-600', i >= n);
+    });
+}
 function openDetailsModal(id) {
     const el = document.getElementById(id);
     if (el) { el.style.display = 'flex'; }

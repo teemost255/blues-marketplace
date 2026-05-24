@@ -299,6 +299,37 @@
 @endif
 
 {{-- ═══════════════════════════════════════════════════════
+     PROMO BANNER
+═══════════════════════════════════════════════════════ --}}
+@if($promoBannerEnabled && $promoBannerText)
+<div id="promoBanner" class="w-full py-2.5 px-4
+    @if($promoBannerColor === 'green')   bg-green-600/90
+    @elseif($promoBannerColor === 'yellow') bg-yellow-500/90
+    @elseif($promoBannerColor === 'red')  bg-red-600/90
+    @elseif($promoBannerColor === 'purple') bg-purple-600/90
+    @else bg-brand/90
+    @endif
+    text-white text-center text-sm font-medium relative" style="display:none" id="promoBannerInner">
+    <span>{{ $promoBannerText }}</span>
+    <button onclick="dismissBanner()" class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-lg leading-none">&times;</button>
+</div>
+<script>
+(function() {
+    var key = 'promo_dismissed_{{ Str::slug($promoBannerText) }}';
+    if (!localStorage.getItem(key)) {
+        var b = document.getElementById('promoBannerInner');
+        if (b) b.style.display = '';
+    }
+    window.dismissBanner = function() {
+        localStorage.setItem(key, '1');
+        var b = document.getElementById('promoBannerInner');
+        if (b) b.style.display = 'none';
+    };
+})();
+</script>
+@endif
+
+{{-- ═══════════════════════════════════════════════════════
      LATEST ARRIVALS
 ═══════════════════════════════════════════════════════ --}}
 @if(isset($latestListings) && $latestListings->isNotEmpty())

@@ -21,6 +21,12 @@ class MarketplaceController extends Controller
                   ->orWhere('description', 'ilike', '%'.$request->search.'%');
             });
         }
+        if ($request->filled('min_price')) {
+            $query->where('price', '>=', (float) $request->min_price);
+        }
+        if ($request->filled('max_price')) {
+            $query->where('price', '<=', (float) $request->max_price);
+        }
         if ($request->filled('sort')) {
             match($request->sort) {
                 'price_asc'  => $query->orderBy('price', 'asc'),
@@ -49,7 +55,20 @@ class MarketplaceController extends Controller
         $inWishlist = Auth::check()
             ? Wishlist::where('user_id', Auth::id())->where('listing_id', $id)->exists()
             : false;
-        return view('marketplace.show', compact('listing', 'related', 'inWishlist'));
+
+        $reviews      = \App\Models\ListingReview::with('user')->where('listing_id', $id)->latest()->get();
+        $avgRating    = $reviews->avg('rating') ? round($reviews->avg('rating'), 1) : null;
+        $userReviewedPurchaseId = null;
+        if (Auth::check()) {
+            $bought = Purchase::where('user_id', Auth::id())
+                ->where('listing_id', $id)
+                ->where('status', 'completed')
+                ->whereDoesntHave('review')
+                ->first();
+            $userReviewedPurchaseId = $bought?->id;
+        }
+
+        return view('marketplace.show', compact('listing', 'related', 'inWishlist', 'reviews', 'avgRating', 'userReviewedPurchaseId'));
     }
 
     public function buy(Request $request, int $id)
@@ -116,6 +135,17 @@ class MarketplaceController extends Controller
                     });
                 }
             } catch (\Throwable) {}
+        }
+
+        $lowBalanceThreshold = (float) \App\Models\Setting::get('low_balance_threshold', '5');
+        $newBalance = (float) Wallet::where('user_id', $user->id)->value('balance');
+        if ($lowBalanceThreshold > 0 && $newBalance < $lowBalanceThreshold) {
+            Notification::create([
+                'user_id' => $user->id,
+                'title'   => 'Low Wallet Balance',
+                'message' => 'Your wallet balance is ₦' . number_format($newBalance, 2) . '. Top up to keep shopping.',
+                'type'    => 'warning',
+            ]);
         }
 
         return redirect()->route('dashboard.orders')->with('success',

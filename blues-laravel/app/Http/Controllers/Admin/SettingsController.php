@@ -32,6 +32,10 @@ class SettingsController extends Controller
             'mail_from_address'        => Setting::get('mail_from_address', ''),
             'mail_from_name'           => Setting::get('mail_from_name', 'Blues Marketplace'),
             'referral_bonus'           => Setting::get('referral_bonus', '0'),
+            'promo_banner_enabled'     => Setting::get('promo_banner_enabled', '0'),
+            'promo_banner_text'        => Setting::get('promo_banner_text', ''),
+            'promo_banner_color'       => Setting::get('promo_banner_color', 'brand'),
+            'low_balance_threshold'    => Setting::get('low_balance_threshold', '5'),
         ];
         return view('admin.settings', compact('settings'));
     }
@@ -59,6 +63,9 @@ class SettingsController extends Controller
             'mail_from_address'       => 'nullable|email',
             'mail_from_name'          => 'nullable|string|max:100',
             'referral_bonus'          => 'nullable|numeric|min:0',
+            'promo_banner_text'       => 'nullable|string|max:300',
+            'promo_banner_color'      => 'nullable|string|in:brand,green,yellow,red,purple',
+            'low_balance_threshold'   => 'nullable|numeric|min:0',
         ]);
 
         $keys = [
@@ -67,8 +74,9 @@ class SettingsController extends Controller
             'logsplug_api_key', 'logsplug_api_url', 'whatsapp_number',
             'mail_mailer', 'mail_host', 'mail_port', 'mail_username',
             'mail_password', 'mail_encryption', 'mail_from_address', 'mail_from_name',
-            'referral_bonus',
+            'referral_bonus', 'promo_banner_text', 'promo_banner_color', 'low_balance_threshold',
         ];
+        Setting::set('promo_banner_enabled', $request->boolean('promo_banner_enabled') ? '1' : '0');
 
         foreach ($keys as $key) {
             Setting::set($key, $request->input($key, ''));
