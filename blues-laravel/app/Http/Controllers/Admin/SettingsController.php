@@ -21,6 +21,7 @@ class SettingsController extends Controller
             'logsplug_api_key'         => Setting::get('logsplug_api_key', ''),
             'logsplug_api_url'         => Setting::get('logsplug_api_url', 'https://logsplug.com/api'),
             'virtual_number_enabled'   => Setting::get('virtual_number_enabled', '1'),
+            'whatsapp_number'          => Setting::get('whatsapp_number', ''),
         ];
         return view('admin.settings', compact('settings'));
     }
@@ -44,7 +45,7 @@ class SettingsController extends Controller
         $keys = [
             'paystack_public_key', 'paystack_secret_key', 'paystack_webhook_secret',
             'site_name', 'support_email', 'min_deposit', 'max_deposit',
-            'logsplug_api_key', 'logsplug_api_url',
+            'logsplug_api_key', 'logsplug_api_url', 'whatsapp_number',
         ];
 
         foreach ($keys as $key) {
