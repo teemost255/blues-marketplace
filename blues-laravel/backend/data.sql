@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict pU9JjL7maaPjS05LWNrf75sr4kP0ge6h8FLEsDPyPA01duR1bVmBRb9UdC7abs5
+\restrict SYKgri8gSPZG3b87M6VYnQD5F0DEW0Ph7FagdT7HLokGgG649WnasUha8NcbTUv
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -101,6 +101,46 @@ ALTER SEQUENCE public.admins_users_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.admins_users_id_seq OWNED BY public.admins_users.id;
+
+
+--
+-- Name: announcements; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.announcements (
+    id bigint NOT NULL,
+    title character varying(255) NOT NULL,
+    message text NOT NULL,
+    type character varying(255) DEFAULT 'info'::character varying NOT NULL,
+    sent_by bigint,
+    email_sent boolean DEFAULT false NOT NULL,
+    recipients_count integer DEFAULT 0 NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+ALTER TABLE public.announcements OWNER TO postgres;
+
+--
+-- Name: announcements_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.announcements_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.announcements_id_seq OWNER TO postgres;
+
+--
+-- Name: announcements_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.announcements_id_seq OWNED BY public.announcements.id;
 
 
 --
@@ -280,7 +320,8 @@ CREATE TABLE public.listings (
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
     image_path character varying(255),
-    featured boolean DEFAULT false NOT NULL
+    featured boolean DEFAULT false NOT NULL,
+    login_details text
 );
 
 
@@ -610,6 +651,50 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
+-- Name: virtual_number_orders; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.virtual_number_orders (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    external_order_id character varying(255),
+    service character varying(255) NOT NULL,
+    country character varying(255) DEFAULT 'ng'::character varying NOT NULL,
+    phone_number character varying(255),
+    sms_code character varying(255),
+    cost numeric(10,2) DEFAULT '0'::numeric NOT NULL,
+    status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
+    raw_response text,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    CONSTRAINT virtual_number_orders_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'active'::character varying, 'completed'::character varying, 'cancelled'::character varying, 'failed'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.virtual_number_orders OWNER TO postgres;
+
+--
+-- Name: virtual_number_orders_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.virtual_number_orders_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.virtual_number_orders_id_seq OWNER TO postgres;
+
+--
+-- Name: virtual_number_orders_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.virtual_number_orders_id_seq OWNED BY public.virtual_number_orders.id;
+
+
+--
 -- Name: wallet_transactions; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -622,7 +707,7 @@ CREATE TABLE public.wallet_transactions (
     description text,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    CONSTRAINT wallet_transactions_type_check CHECK (((type)::text = ANY ((ARRAY['deposit'::character varying, 'withdrawal'::character varying, 'purchase'::character varying, 'refund'::character varying])::text[])))
+    CONSTRAINT wallet_transactions_type_check CHECK (((type)::text = ANY ((ARRAY['deposit'::character varying, 'withdrawal'::character varying, 'purchase'::character varying, 'refund'::character varying, 'credit'::character varying, 'debit'::character varying])::text[])))
 );
 
 
@@ -736,6 +821,13 @@ ALTER TABLE ONLY public.admins_users ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
+-- Name: announcements id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.announcements ALTER COLUMN id SET DEFAULT nextval('public.announcements_id_seq'::regclass);
+
+
+--
 -- Name: failed_jobs id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -813,6 +905,13 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
+-- Name: virtual_number_orders id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.virtual_number_orders ALTER COLUMN id SET DEFAULT nextval('public.virtual_number_orders_id_seq'::regclass);
+
+
+--
 -- Name: wallet_transactions id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -846,7 +945,15 @@ COPY public.admin_audit_log (id, admin_id, action, target_type, target_id, detai
 --
 
 COPY public.admins_users (id, email, password_hash, display_name, avatar_url, is_active, last_login, created_at, updated_at, role) FROM stdin;
-2	admin@blues.com	$2y$12$sRCnxa9IjcJ5zFflaQw8qOiODW4HxFXSpz34TpSAv/f2zMNiOhaJS	Super Admin	\N	t	2026-05-23 21:29:36	2026-05-23 21:24:08	2026-05-23 21:29:36	admin
+2	admin@blues.com	$2y$12$sRCnxa9IjcJ5zFflaQw8qOiODW4HxFXSpz34TpSAv/f2zMNiOhaJS	Super Admin	\N	t	2026-05-24 02:16:08	2026-05-23 21:24:08	2026-05-24 02:16:08	admin
+\.
+
+
+--
+-- Data for Name: announcements; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.announcements (id, title, message, type, sent_by, email_sent, recipients_count, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -898,7 +1005,9 @@ COPY public.listing_categories (id, name, created_at, updated_at, slug, descript
 1	Facebook	2026-05-23 21:07:54	2026-05-23 21:07:54	\N	\N	\N	t
 2	Instagram	2026-05-23 21:07:54	2026-05-23 21:07:54	\N	\N	\N	t
 3	TikTok	2026-05-23 21:07:54	2026-05-23 21:07:54	\N	\N	\N	t
-4	2nd Numbers	2026-05-23 21:07:54	2026-05-23 21:07:54	\N	\N	\N	t
+4	Virtual Numbers	2026-05-23 21:07:54	2026-05-23 21:07:54	\N	\N	\N	t
+5	Twitter	2026-05-24 02:12:26	2026-05-24 02:12:26	\N	\N	\N	t
+6	Telegram	2026-05-24 02:12:26	2026-05-24 02:12:26	\N	\N	\N	t
 \.
 
 
@@ -906,8 +1015,9 @@ COPY public.listing_categories (id, name, created_at, updated_at, slug, descript
 -- Data for Name: listings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.listings (id, title, description, category, price, stock, is_active, image_url, created_at, updated_at, image_path, featured) FROM stdin;
-1	Verified facebook account	\N	\N	3000.00	0	t	\N	2026-05-23 21:40:37	2026-05-23 22:02:06	listings/n4e4PkZpPSVlOrUw74SXPERNWjELn1Mkj3Q5fJm9.jpg	f
+COPY public.listings (id, title, description, category, price, stock, is_active, image_url, created_at, updated_at, image_path, featured, login_details) FROM stdin;
+1	Verified facebook account	\N	\N	3000.00	0	t	\N	2026-05-23 21:40:37	2026-05-24 02:31:29	listings/n4e4PkZpPSVlOrUw74SXPERNWjELn1Mkj3Q5fJm9.jpg	f	Email: test@test.com\r\nPassword: 1234user
+2	Fb page	Page profile	\N	3000.00	3	t	\N	2026-05-24 02:34:45	2026-05-24 02:34:45	listings/tCvmzhJPPmmtcoXa4Gxp8QCc8f6ow9HJtPOe2b4s.jpg	f	Email\r\nPassword
 \.
 
 
@@ -936,6 +1046,11 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 18	2026_05_23_211758_add_extra_fields_to_listings_table	2
 19	2026_05_23_215407_add_role_to_admins_users_table	3
 20	2026_05_23_215408_create_password_reset_tokens_table	3
+21	2026_05_24_000003_add_extra_fields_to_listing_categories_table	4
+22	2026_05_25_000001_update_listing_categories_add_twitter_telegram	5
+23	2026_05_25_000002_create_virtual_number_orders_table	5
+24	2026_05_25_000003_add_login_details_to_listings_table	5
+25	2026_05_24_070448_create_announcements_table	6
 \.
 
 
@@ -979,24 +1094,28 @@ COPY public.purchases (id, user_id, listing_id, amount, status, delivery_data, c
 --
 
 COPY public.sessions (id, user_id, ip_address, user_agent, payload, last_activity) FROM stdin;
-X0KVndd3AQQTEBNgbnEqJFhMCHLwzw4zviB0VspY	\N	127.0.0.1	Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/140.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiMVBQRlNCTnlJS2w2NnhXUFpyVU0zd214VWxvNzdFcEFSTjdFeEdZNiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMCI7czo1OiJyb3V0ZSI7czo0OiJob21lIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1779570492
-NQmu0jgOsAiNhOvap7XCTq0mgTaHKS8nChba7dL8	\N	127.0.0.1	Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/140.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiYko2dENMakc4MzdhOEJCTXUwV0FXY2Z6WldzeTFXd2tuTnRLZ0F5cyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMCI7czo1OiJyb3V0ZSI7czo0OiJob21lIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1779571463
-Hcx3d0uA4c9HWelPHfQutx6e7I966tIk4dCgOBSN	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoic3BkZmFRdGpodkZBSXdBRU5HeWhXQzlIcHB6cnlGa0pzS1paTHVIUSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODI6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW4iO3M6NToicm91dGUiO3M6MTU6ImFkbWluLmRhc2hib2FyZCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1779571780
-GXerY29yKsBwNY6sTrMHsWcsKcy9vvBzQhthW69w	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoield4TkRGckJ2V3huUjZHTVk5Y1czM3d5RGxaQ1hjbVlpQmFwWHJCdyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODc6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW5sb2dpbiI7czo1OiJyb3V0ZSI7czoxMToiYWRtaW4ubG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779571781
-4Cl3d6SZbY3aLAroxZCpiH2W9XzsFIlUNvFLKf6h	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiRnZIRldVNXdOZTh0R2lEcE1sd2NqQUMzS09kQTdWWHkxd2NWV3oyaCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODc6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW5sb2dpbiI7czo1OiJyb3V0ZSI7czoxMToiYWRtaW4ubG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779571781
-YVkOvf1MiW1SYIIUIQQgj5jI3XRZFRVzUEGGeVED	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoieGhyenA2RWNxMkxYbExsQWMwT3d4QUx0SW16WGN2S0NxbEU2U1VrSCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODc6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW5sb2dpbiI7czo1OiJyb3V0ZSI7czoxMToiYWRtaW4ubG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779571781
-2MqI3MTNsuBOvJaON4I72JWc8xVwh0xdoxpqwSbD	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiRENaTFJYWm5IUmtXaHpoOUx0NzdUejNQaEF0RG10bXducWdGY1FQNSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6OTA6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW4vdGlja2V0cyI7czo1OiJyb3V0ZSI7czoxMzoiYWRtaW4udGlja2V0cyI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1779571839
-s3KwL4bGe2vorp9e8FHyNGTYbIDzw5HikOzC5EFJ	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiNFRNY0VVTGw3QzI0UUZjT3AxbHlMQ2JPRVNIcjhwbE9Kc0NlN3pQWiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODc6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW5sb2dpbiI7czo1OiJyb3V0ZSI7czoxMToiYWRtaW4ubG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779571840
-RWmBabSjULRQbyA7uqY8SSPKM6Kft0207V95O3gU	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiSzdZRFlNVEptWWpWQ2NHTkRmNUVaMTY0MjlOM2ZSbGl4U1lqVDdSdiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6OTU6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW4vdHJhbnNhY3Rpb25zIjtzOjU6InJvdXRlIjtzOjE4OiJhZG1pbi50cmFuc2FjdGlvbnMiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779571842
-BzP8va1GvdAdA5VEAQEn0p64HcA9pNZcfwbm2nwT	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoibDFidXgySWdBRzRxakM5THM0N0Z6TnJrY3RKa00xZHNpMnBWWGs1aSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODc6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW5sb2dpbiI7czo1OiJyb3V0ZSI7czoxMToiYWRtaW4ubG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779571842
-cMTfFH7FcTIsfbBFCUMJTA5VU1c87NmCy3quTtDD	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTo0OntzOjY6Il90b2tlbiI7czo0MDoiR0t2ZW1ja2cxUTYyREVJWW5LNUxaYzFLV3IxMzlWZUpvT0hPaTR6NSI7czo1OiJlcnJvciI7czoyNjoiUGxlYXNlIGxvZyBpbiB0byBjb250aW51ZS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo1OiJlcnJvciI7fX1zOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo5MzoiaHR0cDovLzgxNmFjMmM3LTE3MjUtNDM1Yy05YWZkLWYzZjIwYzM0YzNlYy0wMC1mdmx2NGdkdWoyN2gucmlrZXIucmVwbGl0LmRldi9kYXNoYm9hcmQvb3JkZXJzIjtzOjU6InJvdXRlIjtzOjE2OiJkYXNoYm9hcmQub3JkZXJzIjt9fQ==	1779572169
-5Shkml4q1KoRQcDio4PcgVJ0vOdiQNcKTuO0vD8n	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiU2Y4VzZXWW5TNjV6WHJuS1E5UmdvZnM0VHBRNmQ1dm42bE05Mm5lOSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODI6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvbG9naW4iO3M6NToicm91dGUiO3M6NToibG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779572170
-hUgoUD9vFu9P7l3evYGIJ2hpKQdQlnmFoeiMSaOp	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTo0OntzOjY6Il90b2tlbiI7czo0MDoiYTJKY1hrRmhaSVlJTUtxaHlOQ0JqSmczSHN6T1cwYUxTMTVlcDRseiI7czo1OiJlcnJvciI7czoyNjoiUGxlYXNlIGxvZyBpbiB0byBjb250aW51ZS4iO3M6NjoiX2ZsYXNoIjthOjI6e3M6MzoibmV3IjthOjA6e31zOjM6Im9sZCI7YToxOntpOjA7czo1OiJlcnJvciI7fX1zOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo5NToiaHR0cDovLzgxNmFjMmM3LTE3MjUtNDM1Yy05YWZkLWYzZjIwYzM0YzNlYy0wMC1mdmx2NGdkdWoyN2gucmlrZXIucmVwbGl0LmRldi9kYXNoYm9hcmQvd2lzaGxpc3QiO3M6NToicm91dGUiO3M6MTg6ImRhc2hib2FyZC53aXNobGlzdCI7fX0=	1779572176
-Tz4mxgD5ghjudDnYFNJI1tG9sBvWjPAMCYMcMcQ0	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoieHp2MGZjNmp0NEJ1Z0FZSk56YUtZSmpRZU5QWnUwOFE4NXp6dTlFQyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODI6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvbG9naW4iO3M6NToicm91dGUiO3M6NToibG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779572176
-wd23DxFCLssZrUZbnu7fD6eezO9PdVAGXnXoWoSV	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiUk9GMVBlRlFJUnhZZ0JPTWNKZjV5ZXJFWFcxV1ZIODJhcEE2YXd0VCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MTAwOiJodHRwOi8vODE2YWMyYzctMTcyNS00MzVjLTlhZmQtZjNmMjBjMzRjM2VjLTAwLWZ2bHY0Z2R1ajI3aC5yaWtlci5yZXBsaXQuZGV2L2FkbWluL3VzZXJzLzEvZGFzaGJvYXJkIjtzOjU6InJvdXRlIjtzOjI3OiJhZG1pbi5pbXBlcnNvbmF0ZS5kYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779572230
-qw0xReLFmnUnE2z49MIfBoKzkTHC5Wga4fAiGc8h	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoic0gxQjkxUElPRE5yVUNnaXJLVnpzRndSaFNobEJUZ3d0Sks1Tms3TiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODc6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW5sb2dpbiI7czo1OiJyb3V0ZSI7czoxMToiYWRtaW4ubG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779572230
-jybcAxW4A3RLulYUIsjzh2WbKcG7zAkfeH0MoCmX	1	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36	YTo3OntzOjY6Il90b2tlbiI7czo0MDoibG5Ma0xYaTNTRG1KQjFmOFY2NG9yOGM5U0p4Q3BMRXN2dUtjdUt4dyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzY6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYiO3M6NToicm91dGUiO3M6NDoiaG9tZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6ODoiYWRtaW5faWQiO2k6MjtzOjExOiJhZG1pbl9lbWFpbCI7czoxNToiYWRtaW5AYmx1ZXMuY29tIjtzOjEwOiJhZG1pbl9uYW1lIjtzOjExOiJTdXBlciBBZG1pbiI7czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9	1779573915
-TjeadU3598fILQgNcg5A6YF397p0UkHVigwoNuOz	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiY1JJYmZJZXV5VDFRNXUwRGZhQzhFSnhvOHF3d2s3d2ZXWkNCWUV2TSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzY6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYiO3M6NToicm91dGUiO3M6NDoiaG9tZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1779587203
+tX4uCwiiYbyvdqomFUy1GGlXTcGmZIbqJTPi2qpW	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoialhwZ0JwbnFkd1hhdTY0VkUwTE53S1pQSXBwbGlrYnFvSW03SXB5dSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODI6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvbG9naW4iO3M6NToicm91dGUiO3M6NToibG9naW4iO319	1779589937
+64AYRTRIWCjzwz4Bom0RoBatuYKPvikqEKQd84KT	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoib0ZPY1NnWmRNRzRGV0xJZGFuUGJFYkxyYW5PdXBHOU5LcU1kTmk4TiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MTIwOiJodHRwOi8vODE2YWMyYzctMTcyNS00MzVjLTlhZmQtZjNmMjBjMzRjM2VjLTAwLWZ2bHY0Z2R1ajI3aC5yaWtlci5yZXBsaXQuZGV2L21hcmtldHBsYWNlP2NhdGVnb3J5PUZhY2Vib29rJnNlYXJjaD0mc29ydD0iO3M6NToicm91dGUiO3M6MTE6Im1hcmtldHBsYWNlIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1779589986
+z6nZr6EGM5R9XFQAVvBEdmGLLRIIAbiRnMn9xD6M	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiSlJoS1NPUEh2OHhWMk1QalFJeWY2eG1RazhDbENsUWFOREU2TmZSTiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MTIwOiJodHRwOi8vODE2YWMyYzctMTcyNS00MzVjLTlhZmQtZjNmMjBjMzRjM2VjLTAwLWZ2bHY0Z2R1ajI3aC5yaWtlci5yZXBsaXQuZGV2L21hcmtldHBsYWNlP2NhdGVnb3J5PUZhY2Vib29rJnNlYXJjaD0mc29ydD0iO3M6NToicm91dGUiO3M6MTE6Im1hcmtldHBsYWNlIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1779589986
+iXqSleG8T11pYYvuDYc0xa4LFwvX31tHJXTw6ID6	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiRmN5TE85eFpRVmdDWWlER2E0OU1iY3p5ZnVkdXduQkh4cWZKUGo5OCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MTEyOiJodHRwOi8vODE2YWMyYzctMTcyNS00MzVjLTlhZmQtZjNmMjBjMzRjM2VjLTAwLWZ2bHY0Z2R1ajI3aC5yaWtlci5yZXBsaXQuZGV2L21hcmtldHBsYWNlP2NhdGVnb3J5PSZzZWFyY2g9JnNvcnQ9IjtzOjU6InJvdXRlIjtzOjExOiJtYXJrZXRwbGFjZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1779590118
+oLQE6rayv4liMHOxjhBtKMUeybt68ZgnYokLrFzb	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiMFVvRjJSSDFuNnJaUkllQlBBbFN4WFF5bHVoYVBoU0V4cVREQTJuYSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MTIxOiJodHRwOi8vODE2YWMyYzctMTcyNS00MzVjLTlhZmQtZjNmMjBjMzRjM2VjLTAwLWZ2bHY0Z2R1ajI3aC5yaWtlci5yZXBsaXQuZGV2L21hcmtldHBsYWNlP2NhdGVnb3J5PUluc3RhZ3JhbSZzZWFyY2g9JnNvcnQ9IjtzOjU6InJvdXRlIjtzOjExOiJtYXJrZXRwbGFjZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1779590126
+0a0A1yexO8k3uoFhm6pxzSQPH2n3ukhYocfrzjtj	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiejdTaGJBOTREREpWZzE3UXhtdElXOTBWSVkxWjNsTjdMeElOZFhZayI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MTIxOiJodHRwOi8vODE2YWMyYzctMTcyNS00MzVjLTlhZmQtZjNmMjBjMzRjM2VjLTAwLWZ2bHY0Z2R1ajI3aC5yaWtlci5yZXBsaXQuZGV2L21hcmtldHBsYWNlP2NhdGVnb3J5PUluc3RhZ3JhbSZzZWFyY2g9JnNvcnQ9IjtzOjU6InJvdXRlIjtzOjExOiJtYXJrZXRwbGFjZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1779590127
+Z1OuYMBbKVd3RP8uQGHw0L2dN5l5CJH7UwquSSEb	\N	127.0.0.1	Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/140.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiRjRRakJPWmxsQUpLcHdIS2pibVhUYTVNUkVEYTIwWEhuWG1NWGw2TSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1779606705
+nBIK8riwdjJDICpIabfu3e7iZFmBP11MarbEiZuQ	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiVzFWcUhjbGVURjVoMjJXeXRCMXBCeGlPbWs0RGlJeGthSXp3cjJPWSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODI6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvbG9naW4iO3M6NToicm91dGUiO3M6NToibG9naW4iO319	1779589937
+Ukb6MnNarbftMOgyiVQXVsJqWUmkKAchHcnr3a6Y	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiOGx4SDNpd3JoTzVyQzk1dHlYdnZoTDVtcElmdHdsWmpFelE3b0xjcCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MTIwOiJodHRwOi8vODE2YWMyYzctMTcyNS00MzVjLTlhZmQtZjNmMjBjMzRjM2VjLTAwLWZ2bHY0Z2R1ajI3aC5yaWtlci5yZXBsaXQuZGV2L21hcmtldHBsYWNlP2NhdGVnb3J5PUZhY2Vib29rJnNlYXJjaD0mc29ydD0iO3M6NToicm91dGUiO3M6MTE6Im1hcmtldHBsYWNlIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1779589986
+K9f8sO1hBeYowmDccjBt9X0Lfusvm7ejzdhzTqWU	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoib0hoYXRQTTE4ZEpPcG5hQWpKdU5tMzNVMk1uUU9aWEM5QUNrMUc5dSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MTEyOiJodHRwOi8vODE2YWMyYzctMTcyNS00MzVjLTlhZmQtZjNmMjBjMzRjM2VjLTAwLWZ2bHY0Z2R1ajI3aC5yaWtlci5yZXBsaXQuZGV2L21hcmtldHBsYWNlP2NhdGVnb3J5PSZzZWFyY2g9JnNvcnQ9IjtzOjU6InJvdXRlIjtzOjExOiJtYXJrZXRwbGFjZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1779590118
+B7e6CNzHlYw4tKiDvfKpW9Zu6eYIQDPRNeh1S2qF	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiaHdKVGhYYjdSek1iYnp0VkhkbzNrWHBKYWxibllKV3NXV0NnNnpiQiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MTEyOiJodHRwOi8vODE2YWMyYzctMTcyNS00MzVjLTlhZmQtZjNmMjBjMzRjM2VjLTAwLWZ2bHY0Z2R1ajI3aC5yaWtlci5yZXBsaXQuZGV2L21hcmtldHBsYWNlP2NhdGVnb3J5PSZzZWFyY2g9JnNvcnQ9IjtzOjU6InJvdXRlIjtzOjExOiJtYXJrZXRwbGFjZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1779590119
+DytpQsw1xEh7vfKZO25RKY1W2QZ4iN87FnGPwiVe	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiUmhFMTJPUTl1VWdsVzJzUWtzU0g3OHJxU1lJaWV0ZE1RdVRmbHJTeCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MTIxOiJodHRwOi8vODE2YWMyYzctMTcyNS00MzVjLTlhZmQtZjNmMjBjMzRjM2VjLTAwLWZ2bHY0Z2R1ajI3aC5yaWtlci5yZXBsaXQuZGV2L21hcmtldHBsYWNlP2NhdGVnb3J5PUluc3RhZ3JhbSZzZWFyY2g9JnNvcnQ9IjtzOjU6InJvdXRlIjtzOjExOiJtYXJrZXRwbGFjZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1779590127
+PKjJFAqDoTJfD9i4kZi4PedP1MJIXDOndzpygyad	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiWHVmdnNWdWpzdTN2TjRUeU9URHZ0cHBUZ0JzVVpiUWt2cTE5ZzBWWSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzY6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYiO3M6NToicm91dGUiO3M6NDoiaG9tZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=	1779606821
+romeVCynmyG12BgcfIfdaKb7wUnkKb1XdMcbq3lj	\N	127.0.0.1	Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/140.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoiV1d0QnA0RW1MdkJIOW9GRkQ0N05yd2xOREl0WWJIQWdVZjFDS0Q1aCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fX0=	1779588755
+LwlOyajUSWkiPqIhaFCaLNukEkKnlLAjHrLZ1czF	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiQkw1dFFLQWlHZU41U2VEMmVRR295bm5xVjlWdERrTjFTbFphZlNKRyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6OTE6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW4vbGlzdGluZ3MiO3M6NToicm91dGUiO3M6MTQ6ImFkbWluLmxpc3RpbmdzIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1779589834
+KYWNI9TK2OztojIZiKWmQKUMo31wNAB97P5Nti07	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiNDR5dGxhQzBUVDhPaUxCZWI1cVF5Zzd6SUlxT3F3YWVnMDk1Sk1BdCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODc6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW5sb2dpbiI7czo1OiJyb3V0ZSI7czoxMToiYWRtaW4ubG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779589834
+EFGctOJuNCy5TyQUfe6k8RxXiwgUrpVuLwQ9CyeB	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiMTRFWlMzMTUxS2RZYmNWUHFTT21KOXM4NWY4RGF2VkhwdkYwUEZ1bSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODc6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW5sb2dpbiI7czo1OiJyb3V0ZSI7czoxMToiYWRtaW4ubG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779589835
+77NzmllUjIupSEhcEjKwK1ZF4IbRjlbM5SkA3KzY	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoia0E0SlBqbVk1OTRiVVFUc3B2NmhOcnJyRDJsSnlTQ2E5dlc1Tmt3aSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODc6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW5sb2dpbiI7czo1OiJyb3V0ZSI7czoxMToiYWRtaW4ubG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779589835
+H5XAfExGR8jVkypBqOasMLf85f1JbE8PsAnAFfyh	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiRDFYcng1cE9jZEtQNEJWZmdVY1l3QVF4bzJkVTB1RmE3OTB4ZGk2MCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6OTg6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW4vbGlzdGluZ3MvMS9lZGl0IjtzOjU6InJvdXRlIjtzOjE5OiJhZG1pbi5saXN0aW5ncy5lZGl0Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1779589837
+jSa6gbFOYDDy3jxcVsOyUvBMzTnv8t6ys0L9vjRD	\N	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-Read-Aloud; +https://support.google.com/webmasters/answer/1061943)	YTozOntzOjY6Il90b2tlbiI7czo0MDoiSGpjb0o0RUI2RGpTSTl2cWRCbmhvZGl4ZmlrUzc3MFowYk1SRkxyaCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODc6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvYWRtaW5sb2dpbiI7czo1OiJyb3V0ZSI7czoxMToiYWRtaW4ubG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19	1779589837
+v1UMku5bqyFBSBU552uoAT2d4XIoShQz6YawVWV3	\N	127.0.0.1	Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/140.0.0.0 Safari/537.36	YTozOntzOjY6Il90b2tlbiI7czo0MDoieWZTOXhaMmwybmc2VmpSMU1aNUt4Y3dvNHFhVFJtempYanZST2dLTyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMCI7czo1OiJyb3V0ZSI7czo0OiJob21lIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==	1779589852
+OaXHxgxfmggFjCdHIe9XU1ISkXrDD2GAvafXBIHL	1	127.0.0.1	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36	YTo3OntzOjY6Il90b2tlbiI7czo0MDoiZ3VFc0J4S2JJMm5iZU8xcFZFWnNoa25FbEZuczBrb2Z0V0hONjNKeSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6OTQ6Imh0dHA6Ly84MTZhYzJjNy0xNzI1LTQzNWMtOWFmZC1mM2YyMGMzNGMzZWMtMDAtZnZsdjRnZHVqMjdoLnJpa2VyLnJlcGxpdC5kZXYvZGFzaGJvYXJkL3N1cHBvcnQiO3M6NToicm91dGUiO3M6MTc6ImRhc2hib2FyZC5zdXBwb3J0Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjg6ImFkbWluX2lkIjtpOjI7czoxMToiYWRtaW5fZW1haWwiO3M6MTU6ImFkbWluQGJsdWVzLmNvbSI7czoxMDoiYWRtaW5fbmFtZSI7czoxMToiU3VwZXIgQWRtaW4iO30=	1779590383
 \.
 
 
@@ -1005,6 +1124,18 @@ TjeadU3598fILQgNcg5A6YF397p0UkHVigwoNuOz	\N	127.0.0.1	Mozilla/5.0 (Linux; Androi
 --
 
 COPY public.settings (id, key, value, created_at, updated_at) FROM stdin;
+1	paystack_public_key	\N	2026-05-24 02:19:33	2026-05-24 02:19:33
+2	paystack_secret_key	\N	2026-05-24 02:19:33	2026-05-24 02:19:33
+3	paystack_webhook_secret	\N	2026-05-24 02:19:33	2026-05-24 02:19:33
+4	site_name	Blues Marketplace	2026-05-24 02:19:33	2026-05-24 02:19:33
+5	support_email	\N	2026-05-24 02:19:33	2026-05-24 02:19:33
+6	min_deposit	500	2026-05-24 02:19:33	2026-05-24 02:19:33
+7	max_deposit	1000000	2026-05-24 02:19:33	2026-05-24 02:19:33
+8	logsplug_api_key	sk_live_9282a206e65070fcd9108e1a6eb359534c4714d7814dead8e054d0fd6d52547b	2026-05-24 02:19:33	2026-05-24 02:19:33
+9	logsplug_api_url	https://logsplug.com/api	2026-05-24 02:19:33	2026-05-24 02:19:33
+10	maintenance_mode	0	2026-05-24 02:19:33	2026-05-24 02:19:33
+11	virtual_number_enabled	1	2026-05-24 02:19:33	2026-05-24 02:19:33
+12	whatsapp_number	2348012345678	2026-05-24 02:30:47	2026-05-24 02:30:47
 \.
 
 
@@ -1013,6 +1144,7 @@ COPY public.settings (id, key, value, created_at, updated_at) FROM stdin;
 --
 
 COPY public.support_tickets (id, user_id, subject, message, admin_reply, status, priority, created_at, updated_at) FROM stdin;
+1	1	Help	help me	Thanks for reaching outto us	closed	high	2026-05-24 02:38:31	2026-05-24 02:39:32
 \.
 
 
@@ -1022,6 +1154,14 @@ COPY public.support_tickets (id, user_id, subject, message, admin_reply, status,
 
 COPY public.users (id, name, email, email_verified_at, password, remember_token, created_at, updated_at, status) FROM stdin;
 1	Teemost	agboolasamul09@gmail.com	\N	$2y$12$N83lxo8ul/L7efnUlWj08OsBEydNZarU7/kSQc96.LhA1FEIlsoEi	\N	2026-05-23 21:34:21	2026-05-23 21:34:21	active
+\.
+
+
+--
+-- Data for Name: virtual_number_orders; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.virtual_number_orders (id, user_id, external_order_id, service, country, phone_number, sms_code, cost, status, raw_response, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -1051,6 +1191,7 @@ COPY public.wallets (id, user_id, balance, created_at, updated_at) FROM stdin;
 
 COPY public.wishlists (id, user_id, listing_id, created_at, updated_at) FROM stdin;
 1	1	1	2026-05-23 22:00:37	2026-05-23 22:00:37
+2	1	2	2026-05-24 02:37:36	2026-05-24 02:37:36
 \.
 
 
@@ -1066,6 +1207,13 @@ SELECT pg_catalog.setval('public.admin_audit_log_id_seq', 1, false);
 --
 
 SELECT pg_catalog.setval('public.admins_users_id_seq', 2, true);
+
+
+--
+-- Name: announcements_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.announcements_id_seq', 1, false);
 
 
 --
@@ -1086,21 +1234,21 @@ SELECT pg_catalog.setval('public.jobs_id_seq', 1, false);
 -- Name: listing_categories_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.listing_categories_id_seq', 4, true);
+SELECT pg_catalog.setval('public.listing_categories_id_seq', 6, true);
 
 
 --
 -- Name: listings_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.listings_id_seq', 1, true);
+SELECT pg_catalog.setval('public.listings_id_seq', 2, true);
 
 
 --
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 20, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 25, true);
 
 
 --
@@ -1128,14 +1276,14 @@ SELECT pg_catalog.setval('public.purchases_id_seq', 1, true);
 -- Name: settings_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.settings_id_seq', 1, false);
+SELECT pg_catalog.setval('public.settings_id_seq', 12, true);
 
 
 --
 -- Name: support_tickets_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.support_tickets_id_seq', 1, false);
+SELECT pg_catalog.setval('public.support_tickets_id_seq', 1, true);
 
 
 --
@@ -1143,6 +1291,13 @@ SELECT pg_catalog.setval('public.support_tickets_id_seq', 1, false);
 --
 
 SELECT pg_catalog.setval('public.users_id_seq', 1, true);
+
+
+--
+-- Name: virtual_number_orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.virtual_number_orders_id_seq', 1, false);
 
 
 --
@@ -1163,7 +1318,7 @@ SELECT pg_catalog.setval('public.wallets_id_seq', 1, true);
 -- Name: wishlists_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.wishlists_id_seq', 1, true);
+SELECT pg_catalog.setval('public.wishlists_id_seq', 2, true);
 
 
 --
@@ -1188,6 +1343,14 @@ ALTER TABLE ONLY public.admins_users
 
 ALTER TABLE ONLY public.admins_users
     ADD CONSTRAINT admins_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: announcements announcements_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.announcements
+    ADD CONSTRAINT announcements_pkey PRIMARY KEY (id);
 
 
 --
@@ -1367,6 +1530,14 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: virtual_number_orders virtual_number_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.virtual_number_orders
+    ADD CONSTRAINT virtual_number_orders_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: wallet_transactions wallet_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1442,6 +1613,13 @@ CREATE INDEX sessions_user_id_index ON public.sessions USING btree (user_id);
 
 
 --
+-- Name: virtual_number_orders_external_order_id_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX virtual_number_orders_external_order_id_index ON public.virtual_number_orders USING btree (external_order_id);
+
+
+--
 -- Name: admin_audit_log admin_audit_log_admin_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1490,6 +1668,14 @@ ALTER TABLE ONLY public.support_tickets
 
 
 --
+-- Name: virtual_number_orders virtual_number_orders_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.virtual_number_orders
+    ADD CONSTRAINT virtual_number_orders_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: wallet_transactions wallet_transactions_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1525,5 +1711,5 @@ ALTER TABLE ONLY public.wishlists
 -- PostgreSQL database dump complete
 --
 
-\unrestrict pU9JjL7maaPjS05LWNrf75sr4kP0ge6h8FLEsDPyPA01duR1bVmBRb9UdC7abs5
+\unrestrict SYKgri8gSPZG3b87M6VYnQD5F0DEW0Ph7FagdT7HLokGgG649WnasUha8NcbTUv
 
