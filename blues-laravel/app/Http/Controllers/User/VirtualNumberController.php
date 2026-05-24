@@ -93,7 +93,7 @@ class VirtualNumberController extends Controller
             return back()->with('error', 'Insufficient wallet balance. Please top up your wallet.');
         }
 
-        $rentResult = $svc->rentNumber($request->server, $request->service_id, $request->country ?? '');
+        $rentResult = $svc->rentNumber($request->input('server'), $request->service_id, $request->country ?? '');
 
         if (!$rentResult['success']) {
             return back()->with('error', 'Could not get a number: ' . $rentResult['message']);

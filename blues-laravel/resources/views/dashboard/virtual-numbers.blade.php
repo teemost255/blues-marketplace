@@ -373,7 +373,7 @@ async function loadCountries() {
 
         if (data.success && data.data?.length) {
             const sel = document.getElementById('country-select');
-            sel.innerHTML = '<option value="">All Countries</option>';
+            sel.innerHTML = '<option value="">— Select a country —</option>';
             data.data.forEach(c => {
                 const code = c.code;   // numeric e.g. 1
                 const iso  = flagFromUrl(c.flag);
@@ -383,7 +383,7 @@ async function loadCountries() {
                 opt.textContent = c.name;
                 sel.appendChild(opt);
             });
-            loadServices();
+            showState('empty', 'Select a country above to see available services.');
         } else {
             showState('empty', data.message || 'No countries returned.');
         }
