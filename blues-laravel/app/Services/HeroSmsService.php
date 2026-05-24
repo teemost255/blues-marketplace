@@ -157,20 +157,26 @@ class HeroSmsService
             return ['success' => false, 'message' => $json['details'] ?? $json['title']];
         }
 
+        // When a country is specified, Hero-SMS wraps response as:
+        // {"countryId": {"service": {"count":N,"cost":X.XX,"physicalCount":N}, ...}}
+        // When no country, it's: {"service": {"countryId": {"count":N,...}, ...}}
+        // Detect the wrapped format by checking if the first value is itself a map of maps.
+        $firstValue = reset($json);
+        if (is_array($firstValue) && !isset($firstValue['count']) && !isset($firstValue['cost'])) {
+            // Unwrap one level — use the first (and usually only) country block
+            $json = $firstValue;
+        }
+
         // Convert to array of service objects
         $services = [];
         foreach ($json as $name => $info) {
-            // Single country: {"count":N,"cost":X.XX}
-            // All countries:  {"countryId":{"count":N,"cost":X.XX},...}
-            if (isset($info['count'])) {
-                if ((int)($info['count'] ?? 0) > 0) {
-                    $services[] = [
-                        'serviceId' => $name,
-                        'name'      => $name,
-                        'count'     => (int) $info['count'],
-                        'cost'      => (float) $info['cost'],
-                    ];
-                }
+            if (is_array($info) && isset($info['count']) && (int)($info['count']) > 0) {
+                $services[] = [
+                    'serviceId' => $name,
+                    'name'      => $name,
+                    'count'     => (int) $info['count'],
+                    'cost'      => (float) ($info['cost'] ?? 0),
+                ];
             }
         }
 
