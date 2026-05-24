@@ -118,10 +118,9 @@ class VirtualNumberController extends Controller
                 $wallet->decrement('balance', $cost);
                 WalletTransaction::create([
                     'user_id'     => auth()->id(),
-                    'type'        => 'debit',
+                    'type'        => 'withdrawal',
                     'amount'      => $cost,
                     'description' => 'Virtual number: ' . $serviceName,
-                    'status'      => 'completed',
                     'reference'   => 'VN-' . $order->id . '-' . time(),
                 ]);
             }
@@ -194,10 +193,9 @@ class VirtualNumberController extends Controller
                     $wallet->increment('balance', $order->cost);
                     WalletTransaction::create([
                         'user_id'     => auth()->id(),
-                        'type'        => 'credit',
+                        'type'        => 'refund',
                         'amount'      => $order->cost,
                         'description' => 'Refund: cancelled virtual number #' . $order->id,
-                        'status'      => 'completed',
                         'reference'   => 'REFUND-VN-' . $order->id . '-' . time(),
                     ]);
                 }

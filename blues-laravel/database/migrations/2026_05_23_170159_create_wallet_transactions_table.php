@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->decimal('amount', 10, 2);
-            $table->enum('type', ['deposit', 'withdrawal', 'purchase', 'refund']);
+            $table->enum('type', ['deposit', 'withdrawal', 'purchase', 'refund', 'referral_bonus', 'admin_credit', 'admin_debit']);
             $table->string('reference')->nullable();
             $table->text('description')->nullable();
             $table->timestamps();

@@ -49,6 +49,7 @@ class UsersController extends Controller
         }
         $user->update(['status' => $status]);
         $labels = ['active' => 'activated', 'suspended' => 'suspended', 'banned' => 'banned'];
+        \App\Helpers\AuditHelper::log("Set user {$user->name} ({$user->email}) status to {$status}", 'user', $user->id);
         return back()->with('success', "User {$user->name} has been {$labels[$status]}.");
     }
 
@@ -82,13 +83,19 @@ class UsersController extends Controller
             $wallet->decrement('balance', $amount);
         }
 
+        $txType = $request->type === 'fund' ? 'admin_credit' : 'admin_debit';
         WalletTransaction::create([
             'user_id'     => $user->id,
             'amount'      => $request->type === 'fund' ? $amount : -$amount,
-            'type'        => $request->type === 'fund' ? 'credit' : 'debit',
+            'type'        => $txType,
             'reference'   => 'ADMIN-' . strtoupper(uniqid()),
             'description' => $request->description ?: ($request->type === 'fund' ? 'Admin wallet funding' : 'Admin wallet deduction'),
         ]);
+
+        \App\Helpers\AuditHelper::log(
+            ($request->type === 'fund' ? 'Funded' : 'Deducted') . ' ₦' . number_format($amount, 2) . ' ' . ($request->type === 'fund' ? 'to' : 'from') . " {$user->name}'s wallet" . ($request->description ? ": {$request->description}" : ''),
+            'user', $user->id
+        );
 
         $action = $request->type === 'fund' ? 'funded' : 'deducted from';
         return back()->with('success', "₦" . number_format($amount, 2) . " {$action} {$user->name}'s wallet.");

@@ -23,7 +23,7 @@ class ModeratorsController extends Controller
             'password'     => 'required|string|min:6',
         ]);
 
-        AdminUser::create([
+        $mod = AdminUser::create([
             'email'         => strtolower(trim($request->email)),
             'password_hash' => Hash::make($request->password),
             'display_name'  => $request->display_name,
@@ -31,6 +31,7 @@ class ModeratorsController extends Controller
             'is_active'     => true,
         ]);
 
+        \App\Helpers\AuditHelper::log("Created moderator account: {$request->display_name} ({$request->email})", 'moderator', $mod->id);
         return back()->with('success', "Moderator {$request->display_name} created successfully.");
     }
 
@@ -46,6 +47,7 @@ class ModeratorsController extends Controller
         }
         $admin->update(['role' => $role]);
         $label = $role === 'admin' ? 'promoted to Admin' : 'set as Moderator';
+        \App\Helpers\AuditHelper::log("Role change: {$admin->display_name} ({$admin->email}) {$label}", 'admin_user', $admin->id);
         return back()->with('success', "{$admin->display_name} has been {$label}.");
     }
 
@@ -54,6 +56,7 @@ class ModeratorsController extends Controller
         if ($admin->id == session('admin_id')) {
             return back()->with('error', 'You cannot delete your own account.');
         }
+        \App\Helpers\AuditHelper::log("Deleted account: {$admin->display_name} ({$admin->email})", 'admin_user', $admin->id);
         $admin->delete();
         return back()->with('success', 'Account removed.');
     }

@@ -19,7 +19,7 @@ class DashboardController extends Controller
             'total_purchases'  => Purchase::count(),
             'total_revenue'    => Purchase::where('status', 'completed')->sum('amount'),
             'open_tickets'     => SupportTicket::where('status', 'open')->count(),
-            'wallet_volume'    => WalletTransaction::where('type', 'credit')->sum('amount'),
+            'wallet_volume'    => WalletTransaction::whereIn('type', ['deposit', 'admin_credit', 'referral_bonus'])->sum('amount'),
             'recent_purchases' => Purchase::with(['user', 'listing'])->latest()->take(8)->get(),
             'recent_users'     => User::latest()->take(5)->get(),
         ];
