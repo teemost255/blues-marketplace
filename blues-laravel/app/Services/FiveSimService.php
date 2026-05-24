@@ -85,10 +85,15 @@ class FiveSimService
 
             $countries = [];
             foreach ($data as $code => $info) {
-                if (!isset($info['name'])) continue;
+                if (!is_array($info)) continue;
+                // API returns text_en for English name; iso is {"af":1} object
+                $name = $info['text_en'] ?? ucwords(str_replace('and', '& ', $code));
+                $isoObj = $info['iso'] ?? [];
+                $iso = is_array($isoObj) ? (string)(array_key_first($isoObj) ?? '') : '';
                 $countries[] = [
                     'code' => $code,
-                    'name' => $info['name'] ?? ucfirst($code),
+                    'name' => $name,
+                    'iso'  => $iso,
                 ];
             }
 

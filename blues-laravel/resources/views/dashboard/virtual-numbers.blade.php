@@ -413,10 +413,10 @@ async function loadCountries() {
                     sel.appendChild(opt);
                 });
             } else if (currentProvider === 'fivesim') {
-                // 5SIM: [{code, name}]
+                // 5SIM: [{code, name, iso}]
                 data.data.forEach(c => {
                     const code = c.code;
-                    countriesCache[code] = { name: c.name, iso: code.length === 2 ? code : '' };
+                    countriesCache[code] = { name: c.name, iso: c.iso || '' };
                     const opt  = document.createElement('option');
                     opt.value  = code;
                     opt.textContent = c.name;
