@@ -23,10 +23,21 @@ class RegisterController extends Controller
             'password'              => 'required|string|min:8|confirmed',
         ]);
 
+        $referrerId = null;
+        $referralCode = session('referral_code');
+        if ($referralCode) {
+            $referrerProfile = \App\Models\Profile::where('referral_code', $referralCode)->first();
+            if ($referrerProfile) {
+                $referrerId = $referrerProfile->user_id;
+            }
+        }
+
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
+            'name'                => $request->name,
+            'email'               => $request->email,
+            'password'            => Hash::make($request->password),
+            'email_notifications' => true,
+            'referred_by'         => $referrerId,
         ]);
 
         Profile::create([
@@ -35,11 +46,43 @@ class RegisterController extends Controller
             'referral_code' => strtoupper(Str::random(8)),
         ]);
 
-        Wallet::create(['user_id' => $user->id, 'balance' => 0]);
+        $wallet = Wallet::create(['user_id' => $user->id, 'balance' => 0]);
+
+        $bonusAmount = (float) \App\Models\Setting::get('referral_bonus', '0');
+
+        if ($referrerId && $bonusAmount > 0) {
+            $referrerWallet = \App\Models\Wallet::firstOrCreate(
+                ['user_id' => $referrerId],
+                ['balance' => 0]
+            );
+            $referrerWallet->increment('balance', $bonusAmount);
+
+            \App\Models\WalletTransaction::create([
+                'user_id'     => $referrerId,
+                'amount'      => $bonusAmount,
+                'type'        => 'referral_bonus',
+                'reference'   => 'REF-' . $user->id,
+                'description' => 'Referral bonus: ' . $request->name . ' joined using your link',
+            ]);
+
+            \App\Models\Notification::create([
+                'user_id' => $referrerId,
+                'title'   => 'Referral Bonus Earned!',
+                'message' => $request->name . ' joined using your referral link. $' . number_format($bonusAmount, 2) . ' has been added to your wallet.',
+                'type'    => 'success',
+            ]);
+        }
+
+        session()->forget('referral_code');
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard.index')->with('success', 'Welcome to BluesMarketplace!');
+        $welcomeMsg = 'Welcome to BluesMarketplace!';
+        if ($referrerId) {
+            $welcomeMsg = 'Welcome! You joined via a referral link.';
+        }
+
+        return redirect()->route('dashboard.index')->with('success', $welcomeMsg);
     }
 }

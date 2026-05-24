@@ -78,6 +78,11 @@
                     <label class="block text-xs text-slate-400 mb-1.5">Max Deposit (₦)</label>
                     <input type="number" name="max_deposit" value="{{ $settings['max_deposit'] }}" min="1" placeholder="1000000">
                 </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">Referral Bonus ($)</label>
+                    <input type="number" name="referral_bonus" value="{{ $settings['referral_bonus'] }}" min="0" step="0.01" placeholder="0">
+                    <p class="text-xs text-slate-600 mt-1">Wallet credit for referrer when a friend registers. Set 0 to disable.</p>
+                </div>
             </div>
             <div class="pt-2 border-t border-slate-700">
                 <label class="flex items-center gap-3 cursor-pointer">

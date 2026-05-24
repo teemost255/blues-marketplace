@@ -46,7 +46,7 @@ class AnnouncementsController extends Controller
             $fromName    = Setting::get('mail_from_name', $siteName);
             $subject     = "[{$siteName}] " . $request->title;
 
-            foreach ($users as $user) {
+            foreach ($users->where('email_notifications', true) as $user) {
                 try {
                     $html = view('emails.announcement', [
                         'user'     => $user,

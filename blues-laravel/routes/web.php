@@ -23,6 +23,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\PagesController;
+use App\Http\Controllers\ReferralController;
 
 // User dashboard imports
 use App\Http\Controllers\User\DashboardController;
@@ -39,6 +40,7 @@ use App\Http\Controllers\User\VirtualNumberController;
 Route::post('/paystack/webhook', [WalletController::class, 'webhook'])->name('paystack.webhook')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::get('/',          [HomeController::class,        'index'])->name('home');
+Route::get('/r/{code}',  [ReferralController::class,    'handle'])->name('referral');
 Route::get('/terms',     [PagesController::class,       'terms'])->name('terms');
 Route::get('/privacy',   [PagesController::class,       'privacy'])->name('privacy');
 
@@ -76,6 +78,7 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::post('/support',     [SupportController::class,      'store'])->name('support.store');
     Route::get('/profile',      [ProfileController::class,      'index'])->name('profile');
     Route::post('/profile',     [ProfileController::class,      'update'])->name('profile.update');
+    Route::post('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications');
 
     Route::get('/virtual-numbers',                  [VirtualNumberController::class, 'index'])->name('virtual-numbers');
     Route::post('/virtual-numbers/order',           [VirtualNumberController::class, 'order'])->name('virtual-numbers.order');

@@ -31,6 +31,7 @@ class SettingsController extends Controller
             'mail_encryption'          => Setting::get('mail_encryption', 'tls'),
             'mail_from_address'        => Setting::get('mail_from_address', ''),
             'mail_from_name'           => Setting::get('mail_from_name', 'Blues Marketplace'),
+            'referral_bonus'           => Setting::get('referral_bonus', '0'),
         ];
         return view('admin.settings', compact('settings'));
     }
@@ -57,6 +58,7 @@ class SettingsController extends Controller
             'mail_encryption'         => 'nullable|string|in:tls,ssl,',
             'mail_from_address'       => 'nullable|email',
             'mail_from_name'          => 'nullable|string|max:100',
+            'referral_bonus'          => 'nullable|numeric|min:0',
         ]);
 
         $keys = [
@@ -65,6 +67,7 @@ class SettingsController extends Controller
             'logsplug_api_key', 'logsplug_api_url', 'whatsapp_number',
             'mail_mailer', 'mail_host', 'mail_port', 'mail_username',
             'mail_password', 'mail_encryption', 'mail_from_address', 'mail_from_name',
+            'referral_bonus',
         ];
 
         foreach ($keys as $key) {

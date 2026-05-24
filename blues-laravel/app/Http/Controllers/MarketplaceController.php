@@ -94,6 +94,30 @@ class MarketplaceController extends Controller
             'type'    => 'success',
         ]);
 
+        if ($user->email_notifications) {
+            try {
+                $siteName    = \App\Models\Setting::get('site_name', 'Blues Marketplace');
+                $fromAddress = \App\Models\Setting::get('mail_from_address', config('mail.from.address'));
+                $fromName    = \App\Models\Setting::get('mail_from_name', $siteName);
+
+                if (\App\Models\Setting::get('mail_host', '') !== '' && \App\Models\Setting::get('mail_mailer', 'log') !== 'log') {
+                    $html = view('emails.purchase-confirmation', [
+                        'user'        => $user,
+                        'listing'     => $listing,
+                        'purchase'    => $purchase,
+                        'hasDetails'  => $hasDetails,
+                        'siteName'    => $siteName,
+                    ])->render();
+
+                    \Illuminate\Support\Facades\Mail::html($html, function ($msg) use ($user, $siteName, $fromAddress, $fromName) {
+                        $msg->to($user->email, $user->name)
+                            ->from($fromAddress, $fromName)
+                            ->subject("[{$siteName}] Purchase Confirmed — Check Your Orders");
+                    });
+                }
+            } catch (\Throwable) {}
+        }
+
         return redirect()->route('dashboard.orders')->with('success',
             $hasDetails
                 ? 'Purchase successful! Your login details are shown below.'

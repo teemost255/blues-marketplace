@@ -299,6 +299,60 @@
 @endif
 
 {{-- ═══════════════════════════════════════════════════════
+     LATEST ARRIVALS
+═══════════════════════════════════════════════════════ --}}
+@if(isset($latestListings) && $latestListings->isNotEmpty())
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    <div class="flex items-end justify-between mb-8 reveal">
+        <div>
+            <span class="text-xs font-bold text-green-400 uppercase tracking-widest">Just Added</span>
+            <h2 class="text-3xl font-bold text-white mt-1">Latest Arrivals</h2>
+        </div>
+        <a href="{{ route('marketplace') }}?sort=latest" class="group flex items-center gap-1 text-green-400 hover:text-green-300 text-sm font-semibold transition-colors">
+            See all new
+            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </a>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        @foreach($latestListings as $i => $listing)
+        <a href="{{ route('marketplace.show', $listing->id) }}"
+           class="bg-slate-800 border border-slate-700 hover:border-green-500/40 rounded-2xl p-4 flex items-center gap-4 group transition-all hover:-translate-y-0.5 reveal"
+           style="transition-delay:{{ $i * 60 }}ms">
+            {{-- Icon / thumb --}}
+            <div class="w-14 h-14 rounded-xl flex-shrink-0 overflow-hidden
+                @php
+                    $latCatGrads = ['Facebook'=>'from-blue-600/40 to-blue-900/40','Instagram'=>'from-pink-600/40 to-purple-900/40','TikTok'=>'from-purple-600/40 to-black/60','2nd Numbers'=>'from-emerald-600/40 to-teal-900/40'];
+                    echo 'bg-gradient-to-br '.($latCatGrads[$listing->category] ?? 'from-brand/30 to-slate-700');
+                @endphp flex items-center justify-center relative">
+                @if($listing->image_url)
+                    <img src="{{ $listing->image_url }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
+                @else
+                    <svg class="w-7 h-7 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                @endif
+            </div>
+            <div class="flex-1 min-w-0">
+                @if($listing->category)
+                <span class="text-[10px] text-green-400 font-bold uppercase tracking-wider">{{ $listing->category }}</span>
+                @endif
+                <h3 class="font-semibold text-white text-sm mt-0.5 truncate group-hover:text-green-300 transition-colors">{{ $listing->title }}</h3>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-white font-extrabold text-base">${{ number_format($listing->price, 2) }}</span>
+                    <span class="text-slate-500 text-xs">·</span>
+                    <span class="text-slate-400 text-xs">{{ $listing->stock }} in stock</span>
+                </div>
+            </div>
+            <div class="flex-shrink-0">
+                <span class="bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold px-3 py-1.5 rounded-lg group-hover:bg-green-500 group-hover:text-white group-hover:border-green-500 transition-all">
+                    Buy
+                </span>
+            </div>
+        </a>
+        @endforeach
+    </div>
+</section>
+@endif
+
+{{-- ═══════════════════════════════════════════════════════
      WHY BLUESMARKETPLACE
 ═══════════════════════════════════════════════════════ --}}
 <section class="relative overflow-hidden py-20 bg-slate-800/40 border-y border-slate-700/50">
@@ -643,6 +697,37 @@
 </section>
 
 {{-- ═══════════════════════════════════════════════════════
+     REFERRAL CTA (logged-in users)
+═══════════════════════════════════════════════════════ --}}
+@auth
+@php $homeProfile = Auth::user()->profile; @endphp
+@if($homeProfile && $homeProfile->referral_code)
+<section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 reveal">
+    <div class="relative overflow-hidden bg-gradient-to-r from-brand/15 via-purple-500/10 to-pink-500/10 border border-brand/25 rounded-2xl p-8">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_right,rgba(99,102,241,0.15),transparent_60%)]"></div>
+        <div class="relative flex flex-col md:flex-row items-center gap-6">
+            <div class="flex-1 text-center md:text-left">
+                <span class="text-xs font-bold text-brand uppercase tracking-widest">Referral Program</span>
+                <h2 class="text-2xl font-bold text-white mt-2 mb-2">Earn by Sharing BluesMarket</h2>
+                <p class="text-slate-400 text-sm max-w-md">Share your unique referral link. When a friend joins, you earn a wallet bonus — automatically.</p>
+            </div>
+            <div class="flex-shrink-0 text-center">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Your Referral Code</p>
+                <code class="block text-2xl font-black font-mono text-brand tracking-widest mb-4">{{ $homeProfile->referral_code }}</code>
+                <button onclick="copyHomeRef('{{ url('/r/'.$homeProfile->referral_code) }}')" id="home-ref-btn"
+                    class="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                    Copy My Referral Link
+                </button>
+                <a href="{{ route('dashboard.profile') }}" class="block text-xs text-slate-500 hover:text-brand mt-2 transition-colors">View referral stats →</a>
+            </div>
+        </div>
+    </div>
+</section>
+@endif
+@endauth
+
+{{-- ═══════════════════════════════════════════════════════
      LIVE ACTIVITY (if data exists)
 ═══════════════════════════════════════════════════════ --}}
 @if($recentActivity->isNotEmpty())
@@ -800,6 +885,18 @@ function toggleFaq(i) {
   document.querySelectorAll('.faq-body').forEach(b => b.classList.remove('open'));
   document.querySelectorAll('[id^="faq-icon-"]').forEach(ic => ic.style.transform = '');
   if (!open) { body.classList.add('open'); icon.style.transform = 'rotate(180deg)'; }
+}
+
+/* ─── Referral copy ───────────────────────────────────── */
+function copyHomeRef(url) {
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('home-ref-btn');
+    if (!btn) return;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!';
+    btn.classList.add('bg-green-600'); btn.classList.remove('bg-brand','hover:bg-brand-dark');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('bg-green-600'); btn.classList.add('bg-brand','hover:bg-brand-dark'); }, 2500);
+  });
 }
 
 /* ─── Live activity toasts ────────────────────────────── */

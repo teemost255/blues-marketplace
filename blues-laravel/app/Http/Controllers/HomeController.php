@@ -26,6 +26,7 @@ class HomeController extends Controller
             'sales'      => Purchase::where('status', 'completed')->count(),
             'categories' => ListingCategory::count(),
         ];
-        return view('home.index', compact('categories', 'featuredListings', 'stats', 'recentActivity'));
+        $latestListings = Listing::where('is_active', true)->where('stock', '>', 0)->latest()->limit(6)->get();
+        return view('home.index', compact('categories', 'featuredListings', 'latestListings', 'stats', 'recentActivity'));
     }
 }
