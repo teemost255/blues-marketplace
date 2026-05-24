@@ -129,7 +129,7 @@
 
         {{-- CTAs --}}
         <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12" style="animation:slide-up .7s ease .3s both">
-            <a href="{{ route('marketplace') }}" class="group relative inline-flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-xl text-base overflow-hidden">
+            <a href="{{ route('dashboard.marketplace') }}" class="group relative inline-flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-xl text-base overflow-hidden">
                 <span class="absolute inset-0 grad-bg opacity-90 group-hover:opacity-100 transition-opacity"></span>
                 <span class="relative flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -225,7 +225,7 @@
         @endphp
         @foreach($categories as $i => $cat)
         @php $d = $catData[$cat->name] ?? ['cls'=>'other','border'=>'border-slate-600','ring'=>'ring-brand/40','icon_bg'=>'bg-brand/10','label_color'=>'text-brand','desc'=>'Digital accounts','path'=>'M4 6h16M4 12h16M4 18h16']; @endphp
-        <a href="{{ route('marketplace') }}?category={{ urlencode($cat->name) }}"
+        <a href="{{ route('dashboard.marketplace') }}?category={{ urlencode($cat->name) }}"
            class="cat-card {{ $d['cls'] }} relative bg-slate-800/80 border {{ $d['border'] }} hover:ring-2 {{ $d['ring'] }} rounded-2xl p-6 flex flex-col items-center gap-3 overflow-hidden reveal"
            style="transition-delay:{{ $i * 80 }}ms">
             {{-- Glow bg --}}
@@ -254,7 +254,7 @@
             <span class="text-xs font-bold text-brand uppercase tracking-widest">Hand-Picked</span>
             <h2 class="text-3xl font-bold text-white mt-1">Featured Listings</h2>
         </div>
-        <a href="{{ route('marketplace') }}" class="group flex items-center gap-1 text-brand hover:text-sky-300 text-sm font-semibold transition-colors">
+        <a href="{{ route('dashboard.marketplace') }}" class="group flex items-center gap-1 text-brand hover:text-sky-300 text-sm font-semibold transition-colors">
             View all
             <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>
@@ -262,7 +262,7 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="listings-grid">
         @foreach($featuredListings as $i => $listing)
-        <a href="{{ route('marketplace.show', $listing->id) }}"
+        <a href="{{ route('dashboard.marketplace.show', $listing->id) }}"
            class="listing-card bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden group flex flex-col reveal"
            style="transition-delay:{{ $i * 70 }}ms">
             {{-- Thumbnail --}}
@@ -339,14 +339,14 @@
             <span class="text-xs font-bold text-green-400 uppercase tracking-widest">Just Added</span>
             <h2 class="text-3xl font-bold text-white mt-1">Latest Arrivals</h2>
         </div>
-        <a href="{{ route('marketplace') }}?sort=latest" class="group flex items-center gap-1 text-green-400 hover:text-green-300 text-sm font-semibold transition-colors">
+        <a href="{{ route('dashboard.marketplace') }}?sort=latest" class="group flex items-center gap-1 text-green-400 hover:text-green-300 text-sm font-semibold transition-colors">
             See all new
             <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         @foreach($latestListings as $i => $listing)
-        <a href="{{ route('marketplace.show', $listing->id) }}"
+        <a href="{{ route('dashboard.marketplace.show', $listing->id) }}"
            class="bg-slate-800 border border-slate-700 hover:border-green-500/40 rounded-2xl p-4 flex items-center gap-4 group transition-all hover:-translate-y-0.5 reveal"
            style="transition-delay:{{ $i * 60 }}ms">
             {{-- Icon / thumb --}}
@@ -458,7 +458,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>
         @else
-        <a href="{{ route('marketplace') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-bold px-8 py-3.5 rounded-xl text-sm transition-colors">
+        <a href="{{ route('dashboard.marketplace') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-bold px-8 py-3.5 rounded-xl text-sm transition-colors">
             Browse Listings
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>
@@ -563,7 +563,7 @@
                     </div>
                     @endforeach
                 </div>
-                <a href="{{ route('marketplace') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors">
+                <a href="{{ route('dashboard.marketplace') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors">
                     Open Marketplace
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                 </a>
@@ -811,7 +811,7 @@
                 <span class="relative">Create Free Account</span>
                 <svg class="relative w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
-            <a href="{{ route('marketplace') }}" class="inline-flex items-center justify-center gap-2 border border-slate-600 hover:border-brand bg-slate-800/60 text-slate-300 hover:text-white font-bold px-10 py-4 rounded-xl text-base transition-all">
+            <a href="{{ route('dashboard.marketplace') }}" class="inline-flex items-center justify-center gap-2 border border-slate-600 hover:border-brand bg-slate-800/60 text-slate-300 hover:text-white font-bold px-10 py-4 rounded-xl text-base transition-all">
                 Browse First
             </a>
         </div>
@@ -819,7 +819,7 @@
         <span class="text-xs font-bold text-brand uppercase tracking-widest">You're In</span>
         <h2 class="text-4xl font-extrabold text-white mt-3 mb-4">What Will You Buy Next?</h2>
         <p class="text-slate-400 mb-8">Hundreds of verified accounts waiting in the marketplace.</p>
-        <a href="{{ route('marketplace') }}" class="group relative inline-flex items-center justify-center gap-2 text-white font-bold px-10 py-4 rounded-xl text-base overflow-hidden">
+        <a href="{{ route('dashboard.marketplace') }}" class="group relative inline-flex items-center justify-center gap-2 text-white font-bold px-10 py-4 rounded-xl text-base overflow-hidden">
             <span class="absolute inset-0 grad-bg"></span>
             <span class="relative">Browse Marketplace</span>
             <svg class="relative w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>

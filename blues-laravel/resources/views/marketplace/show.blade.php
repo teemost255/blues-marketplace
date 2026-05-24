@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.dashboard')
 @section('title', $listing->title)
 
 @section('content')
@@ -6,10 +6,10 @@
 
     {{-- Breadcrumb --}}
     <nav class="flex items-center gap-2 text-sm text-slate-400 mb-8">
-        <a href="{{ route('marketplace') }}" class="hover:text-white">Marketplace</a>
+        <a href="{{ route('dashboard.marketplace') }}" class="hover:text-white">Marketplace</a>
         <span>/</span>
         @if($listing->category)
-            <a href="{{ route('marketplace') }}?category={{ urlencode($listing->category) }}" class="hover:text-white">{{ $listing->category }}</a>
+            <a href="{{ route('dashboard.marketplace') }}?category={{ urlencode($listing->category) }}" class="hover:text-white">{{ $listing->category }}</a>
             <span>/</span>
         @endif
         <span class="text-slate-200 truncate">{{ $listing->title }}</span>
@@ -53,7 +53,7 @@
 
             @auth
                 @if($listing->stock > 0)
-                    <form method="POST" action="{{ route('marketplace.buy', $listing->id) }}" class="mb-3">
+                    <form method="POST" action="{{ route('dashboard.marketplace.buy', $listing->id) }}" class="mb-3">
                         @csrf
                         <button type="submit" class="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl text-base transition-colors">
                             Buy Now — ₦{{ number_format($listing->price, 2) }}
@@ -162,7 +162,7 @@
         <h2 class="text-xl font-bold text-white mb-5">Related Listings</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             @foreach($related as $item)
-            <a href="{{ route('marketplace.show', $item->id) }}" class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:border-brand/50 transition-all group">
+            <a href="{{ route('dashboard.marketplace.show', $item->id) }}" class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:border-brand/50 transition-all group">
                 <div class="h-28 bg-slate-700 flex items-center justify-center overflow-hidden">
                     @if($item->image_url)
                         <img src="{{ $item->image_url }}" alt="{{ $item->title }}" class="w-full h-full object-cover">

@@ -78,7 +78,7 @@
                 <tr><td colspan="7" class="px-6 py-16 text-center text-slate-500">
                     <svg class="w-10 h-10 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                     <p class="font-medium">No orders yet.</p>
-                    <a href="{{ route('marketplace') }}" class="text-brand hover:underline text-sm mt-1 inline-block">Browse the marketplace →</a>
+                    <a href="{{ route('dashboard.marketplace') }}" class="text-brand hover:underline text-sm mt-1 inline-block">Browse the marketplace →</a>
                 </td></tr>
             @endforelse
             </tbody>

@@ -32,10 +32,18 @@ class LogsplugService
                 return ['success' => true, 'data' => $response->json()];
             }
 
-            return ['success' => false, 'message' => $response->json('message') ?? 'Request failed (' . $response->status() . ')'];
+            $status = $response->status();
+            if ($status >= 500) {
+                return ['success' => false, 'message' => 'The virtual number service is temporarily unavailable. Please try again later.'];
+            }
+            if ($status === 401 || $status === 403) {
+                return ['success' => false, 'message' => 'Invalid API key. Please check your Logsplug API key in admin settings.'];
+            }
+
+            return ['success' => false, 'message' => $response->json('message') ?? 'Request failed (' . $status . ')'];
         } catch (\Exception $e) {
             Log::error('LogsplugService GET error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Service unavailable. Please try again.'];
+            return ['success' => false, 'message' => 'Could not reach the virtual number service. Please check your connection and try again.'];
         }
     }
 
@@ -50,10 +58,18 @@ class LogsplugService
                 return ['success' => true, 'data' => $response->json()];
             }
 
-            return ['success' => false, 'message' => $response->json('message') ?? 'Request failed (' . $response->status() . ')'];
+            $status = $response->status();
+            if ($status >= 500) {
+                return ['success' => false, 'message' => 'The virtual number service is temporarily unavailable. Please try again later.'];
+            }
+            if ($status === 401 || $status === 403) {
+                return ['success' => false, 'message' => 'Invalid API key. Please check your Logsplug API key in admin settings.'];
+            }
+
+            return ['success' => false, 'message' => $response->json('message') ?? 'Request failed (' . $status . ')'];
         } catch (\Exception $e) {
             Log::error('LogsplugService POST error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Service unavailable. Please try again.'];
+            return ['success' => false, 'message' => 'Could not reach the virtual number service. Please check your connection and try again.'];
         }
     }
 

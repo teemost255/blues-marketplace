@@ -44,7 +44,7 @@
 
             {{-- Nav links --}}
             <nav class="hidden md:flex items-center gap-6">
-                <a href="{{ route('marketplace') }}" class="nav-link {{ request()->routeIs('marketplace*') ? 'text-white' : '' }}">Marketplace</a>
+                <a href="{{ route('dashboard.marketplace') }}" class="nav-link {{ request()->routeIs('marketplace*') ? 'text-white' : '' }}">Marketplace</a>
                 <a href="{{ route('terms') }}" class="nav-link">Terms</a>
                 <a href="{{ route('privacy') }}" class="nav-link">Privacy</a>
             </nav>
@@ -102,10 +102,10 @@
             <div>
                 <h4 class="text-white font-semibold text-sm mb-3">Marketplace</h4>
                 <ul class="space-y-2 text-sm text-slate-400">
-                    <li><a href="{{ route('marketplace') }}?category=Facebook" class="hover:text-white transition-colors">Facebook Accounts</a></li>
-                    <li><a href="{{ route('marketplace') }}?category=Instagram" class="hover:text-white transition-colors">Instagram Accounts</a></li>
-                    <li><a href="{{ route('marketplace') }}?category=TikTok" class="hover:text-white transition-colors">TikTok Accounts</a></li>
-                    <li><a href="{{ route('marketplace') }}?category=2nd+Numbers" class="hover:text-white transition-colors">2nd Numbers</a></li>
+                    <li><a href="{{ route('dashboard.marketplace') }}?category=Facebook" class="hover:text-white transition-colors">Facebook Accounts</a></li>
+                    <li><a href="{{ route('dashboard.marketplace') }}?category=Instagram" class="hover:text-white transition-colors">Instagram Accounts</a></li>
+                    <li><a href="{{ route('dashboard.marketplace') }}?category=TikTok" class="hover:text-white transition-colors">TikTok Accounts</a></li>
+                    <li><a href="{{ route('dashboard.marketplace') }}?category=2nd+Numbers" class="hover:text-white transition-colors">2nd Numbers</a></li>
                 </ul>
             </div>
             <div>

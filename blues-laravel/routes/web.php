@@ -48,10 +48,6 @@ Route::get('/r/{code}',  [ReferralController::class,    'handle'])->name('referr
 Route::get('/terms',     [PagesController::class,       'terms'])->name('terms');
 Route::get('/privacy',   [PagesController::class,       'privacy'])->name('privacy');
 
-// Marketplace
-Route::get('/marketplace',          [MarketplaceController::class, 'index'])->name('marketplace');
-Route::get('/marketplace/{id}',     [MarketplaceController::class, 'show'])->name('marketplace.show');
-Route::post('/marketplace/{id}/buy',[MarketplaceController::class, 'buy'])->name('marketplace.buy')->middleware(\App\Http\Middleware\UserAuth::class);
 
 // ── User Auth ─────────────────────────────────────────────────────────────────
 Route::get('/login',    [LoginController::class,    'show'])->name('login');
@@ -86,6 +82,11 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::post('/orders/{purchase}/review', [ReviewController::class, 'store'])->name('orders.review');
 
     Route::get('/referrals',        [ReferralPageController::class,  'index'])->name('referrals');
+
+    // Marketplace (dashboard-only)
+    Route::get('/marketplace',           [MarketplaceController::class, 'index'])->name('marketplace');
+    Route::get('/marketplace/{id}',      [MarketplaceController::class, 'show'])->name('marketplace.show');
+    Route::post('/marketplace/{id}/buy', [MarketplaceController::class, 'buy'])->name('marketplace.buy');
 
     Route::get('/virtual-numbers',                  [VirtualNumberController::class, 'index'])->name('virtual-numbers');
     Route::get('/virtual-numbers/api/countries',    [VirtualNumberController::class, 'getCountries'])->name('virtual-numbers.countries');

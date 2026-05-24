@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.dashboard')
 @section('title', 'Marketplace')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="max-w-7xl mx-auto">
 
     {{-- Header --}}
     <div class="mb-8">
@@ -11,7 +11,7 @@
     </div>
 
     {{-- Filters --}}
-    <form method="GET" action="{{ route('marketplace') }}" class="flex flex-wrap gap-3 mb-8">
+    <form method="GET" action="{{ route('dashboard.marketplace') }}" class="flex flex-wrap gap-3 mb-8">
         <input type="text" name="search" value="{{ request('search') }}" placeholder="Search listings..."
             class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand w-full sm:w-64">
         <select name="category" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand">
@@ -42,7 +42,7 @@
         </div>
         <button type="submit" class="bg-brand hover:bg-brand-dark text-white font-medium px-5 py-2.5 rounded-lg text-sm transition-colors">Search</button>
         @if(request()->hasAny(['search','category','sort','min_price','max_price']))
-            <a href="{{ route('marketplace') }}" class="border border-slate-600 hover:border-slate-500 text-slate-400 hover:text-white font-medium px-5 py-2.5 rounded-lg text-sm transition-colors">Clear</a>
+            <a href="{{ route('dashboard.marketplace') }}" class="border border-slate-600 hover:border-slate-500 text-slate-400 hover:text-white font-medium px-5 py-2.5 rounded-lg text-sm transition-colors">Clear</a>
         @endif
     </form>
 
@@ -57,7 +57,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             @foreach($listings as $listing)
             <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:border-brand/50 transition-all group flex flex-col">
-                <a href="{{ route('marketplace.show', $listing->id) }}" class="block">
+                <a href="{{ route('dashboard.marketplace.show', $listing->id) }}" class="block">
                     <div class="h-36 bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center overflow-hidden">
                         @if($listing->image_url)
                             <img src="{{ $listing->image_url }}" alt="{{ $listing->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
@@ -70,7 +70,7 @@
                     @if($listing->category)
                         <span class="text-xs text-brand font-medium">{{ $listing->category }}</span>
                     @endif
-                    <a href="{{ route('marketplace.show', $listing->id) }}">
+                    <a href="{{ route('dashboard.marketplace.show', $listing->id) }}">
                         <h3 class="font-semibold text-white text-sm mt-1 mb-2 line-clamp-2 group-hover:text-brand transition-colors">{{ $listing->title }}</h3>
                     </a>
                     <div class="mt-auto flex items-center justify-between pt-3 border-t border-slate-700">
@@ -89,7 +89,7 @@
                                     </button>
                                 </form>
                             @endauth
-                            <a href="{{ route('marketplace.show', $listing->id) }}" class="bg-brand hover:bg-brand-dark text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Buy</a>
+                            <a href="{{ route('dashboard.marketplace.show', $listing->id) }}" class="bg-brand hover:bg-brand-dark text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Buy</a>
                         </div>
                     </div>
                 </div>
