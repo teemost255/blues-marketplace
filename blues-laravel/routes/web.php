@@ -145,6 +145,7 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::post('/settings/test-email',         [SettingsController::class,          'sendTestEmail'])->name('settings.test-email');
 
     Route::get('/virtual-numbers',                              [VirtualNumberOrdersController::class, 'index'])->name('virtual-numbers');
+    Route::get('/virtual-numbers/logsplug-balance',            [VirtualNumberOrdersController::class, 'logsplugBalance'])->name('virtual-numbers.logsplug-balance');
     Route::post('/virtual-numbers/{order}/status',             [VirtualNumberOrdersController::class, 'updateStatus'])->name('virtual-numbers.status');
     Route::delete('/virtual-numbers/{order}',                  [VirtualNumberOrdersController::class, 'destroy'])->name('virtual-numbers.destroy');
 

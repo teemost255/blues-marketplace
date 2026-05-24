@@ -18,7 +18,10 @@ class VirtualNumberController extends Controller
         $orders     = \App\Models\VirtualNumberOrder::where('user_id', auth()->id())->latest()->paginate(10);
         $wallet     = Wallet::firstOrCreate(['user_id' => auth()->id()], ['balance' => 0]);
 
-        return view('dashboard.virtual-numbers', compact('enabled', 'configured', 'orders', 'wallet'));
+        $commissionType  = Setting::get('vn_commission_type', 'flat');
+        $commissionValue = (float) Setting::get('vn_commission_value', '0');
+
+        return view('dashboard.virtual-numbers', compact('enabled', 'configured', 'orders', 'wallet', 'commissionType', 'commissionValue'));
     }
 
     public function getCountries(Request $request)
@@ -87,7 +90,11 @@ class VirtualNumberController extends Controller
         }
 
         $wallet = Wallet::firstOrCreate(['user_id' => auth()->id()], ['balance' => 0]);
-        $cost   = (float)($request->price ?? 0);
+        $apiCost        = (float)($request->price ?? 0);
+        $commType       = Setting::get('vn_commission_type', 'flat');
+        $commValue      = (float) Setting::get('vn_commission_value', '0');
+        $commission     = $commType === 'percent' ? round($apiCost * $commValue / 100, 2) : $commValue;
+        $cost           = round($apiCost + $commission, 2);
 
         if ($cost > 0 && $wallet->balance < $cost) {
             return back()->with('error', 'Insufficient wallet balance. Please top up your wallet.');
@@ -102,7 +109,7 @@ class VirtualNumberController extends Controller
         $data        = $rentResult['data']['data'] ?? $rentResult['data'];
         $serviceName = $request->service_name ?? $request->service_id;
 
-        DB::transaction(function () use ($data, $request, $cost, $wallet, $serviceName) {
+        DB::transaction(function () use ($data, $request, $apiCost, $commission, $cost, $wallet, $serviceName) {
             $order = \App\Models\VirtualNumberOrder::create([
                 'user_id'           => auth()->id(),
                 'external_order_id' => (string)($data['id'] ?? ''),
@@ -116,11 +123,15 @@ class VirtualNumberController extends Controller
 
             if ($cost > 0) {
                 $wallet->decrement('balance', $cost);
+                $desc = 'Virtual number: ' . $serviceName;
+                if ($commission > 0) {
+                    $desc .= ' (API: ₦' . number_format($apiCost, 2) . ' + fee: ₦' . number_format($commission, 2) . ')';
+                }
                 WalletTransaction::create([
                     'user_id'     => auth()->id(),
                     'type'        => 'withdrawal',
                     'amount'      => $cost,
-                    'description' => 'Virtual number: ' . $serviceName,
+                    'description' => $desc,
                     'reference'   => 'VN-' . $order->id . '-' . time(),
                 ]);
             }

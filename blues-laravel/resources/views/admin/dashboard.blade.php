@@ -3,7 +3,7 @@
 @section('page-title', 'Dashboard')
 @section('content')
 
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Users</p>
         <p class="text-3xl font-bold text-white mt-1">{{ number_format($stats['total_users']) }}</p>
@@ -26,6 +26,31 @@
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Revenue</p>
         <p class="text-3xl font-bold text-white mt-1">₦{{ number_format($stats['total_revenue'], 2) }}</p>
         <p class="text-xs text-slate-400 mt-2">Wallet vol: ₦{{ number_format($stats['wallet_volume'], 2) }}</p>
+    </div>
+</div>
+
+{{-- Logsplug API Balance Widget --}}
+<div class="mb-6">
+    <div id="logsplug-balance-card" class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-900/40 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            </div>
+            <div>
+                <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Logsplug API Wallet</p>
+                <p id="logsplug-balance-value" class="text-2xl font-bold text-white mt-0.5">
+                    <span class="inline-block w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin align-middle"></span>
+                </p>
+                <p id="logsplug-balance-note" class="text-xs text-slate-500 mt-0.5">Loading balance…</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('admin.settings') }}#virtual-numbers" class="text-xs text-purple-400 hover:underline">Configure →</a>
+            <button onclick="refreshLogsplugBalance()" id="logsplug-refresh-btn"
+                class="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors" title="Refresh">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+        </div>
     </div>
 </div>
 
@@ -109,6 +134,48 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+async function refreshLogsplugBalance() {
+    const valueEl = document.getElementById('logsplug-balance-value');
+    const noteEl  = document.getElementById('logsplug-balance-note');
+    const btn     = document.getElementById('logsplug-refresh-btn');
+
+    valueEl.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin align-middle"></span>';
+    noteEl.textContent = 'Loading balance…';
+    btn.disabled = true;
+
+    try {
+        const res  = await fetch('{{ route('admin.virtual-numbers.logsplug-balance') }}', {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await res.json();
+
+        if (data.success && data.balance !== null && data.balance !== undefined) {
+            const balance = parseFloat(data.balance);
+            valueEl.textContent = isNaN(balance) ? data.balance : balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const low = parseFloat('{{ \App\Models\Setting::get('low_balance_threshold', '5') }}');
+            if (!isNaN(balance) && balance <= low) {
+                noteEl.innerHTML = '<span class="text-red-400">⚠ Low balance — top up soon</span>';
+                document.getElementById('logsplug-balance-card').classList.add('border-red-700/50');
+            } else {
+                noteEl.textContent = 'Available in API wallet · updated just now';
+                document.getElementById('logsplug-balance-card').classList.remove('border-red-700/50');
+            }
+        } else {
+            valueEl.textContent = '—';
+            noteEl.textContent = data.message || 'Could not load balance.';
+        }
+    } catch (e) {
+        valueEl.textContent = '—';
+        noteEl.textContent = 'Network error. Try again.';
+    } finally {
+        btn.disabled = false;
+    }
+}
+refreshLogsplugBalance();
+</script>
 <script>
 const ctx = document.getElementById('revenueChart').getContext('2d');
 const labels = @json($chartLabels);

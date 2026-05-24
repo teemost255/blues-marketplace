@@ -40,6 +40,8 @@ class SettingsController extends Controller
             'promo_banner_text'        => Setting::get('promo_banner_text', ''),
             'promo_banner_color'       => Setting::get('promo_banner_color', 'brand'),
             'low_balance_threshold'    => Setting::get('low_balance_threshold', '5'),
+            'vn_commission_type'       => Setting::get('vn_commission_type', 'flat'),
+            'vn_commission_value'      => Setting::get('vn_commission_value', '0'),
         ];
         return view('admin.settings', compact('settings'));
     }
@@ -74,6 +76,8 @@ class SettingsController extends Controller
             'promo_banner_text'       => 'nullable|string|max:300',
             'promo_banner_color'      => 'nullable|string|in:brand,green,yellow,red,purple',
             'low_balance_threshold'   => 'nullable|numeric|min:0',
+            'vn_commission_type'      => 'nullable|in:flat,percent',
+            'vn_commission_value'     => 'nullable|numeric|min:0',
         ]);
 
         $keys = [
@@ -85,6 +89,7 @@ class SettingsController extends Controller
             'referral_bonus', 'referral_bonus_tier2', 'referral_bonus_tier3',
             'referral_bonus_tier2_threshold', 'referral_bonus_tier3_threshold',
             'promo_banner_text', 'promo_banner_color', 'low_balance_threshold',
+            'vn_commission_type', 'vn_commission_value',
         ];
         Setting::set('promo_banner_enabled', $request->boolean('promo_banner_enabled') ? '1' : '0');
 

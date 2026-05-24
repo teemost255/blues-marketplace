@@ -320,6 +320,8 @@ let allServices      = [];
 let walletBalance    = {{ $wallet->balance }};
 let pollInterval     = null;
 let countriesCache   = {};  // code → { name, flag }
+const COMM_TYPE      = '{{ $commissionType }}';
+const COMM_VALUE     = {{ $commissionValue }};
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
@@ -571,17 +573,36 @@ function openModalFromData(btn) {
     openModal(btn.dataset.id, btn.dataset.name, parseFloat(btn.dataset.price), btn.dataset.country, btn.dataset.code);
 }
 
+function calcCommission(price) {
+    if (COMM_VALUE <= 0) return 0;
+    return COMM_TYPE === 'percent' ? Math.round(price * COMM_VALUE / 100 * 100) / 100 : COMM_VALUE;
+}
+
 function openModal(serviceId, serviceName, price, country, countryCode) {
+    const commission = calcCommission(price);
+    const total      = Math.round((price + commission) * 100) / 100;
+
     document.getElementById('modal-svc-name').textContent = serviceName;
     document.getElementById('modal-country').textContent  = country;
-    document.getElementById('modal-price').textContent    = price > 0
-        ? '₦' + price.toLocaleString('en-NG', { minimumFractionDigits: 2 })
-        : 'Free';
+
+    // Build price display with breakdown if commission applies
+    const priceEl = document.getElementById('modal-price');
+    if (commission > 0 && price > 0) {
+        priceEl.innerHTML =
+            '<span class="text-lg font-bold text-white">₦' + total.toLocaleString('en-NG', { minimumFractionDigits: 2 }) + '</span>' +
+            '<div class="text-xs text-slate-400 mt-0.5">' +
+                '₦' + price.toLocaleString('en-NG', { minimumFractionDigits: 2 }) + ' API' +
+                ' + ₦' + commission.toLocaleString('en-NG', { minimumFractionDigits: 2 }) + ' fee' +
+            '</div>';
+    } else {
+        priceEl.textContent = price > 0 ? '₦' + total.toLocaleString('en-NG', { minimumFractionDigits: 2 }) : 'Free';
+    }
+
     document.getElementById('modal-balance').textContent  = '₦' + walletBalance.toLocaleString('en-NG', { minimumFractionDigits: 2 });
 
     const warn = document.getElementById('modal-warn');
     const btn  = document.getElementById('rent-confirm-btn');
-    if (price > walletBalance) {
+    if (total > walletBalance) {
         warn.classList.remove('hidden');
         btn.disabled = true;
         btn.classList.add('opacity-50','cursor-not-allowed');

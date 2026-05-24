@@ -227,7 +227,33 @@
                 </div>
                 <p class="text-xs text-slate-500 mt-1">Keep this secret. Used to authenticate all virtual number requests.</p>
             </div>
-            <div class="pt-2 border-t border-slate-700">
+            {{-- Commission --}}
+            <div class="pt-4 border-t border-slate-700" id="virtual-numbers">
+                <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Platform Commission</p>
+                <p class="text-xs text-slate-400 mb-4">Added on top of the API price and deducted from the user's wallet. The API is always charged its original rate from the API wallet.</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1.5">Commission Type</label>
+                        <select name="vn_commission_type" id="vn-commission-type"
+                            class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500">
+                            <option value="flat"    {{ $settings['vn_commission_type'] === 'flat'    ? 'selected' : '' }}>Flat amount (₦)</option>
+                            <option value="percent" {{ $settings['vn_commission_type'] === 'percent' ? 'selected' : '' }}>Percentage (%)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1.5" id="vn-comm-label">
+                            {{ $settings['vn_commission_type'] === 'percent' ? 'Commission (%)' : 'Commission (₦)' }}
+                        </label>
+                        <input type="number" name="vn_commission_value" id="vn-commission-value"
+                            value="{{ $settings['vn_commission_value'] }}"
+                            min="0" step="0.01"
+                            placeholder="{{ $settings['vn_commission_type'] === 'percent' ? 'e.g. 10' : 'e.g. 50' }}">
+                        <p class="text-xs text-slate-500 mt-1">Set to 0 to charge no commission.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-700">
                 <label class="flex items-center gap-3 cursor-pointer">
                     <div class="relative">
                         <input type="checkbox" name="virtual_number_enabled" value="1" id="vn-toggle"
@@ -418,6 +444,17 @@ function toggleMailPassword() {
 document.getElementById('vn-toggle').addEventListener('change', function() {
     document.getElementById('vn-toggle-bg').style.background = this.checked ? '#0ea5e9' : '#475569';
     document.getElementById('vn-toggle-dot').style.transform = this.checked ? 'translateX(1rem)' : 'translateX(0)';
+});
+document.getElementById('vn-commission-type').addEventListener('change', function() {
+    const label = document.getElementById('vn-comm-label');
+    const input = document.getElementById('vn-commission-value');
+    if (this.value === 'percent') {
+        label.textContent = 'Commission (%)';
+        input.placeholder = 'e.g. 10';
+    } else {
+        label.textContent = 'Commission (₦)';
+        input.placeholder = 'e.g. 50';
+    }
 });
 </script>
 @endsection

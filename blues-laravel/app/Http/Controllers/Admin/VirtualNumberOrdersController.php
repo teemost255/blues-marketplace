@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\VirtualNumberOrder;
+use App\Services\LogsplugService;
 use Illuminate\Http\Request;
 
 class VirtualNumberOrdersController extends Controller
@@ -50,5 +51,19 @@ class VirtualNumberOrdersController extends Controller
     {
         $order->delete();
         return back()->with('success', 'Order deleted.');
+    }
+
+    public function logsplugBalance()
+    {
+        $svc = new LogsplugService();
+        if (!$svc->isConfigured()) {
+            return response()->json(['success' => false, 'message' => 'API not configured.']);
+        }
+        $result = $svc->getBalance();
+        if ($result['success']) {
+            $balance = $result['data']['data']['balance'] ?? ($result['data']['balance'] ?? null);
+            return response()->json(['success' => true, 'balance' => $balance]);
+        }
+        return response()->json(['success' => false, 'message' => $result['message']]);
     }
 }
