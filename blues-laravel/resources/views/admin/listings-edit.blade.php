@@ -52,6 +52,14 @@
                     <label class="block text-xs text-slate-400 mb-1.5">Description</label>
                     <textarea name="description" rows="4">{{ old('description', $listing->description) }}</textarea>
                 </div>
+                <div class="col-span-2">
+                    <label class="block text-xs text-slate-400 mb-1.5">
+                        Login Details
+                        <span class="text-yellow-400 ml-1">🔐 Shown to buyer after purchase</span>
+                    </label>
+                    <textarea name="login_details" rows="5" style="font-family:monospace;font-size:0.75rem;" placeholder="Email: example@mail.com&#10;Password: MyP@ss123&#10;Recovery: backup@mail.com">{{ old('login_details', $listing->login_details) }}</textarea>
+                    <p class="text-xs text-slate-500 mt-1">Only the buyer can see this after a completed purchase.</p>
+                </div>
                 <div class="col-span-2 flex items-center gap-5">
                     <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
                         <input type="checkbox" name="is_active" value="1" {{ $listing->is_active ? 'checked' : '' }} class="w-4 h-4 rounded"> Active

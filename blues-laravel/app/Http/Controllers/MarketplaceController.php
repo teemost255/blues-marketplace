@@ -70,10 +70,11 @@ class MarketplaceController extends Controller
         $listing->decrement('stock');
 
         $purchase = Purchase::create([
-            'user_id'    => $user->id,
-            'listing_id' => $listing->id,
-            'amount'     => $listing->price,
-            'status'     => 'completed',
+            'user_id'       => $user->id,
+            'listing_id'    => $listing->id,
+            'amount'        => $listing->price,
+            'status'        => 'completed',
+            'delivery_data' => $listing->login_details ?: null,
         ]);
 
         WalletTransaction::create([
@@ -84,13 +85,19 @@ class MarketplaceController extends Controller
             'description' => 'Purchase: '.$listing->title,
         ]);
 
+        $hasDetails = !empty($listing->login_details);
         Notification::create([
             'user_id' => $user->id,
-            'title'   => 'Purchase Successful',
-            'message' => 'Your purchase of "'.$listing->title.'" was successful. Check your orders for delivery details.',
+            'title'   => 'Purchase Successful 🎉',
+            'message' => 'Your purchase of "'.$listing->title.'" was successful. '.
+                         ($hasDetails ? 'Your login details are ready — check My Orders.' : 'Check your orders for delivery details.'),
             'type'    => 'success',
         ]);
 
-        return redirect()->route('dashboard.orders')->with('success', 'Purchase successful! Check your orders for details.');
+        return redirect()->route('dashboard.orders')->with('success',
+            $hasDetails
+                ? 'Purchase successful! Your login details are shown below.'
+                : 'Purchase successful! Check your orders for details.'
+        );
     }
 }

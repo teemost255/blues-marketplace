@@ -30,7 +30,7 @@ class ListingsController extends Controller
             'category' => 'nullable|string|max:100',
         ]);
 
-        $data = $request->only('title', 'description', 'category', 'price', 'stock');
+        $data = $request->only('title', 'description', 'category', 'price', 'stock', 'login_details');
         $data['is_active'] = $request->boolean('is_active');
         $data['featured']  = $request->boolean('featured');
 
@@ -58,7 +58,7 @@ class ListingsController extends Controller
             'category' => 'nullable|string|max:100',
         ]);
 
-        $data = $request->only('title', 'description', 'category', 'price', 'stock');
+        $data = $request->only('title', 'description', 'category', 'price', 'stock', 'login_details');
         $data['is_active'] = $request->boolean('is_active');
         $data['featured']  = $request->boolean('featured');
 

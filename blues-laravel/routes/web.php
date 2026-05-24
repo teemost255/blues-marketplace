@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\TransactionsController;
 use App\Http\Controllers\Admin\TicketsController;
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\VirtualNumberOrdersController;
 
 // Public imports
 use App\Http\Controllers\Auth\LoginController;
@@ -124,6 +125,10 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::get('/tickets',                      [TicketsController::class,      'index'])->name('tickets');
     Route::post('/tickets/{ticket}/reply',      [TicketsController::class,      'reply'])->name('tickets.reply');
     Route::get('/audit',                        [AuditController::class,        'index'])->name('audit');
-    Route::get('/settings',                     [SettingsController::class,     'index'])->name('settings');
-    Route::post('/settings',                    [SettingsController::class,     'update'])->name('settings.update');
+    Route::get('/settings',                     [SettingsController::class,          'index'])->name('settings');
+    Route::post('/settings',                    [SettingsController::class,          'update'])->name('settings.update');
+
+    Route::get('/virtual-numbers',                              [VirtualNumberOrdersController::class, 'index'])->name('virtual-numbers');
+    Route::post('/virtual-numbers/{order}/status',             [VirtualNumberOrdersController::class, 'updateStatus'])->name('virtual-numbers.status');
+    Route::delete('/virtual-numbers/{order}',                  [VirtualNumberOrdersController::class, 'destroy'])->name('virtual-numbers.destroy');
 });

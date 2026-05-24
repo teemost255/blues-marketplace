@@ -140,6 +140,14 @@
                     <label class="block text-xs text-slate-400 mb-1.5">Description</label>
                     <textarea name="description" rows="3" placeholder="Describe this listing…"></textarea>
                 </div>
+                <div class="col-span-2">
+                    <label class="block text-xs text-slate-400 mb-1.5">
+                        Login Details
+                        <span class="text-yellow-400 ml-1">🔐 Shown to buyer after purchase</span>
+                    </label>
+                    <textarea name="login_details" rows="4" placeholder="Email: example@mail.com&#10;Password: MyP@ss123&#10;Recovery: backup@mail.com&#10;2FA: disabled&#10;&#10;Add any relevant account credentials here…" style="font-family:monospace;font-size:0.75rem;"></textarea>
+                    <p class="text-xs text-slate-500 mt-1">Only the buyer can see this. Keep it secure and accurate.</p>
+                </div>
                 <div class="col-span-2 flex items-center gap-5">
                     <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
                         <input type="checkbox" name="is_active" value="1" checked class="w-4 h-4 rounded"> Active

@@ -1,11 +1,12 @@
 @extends('layouts.dashboard')
 @section('title', 'My Orders')
 @section('page-title', 'My Orders')
-
 @section('content')
-<div class="bg-slate-800 border border-slate-700 rounded-xl">
-    <div class="px-6 py-4 border-b border-slate-700">
+
+<div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
         <h2 class="font-semibold text-white">Order History</h2>
+        <span class="text-xs text-slate-400">{{ $orders->total() }} total</span>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -15,29 +16,49 @@
                 <th class="px-6 py-3 text-left">Amount</th>
                 <th class="px-6 py-3 text-left">Status</th>
                 <th class="px-6 py-3 text-left">Date</th>
+                <th class="px-6 py-3 text-left">Login Details</th>
             </tr></thead>
             <tbody>
             @forelse($orders as $order)
-                <tr class="border-b border-slate-700/50">
-                    <td class="px-6 py-3">
+                <tr class="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
+                    <td class="px-6 py-4">
                         <p class="text-white font-medium">{{ $order->listing?->title ?? 'Deleted listing' }}</p>
-                        @if($order->status === 'completed' && $order->delivery_data)
-                            <p class="text-xs text-green-400 mt-0.5">{{ \Illuminate\Support\Str::limit($order->delivery_data, 60) }}</p>
-                        @endif
                     </td>
-                    <td class="px-6 py-3 text-slate-400">{{ $order->listing?->category ?? '—' }}</td>
-                    <td class="px-6 py-3 text-white font-semibold">${{ number_format($order->amount, 2) }}</td>
-                    <td class="px-6 py-3">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-medium
-                            {{ match($order->status) { 'completed'=>'bg-green-900/50 text-green-400', 'pending'=>'bg-yellow-900/50 text-yellow-400', 'refunded'=>'bg-blue-900/50 text-blue-400', default=>'bg-red-900/50 text-red-400' } }}">
+                    <td class="px-6 py-4 text-slate-400">{{ $order->listing?->category ?? '—' }}</td>
+                    <td class="px-6 py-4 text-white font-semibold">₦{{ number_format($order->amount, 2) }}</td>
+                    <td class="px-6 py-4">
+                        @php
+                            $badge = match($order->status) {
+                                'completed' => 'bg-green-900/50 text-green-400 border-green-700/50',
+                                'pending'   => 'bg-yellow-900/50 text-yellow-400 border-yellow-700/50',
+                                'refunded'  => 'bg-blue-900/50 text-blue-400 border-blue-700/50',
+                                default     => 'bg-red-900/50 text-red-400 border-red-700/50',
+                            };
+                        @endphp
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs border {{ $badge }}">
                             {{ ucfirst($order->status) }}
                         </span>
                     </td>
-                    <td class="px-6 py-3 text-slate-400">{{ $order->created_at->format('M j, Y') }}</td>
+                    <td class="px-6 py-4 text-slate-400 whitespace-nowrap">{{ $order->created_at->format('M j, Y') }}</td>
+                    <td class="px-6 py-4">
+                        @if($order->status === 'completed' && $order->delivery_data)
+                            <button onclick="openDetailsModal('details-{{ $order->id }}')"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-900/30 hover:bg-green-900/50 text-green-400 border border-green-700/40 rounded-lg text-xs font-medium transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                View Details
+                            </button>
+                        @elseif($order->status === 'completed')
+                            <span class="text-xs text-slate-500 italic">No details attached</span>
+                        @else
+                            <span class="text-xs text-slate-600">—</span>
+                        @endif
+                    </td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="px-6 py-12 text-center text-slate-500">
-                    No orders yet. <a href="{{ route('marketplace') }}" class="text-brand hover:underline">Browse the marketplace →</a>
+                <tr><td colspan="6" class="px-6 py-16 text-center text-slate-500">
+                    <svg class="w-10 h-10 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                    <p class="font-medium">No orders yet.</p>
+                    <a href="{{ route('marketplace') }}" class="text-brand hover:underline text-sm mt-1 inline-block">Browse the marketplace →</a>
                 </td></tr>
             @endforelse
             </tbody>
@@ -47,4 +68,84 @@
         <div class="px-6 py-4 border-t border-slate-700">{{ $orders->links() }}</div>
     @endif
 </div>
+
+{{-- Login Detail Modals --}}
+@foreach($orders as $order)
+    @if($order->status === 'completed' && $order->delivery_data)
+    <div id="details-{{ $order->id }}"
+         class="details-modal fixed inset-0 z-50 items-center justify-center p-4"
+         style="display:none; background:rgba(0,0,0,0.75);">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-green-900/50 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-white font-semibold text-sm">Login Details</p>
+                        <p class="text-xs text-slate-400">{{ $order->listing?->title ?? 'Order #'.$order->id }}</p>
+                    </div>
+                </div>
+                <button onclick="closeDetailsModal('details-{{ $order->id }}')" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+
+            <div class="mx-6 mt-4 px-4 py-3 bg-yellow-900/20 border border-yellow-700/30 rounded-lg flex gap-2 text-xs text-yellow-300">
+                <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                Keep these credentials private. Do not share with anyone.
+            </div>
+
+            <div class="px-6 py-4">
+                <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 relative">
+                    <pre id="creds-{{ $order->id }}" class="text-green-300 text-xs font-mono whitespace-pre-wrap break-all leading-relaxed">{{ $order->delivery_data }}</pre>
+                    <button onclick="copyDetails({{ $order->id }})"
+                        class="absolute top-3 right-3 flex items-center gap-1 text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded px-2 py-1 transition-colors"
+                        id="copy-btn-{{ $order->id }}">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        Copy
+                    </button>
+                </div>
+            </div>
+
+            <div class="px-6 pb-5 flex items-center justify-between">
+                <p class="text-xs text-slate-500">Purchased {{ $order->created_at->format('M j, Y') }}</p>
+                <button onclick="closeDetailsModal('details-{{ $order->id }}')"
+                    class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+@endforeach
+
+<script>
+function openDetailsModal(id) {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'flex'; }
+    document.body.style.overflow = 'hidden';
+}
+function closeDetailsModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+    document.body.style.overflow = '';
+}
+function copyDetails(orderId) {
+    const text = document.getElementById('creds-' + orderId)?.textContent ?? '';
+    const btn  = document.getElementById('copy-btn-' + orderId);
+    navigator.clipboard.writeText(text).then(() => {
+        if (btn) {
+            btn.textContent = '✓ Copied';
+            setTimeout(() => {
+                btn.innerHTML = '<svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>Copy';
+            }, 2000);
+        }
+    });
+}
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.details-modal').forEach(el => { el.style.display = 'none'; });
+        document.body.style.overflow = '';
+    }
+});
+</script>
 @endsection
