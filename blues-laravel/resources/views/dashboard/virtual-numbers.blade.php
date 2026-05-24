@@ -585,18 +585,8 @@ function openModal(serviceId, serviceName, price, country, countryCode) {
     document.getElementById('modal-svc-name').textContent = serviceName;
     document.getElementById('modal-country').textContent  = country;
 
-    // Build price display with breakdown if commission applies
     const priceEl = document.getElementById('modal-price');
-    if (commission > 0 && price > 0) {
-        priceEl.innerHTML =
-            '<span class="text-lg font-bold text-white">₦' + total.toLocaleString('en-NG', { minimumFractionDigits: 2 }) + '</span>' +
-            '<div class="text-xs text-slate-400 mt-0.5">' +
-                '₦' + price.toLocaleString('en-NG', { minimumFractionDigits: 2 }) + ' API' +
-                ' + ₦' + commission.toLocaleString('en-NG', { minimumFractionDigits: 2 }) + ' fee' +
-            '</div>';
-    } else {
-        priceEl.textContent = price > 0 ? '₦' + total.toLocaleString('en-NG', { minimumFractionDigits: 2 }) : 'Free';
-    }
+    priceEl.textContent = total > 0 ? '₦' + total.toLocaleString('en-NG', { minimumFractionDigits: 2 }) : 'Free';
 
     document.getElementById('modal-balance').textContent  = '₦' + walletBalance.toLocaleString('en-NG', { minimumFractionDigits: 2 });
 

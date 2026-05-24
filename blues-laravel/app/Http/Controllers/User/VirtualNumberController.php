@@ -124,9 +124,6 @@ class VirtualNumberController extends Controller
             if ($cost > 0) {
                 $wallet->decrement('balance', $cost);
                 $desc = 'Virtual number: ' . $serviceName;
-                if ($commission > 0) {
-                    $desc .= ' (API: ₦' . number_format($apiCost, 2) . ' + fee: ₦' . number_format($commission, 2) . ')';
-                }
                 WalletTransaction::create([
                     'user_id'     => auth()->id(),
                     'type'        => 'withdrawal',
