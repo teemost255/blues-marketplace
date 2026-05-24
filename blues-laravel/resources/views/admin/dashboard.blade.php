@@ -145,7 +145,7 @@ async function refreshLogsplugBalance() {
     btn.disabled = true;
 
     try {
-        const res  = await fetch('{{ route('admin.virtual-numbers.logsplug-balance') }}', {
+        const res  = await fetch('/admin/virtual-numbers/logsplug-balance', {
             credentials: 'same-origin',
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         });
