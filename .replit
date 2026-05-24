@@ -28,10 +28,6 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Adminer DB Admin"
-
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -44,18 +40,6 @@ task = "shell.exec"
 args = "cd blues-laravel && php artisan serve --host=0.0.0.0 --port=5000"
 waitForPort = 5000
 
-[[workflows.workflow]]
-name = "Adminer DB Admin"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash blues-laravel/backend/adminer/start.sh"
-waitForPort = 8080
-
-[workflows.workflow.metadata]
-outputType = "console"
-
 [[ports]]
 localPort = 3306
 externalPort = 3001
@@ -66,6 +50,6 @@ externalPort = 80
 
 [deployment]
 deploymentTarget = "vm"
-build = ["bash", "-c", "cd blues-laravel && composer install --no-dev --optimize-autoloader --no-interaction && npm install && npm run build && php artisan config:cache && php artisan route:cache && php artisan view:cache"]
+build = ["bash", "-c", "cd blues-laravel && composer install --no-dev --optimize-autoloader --no-interaction && npm install && npm run build"]
 publicDir = "dist/client"
-run = ["bash", "-c", "cd blues-laravel && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=5000"]
+run = ["bash", "-c", "cd blues-laravel && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=5000"]
