@@ -37,6 +37,7 @@ use App\Http\Controllers\User\NotificationsController;
 use App\Http\Controllers\User\SupportController;
 use App\Http\Controllers\User\ProfileController;
 use App\Http\Controllers\User\VirtualNumberController;
+use App\Http\Controllers\User\ReferralPageController;
 
 // ── Public ────────────────────────────────────────────────────────────────────
 // Paystack webhook (no CSRF)
@@ -83,6 +84,8 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::post('/profile',     [ProfileController::class,      'update'])->name('profile.update');
     Route::post('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications');
     Route::post('/orders/{purchase}/review', [ReviewController::class, 'store'])->name('orders.review');
+
+    Route::get('/referrals',        [ReferralPageController::class,  'index'])->name('referrals');
 
     Route::get('/virtual-numbers',                  [VirtualNumberController::class, 'index'])->name('virtual-numbers');
     Route::post('/virtual-numbers/order',           [VirtualNumberController::class, 'order'])->name('virtual-numbers.order');
