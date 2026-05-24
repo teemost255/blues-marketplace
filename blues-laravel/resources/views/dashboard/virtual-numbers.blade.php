@@ -44,6 +44,19 @@
 </div>
 @endif
 
+{{-- Build service price map for JS --}}
+@php
+$servicePriceMap = [];
+$serviceNameMap  = [];
+foreach ($services as $s) {
+    $sid = $s['serviceId'] ?? '';
+    $servicePriceMap[$sid] = $s['apiPrice'] ?? 0;
+    $serviceNameMap[$sid]  = $s['name'] ?? $sid;
+}
+$firstCountryId = !empty($countries) ? ($countries[0]['id'] ?? '') : '';
+$selectedCountry = request('country', (string)$firstCountryId);
+@endphp
+
 {{-- Order Form --}}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     <div class="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-xl p-6">
@@ -53,55 +66,60 @@
         </h3>
         <form method="POST" action="{{ route('dashboard.virtual-numbers.order') }}" id="order-form">
             @csrf
+            <input type="hidden" name="server" value="server2">
+            <input type="hidden" name="price" id="price-input" value="0">
+            <input type="hidden" name="service_name" id="service-name-input" value="">
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                @if(!empty($countries))
                 <div>
                     <label class="block text-xs text-slate-400 mb-1.5">Country</label>
                     <select name="country" id="country-select"
                         class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand"
                         onchange="this.form.submit()">
-                        @forelse($countries as $c)
+                        @foreach($countries as $c)
                             @php
-                                $code = $c['code'] ?? $c['iso'] ?? $c['id'] ?? '';
-                                $name = $c['name'] ?? $c['title'] ?? $code;
+                                $cid  = $c['id'] ?? '';
+                                $name = $c['name'] ?? $cid;
                             @endphp
-                            <option value="{{ $code }}" {{ request('country', 'ng') === $code ? 'selected' : '' }}>
+                            <option value="{{ $cid }}" {{ (string)$selectedCountry === (string)$cid ? 'selected' : '' }}>
                                 {{ $name }}
                             </option>
-                        @empty
-                            <option value="ng">Nigeria</option>
-                            <option value="us">United States</option>
-                            <option value="gb">United Kingdom</option>
-                            <option value="in">India</option>
-                        @endforelse
+                        @endforeach
                     </select>
                 </div>
+                @endif
+
                 <div>
                     <label class="block text-xs text-slate-400 mb-1.5">Service / App</label>
-                    <select name="service" id="service-select"
-                        class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand">
+                    <select name="service_id" id="service-select"
+                        class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand"
+                        onchange="updateServiceMeta(this)">
                         @forelse($services as $s)
                             @php
-                                $id   = $s['id'] ?? $s['code'] ?? $s['slug'] ?? '';
-                                $name = $s['name'] ?? $s['title'] ?? $id;
-                                $price = isset($s['price']) ? '₦' . number_format($s['price'], 2) : '';
+                                $sid   = $s['serviceId'] ?? '';
+                                $sname = $s['name'] ?? $sid;
+                                $price = isset($s['apiPrice']) ? '₦' . number_format($s['apiPrice'], 2) : '';
                             @endphp
-                            <option value="{{ $id }}">{{ $name }}{{ $price ? ' — ' . $price : '' }}</option>
+                            <option value="{{ $sid }}"
+                                data-price="{{ $s['apiPrice'] ?? 0 }}"
+                                data-name="{{ $sname }}">
+                                {{ $sname }}{{ $price ? ' — ' . $price : '' }}
+                            </option>
                         @empty
-                            <option value="whatsapp">WhatsApp</option>
-                            <option value="telegram">Telegram</option>
-                            <option value="facebook">Facebook</option>
-                            <option value="instagram">Instagram</option>
-                            <option value="tiktok">TikTok</option>
-                            <option value="twitter">Twitter / X</option>
-                            <option value="google">Google</option>
+                            <option value="">No services available for this country</option>
                         @endforelse
                     </select>
                 </div>
             </div>
 
-            <div class="p-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-sm text-slate-300 mb-4">
-                <svg class="w-4 h-4 inline text-brand mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                The cost will be deducted from your wallet. Numbers are valid for a limited time to receive one SMS code.
+            {{-- Price preview --}}
+            <div class="p-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-sm text-slate-300 mb-4 flex items-center justify-between">
+                <span>
+                    <svg class="w-4 h-4 inline text-brand mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Cost deducted from wallet. Numbers are valid for a limited time to receive one SMS code.
+                </span>
+                <span id="cost-preview" class="font-semibold text-white ml-4 whitespace-nowrap"></span>
             </div>
 
             <button type="submit" id="order-btn"
@@ -120,7 +138,7 @@
                 ['icon' => '1', 'title' => 'Select service', 'desc' => 'Choose the app you need the number for and your preferred country.'],
                 ['icon' => '2', 'title' => 'Get number', 'desc' => 'A virtual number is assigned and the cost is deducted from your wallet.'],
                 ['icon' => '3', 'title' => 'Receive SMS', 'desc' => 'Enter the number in the app, then click "Check SMS" to see the code.'],
-                ['icon' => '4', 'title' => 'Done', 'desc' => 'Use the code to verify. Cancel unused numbers for a full refund.'],
+                ['icon' => '4', 'title' => 'Done', 'desc' => 'Use the code to verify. Cancel unused numbers within 2 mins for a refund.'],
             ] as $step)
             <li class="flex gap-3">
                 <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center">{{ $step['icon'] }}</span>
@@ -167,7 +185,9 @@
                     <td class="px-6 py-4 text-slate-400 font-mono text-xs">#{{ $order->id }}</td>
                     <td class="px-6 py-4">
                         <span class="font-medium text-white capitalize">{{ $order->service }}</span>
-                        <span class="text-slate-400 text-xs ml-1 uppercase">({{ $order->country }})</span>
+                        @if($order->country)
+                            <span class="text-slate-400 text-xs ml-1 uppercase">({{ $order->country }})</span>
+                        @endif
                     </td>
                     <td class="px-6 py-4">
                         @if($order->phone_number)
@@ -200,12 +220,12 @@
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
                             @if($order->status === 'active')
-                                <button onclick="checkSms({{ $order->id }})"
+                                <button onclick="checkSms({{ $order->id }}, this)"
                                     class="text-xs px-2.5 py-1 bg-brand/10 hover:bg-brand/20 text-brand border border-brand/30 rounded-lg transition-colors">
                                     Check SMS
                                 </button>
                                 <form method="POST" action="{{ route('dashboard.virtual-numbers.cancel', $order->id) }}"
-                                    onsubmit="return confirm('Cancel this order? You will be refunded.')">
+                                    onsubmit="return confirm('Cancel this order? Refunds are only issued if no SMS was received within 2 minutes.')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"
@@ -233,8 +253,35 @@
 @endif
 
 <script>
-async function checkSms(orderId) {
-    const btn = event.target;
+const servicePrices = @json($servicePriceMap ?? []);
+const serviceNames  = @json($serviceNameMap ?? []);
+
+function formatNGN(amount) {
+    return '₦' + parseFloat(amount).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function updateServiceMeta(select) {
+    const option = select.options[select.selectedIndex];
+    const price  = option?.dataset?.price ?? 0;
+    const name   = option?.dataset?.name ?? '';
+    document.getElementById('price-input').value        = price;
+    document.getElementById('service-name-input').value = name;
+    const preview = document.getElementById('cost-preview');
+    if (preview) preview.textContent = price > 0 ? formatNGN(price) : 'Free';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const sel = document.getElementById('service-select');
+    if (sel) updateServiceMeta(sel);
+});
+
+document.getElementById('order-btn')?.addEventListener('click', function() {
+    this.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> Ordering…';
+    this.disabled = true;
+});
+
+async function checkSms(orderId, btn) {
+    const originalText = btn.textContent;
     btn.textContent = 'Checking…';
     btn.disabled = true;
 
@@ -245,7 +292,7 @@ async function checkSms(orderId) {
         const data = await res.json();
 
         if (data.success) {
-            const codeEl = document.getElementById('sms-' + orderId);
+            const codeEl   = document.getElementById('sms-' + orderId);
             const statusEl = document.getElementById('status-' + orderId);
 
             if (data.sms_code) {
@@ -261,23 +308,21 @@ async function checkSms(orderId) {
             } else if (!data.sms_code) {
                 btn.textContent = 'No SMS yet';
                 btn.disabled = false;
-                setTimeout(() => { btn.textContent = 'Check SMS'; }, 3000);
+                setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
+            } else {
+                btn.textContent = originalText;
+                btn.disabled = false;
             }
         } else {
             alert(data.message || 'Could not check SMS.');
-            btn.textContent = 'Check SMS';
+            btn.textContent = originalText;
             btn.disabled = false;
         }
     } catch (e) {
         alert('Network error. Please try again.');
-        btn.textContent = 'Check SMS';
+        btn.textContent = originalText;
         btn.disabled = false;
     }
 }
-
-document.getElementById('order-btn')?.addEventListener('click', function() {
-    this.textContent = 'Ordering…';
-    this.disabled = true;
-});
 </script>
 @endsection

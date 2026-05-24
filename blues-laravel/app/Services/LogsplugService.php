@@ -13,7 +13,7 @@ class LogsplugService
     public function __construct()
     {
         $this->apiKey  = Setting::get('logsplug_api_key', '');
-        $this->baseUrl = rtrim(Setting::get('logsplug_api_url', 'https://logsplug.com/api'), '/');
+        $this->baseUrl = rtrim(Setting::get('logsplug_api_url', 'https://v2.api.logsplug.com/api/v2'), '/');
     }
 
     public function isConfigured(): bool
@@ -25,7 +25,7 @@ class LogsplugService
     {
         try {
             $response = Http::timeout(15)
-                ->withHeaders(['Authorization' => 'Bearer ' . $this->apiKey])
+                ->withHeaders(['x-api-key' => $this->apiKey])
                 ->get($this->baseUrl . $endpoint, $params);
 
             if ($response->successful()) {
@@ -34,7 +34,7 @@ class LogsplugService
 
             return ['success' => false, 'message' => $response->json('message') ?? 'Request failed (' . $response->status() . ')'];
         } catch (\Exception $e) {
-            Log::error('LogsplugService error: ' . $e->getMessage());
+            Log::error('LogsplugService GET error: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Service unavailable. Please try again.'];
         }
     }
@@ -43,7 +43,7 @@ class LogsplugService
     {
         try {
             $response = Http::timeout(15)
-                ->withHeaders(['Authorization' => 'Bearer ' . $this->apiKey])
+                ->withHeaders(['x-api-key' => $this->apiKey])
                 ->post($this->baseUrl . $endpoint, $data);
 
             if ($response->successful()) {
@@ -52,49 +52,51 @@ class LogsplugService
 
             return ['success' => false, 'message' => $response->json('message') ?? 'Request failed (' . $response->status() . ')'];
         } catch (\Exception $e) {
-            Log::error('LogsplugService error: ' . $e->getMessage());
+            Log::error('LogsplugService POST error: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Service unavailable. Please try again.'];
         }
     }
 
     public function getBalance(): array
     {
-        return $this->get('/balance');
+        return $this->get('/third-party/wallet/balance');
     }
 
-    public function getCountries(): array
+    public function getServers(): array
     {
-        return $this->get('/countries');
+        return $this->get('/third-party/numbers/servers');
     }
 
-    public function getServices(?string $country = null): array
+    public function getCountries(string $server = 'server2'): array
     {
-        $params = $country ? ['country' => $country] : [];
-        return $this->get('/services', $params);
+        return $this->get('/third-party/numbers/countries', ['server' => $server]);
     }
 
-    public function getServicePrice(string $service, string $country = 'ng'): array
+    public function getServices(string $server = 'server2', ?string $country = null): array
     {
-        return $this->get('/price', ['service' => $service, 'country' => $country]);
+        $params = ['server' => $server];
+        if ($country !== null) {
+            $params['country'] = $country;
+        }
+        return $this->get('/third-party/numbers/services', $params);
     }
 
-    public function orderNumber(string $service, string $country = 'ng'): array
+    public function rentNumber(string $server, string $serviceId, string $country): array
     {
-        return $this->post('/order', ['service' => $service, 'country' => $country]);
+        return $this->post('/third-party/numbers/rent', [
+            'server'    => $server,
+            'serviceId' => $serviceId,
+            'country'   => $country,
+        ]);
     }
 
-    public function getOrderStatus(string $orderId): array
+    public function getOtp(string $rentId): array
     {
-        return $this->get('/order/' . $orderId);
+        return $this->get('/third-party/numbers/rent/' . $rentId . '/otp');
     }
 
-    public function cancelOrder(string $orderId): array
+    public function cancelRental(string $rentId): array
     {
-        return $this->post('/order/' . $orderId . '/cancel');
-    }
-
-    public function finishOrder(string $orderId): array
-    {
-        return $this->post('/order/' . $orderId . '/finish');
+        return $this->post('/third-party/numbers/rent/' . $rentId . '/cancel');
     }
 }

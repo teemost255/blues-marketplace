@@ -188,8 +188,8 @@
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">API Base URL</label>
                 <input type="url" name="logsplug_api_url" value="{{ $settings['logsplug_api_url'] }}"
-                    placeholder="https://logsplug.com/api" class="font-mono text-xs">
-                <p class="text-xs text-slate-500 mt-1">The root endpoint of the Logsplug API (no trailing slash).</p>
+                    placeholder="https://v2.api.logsplug.com/api/v2" class="font-mono text-xs">
+                <p class="text-xs text-slate-500 mt-1">The root endpoint of the Logsplug v2 API (no trailing slash). Default: <code class="text-slate-400">https://v2.api.logsplug.com/api/v2</code></p>
             </div>
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">API Key</label>

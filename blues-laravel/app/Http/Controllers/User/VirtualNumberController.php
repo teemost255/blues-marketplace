@@ -13,7 +13,7 @@ class VirtualNumberController extends Controller
 {
     public function index(Request $request)
     {
-        $enabled = Setting::get('virtual_number_enabled', '1') === '1';
+        $enabled    = Setting::get('virtual_number_enabled', '1') === '1';
         $configured = (new LogsplugService())->isConfigured();
 
         $countries = [];
@@ -23,17 +23,36 @@ class VirtualNumberController extends Controller
         if ($enabled && $configured) {
             $svc = new LogsplugService();
 
-            $cResult = $svc->getCountries();
-            if ($cResult['success']) {
-                $countries = $cResult['data']['data'] ?? $cResult['data'] ?? [];
-            } else {
-                $apiError = $cResult['message'];
-            }
+            $selectedServer  = $request->get('server', 'server2');
+            $selectedCountry = $request->get('country');
 
-            $selectedCountry = $request->get('country', 'ng');
-            $sResult = $svc->getServices($selectedCountry);
-            if ($sResult['success']) {
-                $services = $sResult['data']['data'] ?? $sResult['data'] ?? [];
+            if ($selectedServer === 'server2') {
+                $cResult = $svc->getCountries('server2');
+                if ($cResult['success']) {
+                    $countries = $cResult['data']['data'] ?? [];
+                } else {
+                    $apiError = $cResult['message'];
+                }
+
+                if (!$selectedCountry && !empty($countries)) {
+                    $selectedCountry = (string)($countries[0]['id'] ?? '');
+                }
+
+                if ($selectedCountry) {
+                    $sResult = $svc->getServices('server2', $selectedCountry);
+                    if ($sResult['success']) {
+                        $services = $sResult['data']['data'] ?? [];
+                    } elseif (!$apiError) {
+                        $apiError = $sResult['message'];
+                    }
+                }
+            } else {
+                $sResult = $svc->getServices('server1');
+                if ($sResult['success']) {
+                    $services = $sResult['data']['data'] ?? [];
+                } else {
+                    $apiError = $sResult['message'];
+                }
             }
         }
 
@@ -51,44 +70,47 @@ class VirtualNumberController extends Controller
     public function order(Request $request)
     {
         $request->validate([
-            'service' => 'required|string',
-            'country' => 'required|string',
+            'server'     => 'required|string|in:server1,server2',
+            'service_id' => 'required|string',
+            'country'    => 'nullable|string',
+            'price'      => 'nullable|numeric|min:0',
+            'service_name' => 'nullable|string',
         ]);
 
-        $enabled    = Setting::get('virtual_number_enabled', '1') === '1';
-        $svc        = new LogsplugService();
+        $enabled = Setting::get('virtual_number_enabled', '1') === '1';
+        $svc     = new LogsplugService();
 
         if (!$enabled || !$svc->isConfigured()) {
             return back()->with('error', 'Virtual numbers are currently unavailable.');
         }
 
         $wallet = Wallet::firstOrCreate(['user_id' => auth()->id()], ['balance' => 0]);
+        $cost   = (float)($request->price ?? 0);
 
-        $priceResult = $svc->getServicePrice($request->service, $request->country);
-        $cost = 0;
-        if ($priceResult['success']) {
-            $cost = (float)($priceResult['data']['price'] ?? $priceResult['data']['cost'] ?? 0);
-        }
-
-        if ($wallet->balance < $cost && $cost > 0) {
+        if ($cost > 0 && $wallet->balance < $cost) {
             return back()->with('error', 'Insufficient wallet balance. Please top up your wallet.');
         }
 
-        $orderResult = $svc->orderNumber($request->service, $request->country);
+        $rentResult = $svc->rentNumber(
+            $request->server,
+            $request->service_id,
+            $request->country ?? ''
+        );
 
-        if (!$orderResult['success']) {
-            return back()->with('error', 'Could not get a number: ' . $orderResult['message']);
+        if (!$rentResult['success']) {
+            return back()->with('error', 'Could not get a number: ' . $rentResult['message']);
         }
 
-        $data = $orderResult['data'];
+        $data        = $rentResult['data']['data'] ?? $rentResult['data'];
+        $serviceName = $request->service_name ?? $request->service_id;
 
-        DB::transaction(function () use ($data, $request, $cost, $wallet) {
+        DB::transaction(function () use ($data, $request, $cost, $wallet, $serviceName) {
             $order = \App\Models\VirtualNumberOrder::create([
                 'user_id'           => auth()->id(),
-                'external_order_id' => $data['id'] ?? $data['order_id'] ?? null,
-                'service'           => $request->service,
-                'country'           => $request->country,
-                'phone_number'      => $data['number'] ?? $data['phone'] ?? null,
+                'external_order_id' => (string)($data['id'] ?? ''),
+                'service'           => $serviceName,
+                'country'           => $request->country ?? '',
+                'phone_number'      => $data['number'] ?? null,
                 'cost'              => $cost,
                 'status'            => 'active',
                 'raw_response'      => json_encode($data),
@@ -100,7 +122,7 @@ class VirtualNumberController extends Controller
                     'user_id'     => auth()->id(),
                     'type'        => 'debit',
                     'amount'      => $cost,
-                    'description' => 'Virtual number: ' . strtoupper($request->service) . ' (' . strtoupper($request->country) . ')',
+                    'description' => 'Virtual number: ' . $serviceName,
                     'status'      => 'completed',
                     'reference'   => 'VN-' . $order->id . '-' . time(),
                 ]);
@@ -121,21 +143,22 @@ class VirtualNumberController extends Controller
         }
 
         $svc    = new LogsplugService();
-        $result = $svc->getOrderStatus($order->external_order_id);
+        $result = $svc->getOtp($order->external_order_id);
 
         if ($result['success']) {
-            $data = $result['data'];
-            $sms  = $data['sms'] ?? $data['code'] ?? $data['otp'] ?? null;
-            $status = $data['status'] ?? null;
+            $data   = $result['data']['data'] ?? $result['data'];
+            $codes  = $data['code'] ?? [];
+            $sms    = is_array($codes) ? implode(', ', $codes) : (string)$codes;
+            $status = strtolower((string)($data['status'] ?? ''));
 
-            $newStatus = match(strtolower((string)$status)) {
-                'completed', 'success', 'received' => 'completed',
+            $newStatus = match($status) {
+                'received', 'completed', 'success' => 'completed',
                 'cancelled', 'canceled'             => 'cancelled',
                 default                             => $order->status,
             };
 
             $order->update([
-                'sms_code' => $sms ?? $order->sms_code,
+                'sms_code' => $sms ?: $order->sms_code,
                 'status'   => $newStatus,
             ]);
 
@@ -160,13 +183,15 @@ class VirtualNumberController extends Controller
         $result = ['success' => true];
 
         if ($order->external_order_id) {
-            $result = $svc->cancelOrder($order->external_order_id);
+            $result = $svc->cancelRental($order->external_order_id);
         }
 
         if ($result['success']) {
             $order->update(['status' => 'cancelled']);
 
-            if ($order->cost > 0) {
+            $refunded = $result['data']['data']['refunded'] ?? false;
+
+            if ($order->cost > 0 && $refunded) {
                 $wallet = Wallet::where('user_id', auth()->id())->first();
                 if ($wallet) {
                     $wallet->increment('balance', $order->cost);
@@ -181,7 +206,9 @@ class VirtualNumberController extends Controller
                 }
             }
 
-            return back()->with('success', 'Order cancelled and wallet refunded.');
+            return back()->with('success', $refunded
+                ? 'Order cancelled and wallet refunded.'
+                : 'Order cancelled. (No refund — SMS was already received.)');
         }
 
         return back()->with('error', 'Could not cancel: ' . $result['message']);
