@@ -18,6 +18,7 @@ class ListingSeeder extends Seeder
                 'price'       => 8500,
                 'stock'       => 5,
                 'featured'    => true,
+                'image_url'   => 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&q=80',
             ],
             [
                 'title'       => 'Facebook Aged Account (2018 Creation)',
@@ -26,6 +27,7 @@ class ListingSeeder extends Seeder
                 'price'       => 4500,
                 'stock'       => 10,
                 'featured'    => false,
+                'image_url'   => 'https://images.unsplash.com/photo-1508672019048-805c876b67e2?w=800&q=80',
             ],
             [
                 'title'       => 'Twitter/X Account (Verified Blue)',
@@ -34,6 +36,7 @@ class ListingSeeder extends Seeder
                 'price'       => 12000,
                 'stock'       => 3,
                 'featured'    => true,
+                'image_url'   => 'https://images.unsplash.com/photo-1611605698335-8adc22224671?w=800&q=80',
             ],
             [
                 'title'       => 'TikTok Account (10K Followers)',
@@ -42,6 +45,7 @@ class ListingSeeder extends Seeder
                 'price'       => 15000,
                 'stock'       => 2,
                 'featured'    => true,
+                'image_url'   => 'https://images.unsplash.com/photo-1614680376739-414d95ff43df?w=800&q=80',
             ],
 
             // Email Accounts
@@ -52,6 +56,7 @@ class ListingSeeder extends Seeder
                 'price'       => 3500,
                 'stock'       => 20,
                 'featured'    => false,
+                'image_url'   => 'https://images.unsplash.com/photo-1596526131083-e8c633c948d2?w=800&q=80',
             ],
             [
                 'title'       => 'Outlook Account (Aged 2020)',
@@ -60,6 +65,7 @@ class ListingSeeder extends Seeder
                 'price'       => 1500,
                 'stock'       => 15,
                 'featured'    => false,
+                'image_url'   => 'https://images.unsplash.com/photo-1684369175809-f9642bd5e5c4?w=800&q=80',
             ],
             [
                 'title'       => 'Yahoo Mail Account (Phone Verified)',
@@ -68,6 +74,7 @@ class ListingSeeder extends Seeder
                 'price'       => 2000,
                 'stock'       => 8,
                 'featured'    => false,
+                'image_url'   => 'https://images.unsplash.com/photo-1557200134-90327ee9fafa?w=800&q=80',
             ],
 
             // Streaming
@@ -78,6 +85,7 @@ class ListingSeeder extends Seeder
                 'price'       => 5000,
                 'stock'       => 25,
                 'featured'    => true,
+                'image_url'   => 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&q=80',
             ],
             [
                 'title'       => 'Spotify Premium (3 Months)',
@@ -86,6 +94,7 @@ class ListingSeeder extends Seeder
                 'price'       => 4200,
                 'stock'       => 30,
                 'featured'    => false,
+                'image_url'   => 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80',
             ],
             [
                 'title'       => 'Disney+ Account (6 Months)',
@@ -94,6 +103,7 @@ class ListingSeeder extends Seeder
                 'price'       => 6500,
                 'stock'       => 12,
                 'featured'    => false,
+                'image_url'   => 'https://images.unsplash.com/photo-1618556450991-2f1af64e8191?w=800&q=80',
             ],
 
             // Gaming
@@ -104,6 +114,7 @@ class ListingSeeder extends Seeder
                 'price'       => 22000,
                 'stock'       => 2,
                 'featured'    => true,
+                'image_url'   => 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80',
             ],
             [
                 'title'       => 'Valorant Account (Gold Rank)',
@@ -112,6 +123,7 @@ class ListingSeeder extends Seeder
                 'price'       => 18000,
                 'stock'       => 4,
                 'featured'    => false,
+                'image_url'   => 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800&q=80',
             ],
             [
                 'title'       => 'PUBG Mobile Account (Platinum Tier)',
@@ -120,6 +132,7 @@ class ListingSeeder extends Seeder
                 'price'       => 9500,
                 'stock'       => 6,
                 'featured'    => false,
+                'image_url'   => 'https://images.unsplash.com/photo-1560419015-7c427e8ae5ba?w=800&q=80',
             ],
 
             // VPN & Privacy
@@ -130,6 +143,7 @@ class ListingSeeder extends Seeder
                 'price'       => 11000,
                 'stock'       => 18,
                 'featured'    => true,
+                'image_url'   => 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&q=80',
             ],
             [
                 'title'       => 'ExpressVPN Account (6 Months)',
@@ -138,6 +152,7 @@ class ListingSeeder extends Seeder
                 'price'       => 8000,
                 'stock'       => 10,
                 'featured'    => false,
+                'image_url'   => 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=800&q=80',
             ],
 
             // Shopping
@@ -148,6 +163,7 @@ class ListingSeeder extends Seeder
                 'price'       => 7500,
                 'stock'       => 7,
                 'featured'    => true,
+                'image_url'   => 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&q=80',
             ],
             [
                 'title'       => 'eBay Seller Account (100% Feedback)',
@@ -156,6 +172,7 @@ class ListingSeeder extends Seeder
                 'price'       => 14000,
                 'stock'       => 3,
                 'featured'    => false,
+                'image_url'   => 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800&q=80',
             ],
         ];
 
