@@ -3,6 +3,12 @@
 @section('page-title','Settings')
 @section('content')
 
+@if(session('error'))
+<div class="mb-4 bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3">
+    {{ session('error') }}
+</div>
+@endif
+
 <form method="POST" action="{{ route('admin.settings.update') }}" class="space-y-6 max-w-2xl">
     @csrf
 
@@ -88,6 +94,76 @@
                         <p class="text-xs text-slate-400">Temporarily disable the site for users</p>
                     </div>
                 </label>
+            </div>
+        </div>
+    </div>
+
+    {{-- Email / SMTP --}}
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-lg bg-blue-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-white">Email / SMTP</h2>
+                <p class="text-xs text-slate-400">Configure outgoing email delivery for announcements and notifications</p>
+            </div>
+        </div>
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">Mail Driver</label>
+                    <select name="mail_mailer" class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500">
+                        <option value="smtp"    {{ $settings['mail_mailer'] === 'smtp'    ? 'selected' : '' }}>SMTP</option>
+                        <option value="log"     {{ $settings['mail_mailer'] === 'log'     ? 'selected' : '' }}>Log (testing only)</option>
+                        <option value="sendmail"{{ $settings['mail_mailer'] === 'sendmail'? 'selected' : '' }}>Sendmail</option>
+                    </select>
+                    <p class="text-xs text-slate-500 mt-1">Use SMTP for real delivery; Log to write emails to the log file instead.</p>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">Encryption</label>
+                    <select name="mail_encryption" class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500">
+                        <option value="tls" {{ $settings['mail_encryption'] === 'tls' ? 'selected' : '' }}>TLS (port 587)</option>
+                        <option value="ssl" {{ $settings['mail_encryption'] === 'ssl' ? 'selected' : '' }}>SSL (port 465)</option>
+                        <option value=""    {{ $settings['mail_encryption'] === ''    ? 'selected' : '' }}>None (port 25)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">SMTP Host</label>
+                    <input type="text" name="mail_host" value="{{ $settings['mail_host'] }}"
+                        placeholder="e.g. smtp.gmail.com" class="font-mono text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">SMTP Port</label>
+                    <input type="number" name="mail_port" value="{{ $settings['mail_port'] }}"
+                        placeholder="587" min="1" max="65535">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">SMTP Username</label>
+                    <input type="text" name="mail_username" value="{{ $settings['mail_username'] }}"
+                        placeholder="your@email.com" class="font-mono text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">SMTP Password</label>
+                    <div class="relative">
+                        <input type="password" name="mail_password" id="mail-password-input" value="{{ $settings['mail_password'] }}"
+                            placeholder="App password or SMTP password" class="font-mono text-xs pr-10">
+                        <button type="button" onclick="toggleMailPassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">For Gmail, use an App Password, not your account password.</p>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">From Address</label>
+                    <input type="email" name="mail_from_address" value="{{ $settings['mail_from_address'] }}"
+                        placeholder="noreply@yourdomain.com">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">From Name</label>
+                    <input type="text" name="mail_from_name" value="{{ $settings['mail_from_name'] }}"
+                        placeholder="Blues Marketplace">
+                </div>
             </div>
         </div>
     </div>
@@ -200,6 +276,35 @@
     <button type="submit" class="btn-primary px-8 py-3 text-base">Save All Settings</button>
 </form>
 
+{{-- Test Email --}}
+<div class="max-w-2xl mt-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-lg bg-indigo-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-white">Send Test Email</h2>
+                <p class="text-xs text-slate-400">Verify your SMTP settings are working by sending a test message</p>
+            </div>
+        </div>
+        <form method="POST" action="{{ route('admin.settings.test-email') }}" class="flex gap-3 items-end">
+            @csrf
+            <div class="flex-1">
+                <label class="block text-xs text-slate-400 mb-1.5">Recipient Email</label>
+                <input type="email" name="test_email" placeholder="you@example.com" required
+                    class="w-full">
+            </div>
+            <button type="submit"
+                class="shrink-0 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                Send Test
+            </button>
+        </form>
+        <p class="text-xs text-slate-500 mt-3">Make sure you save your SMTP settings above before sending a test email.</p>
+    </div>
+</div>
+
 <script>
 document.getElementById('maintenance-toggle').addEventListener('change', function() {
     document.getElementById('toggle-bg').style.background = this.checked ? '#dc2626' : '#475569';
@@ -211,6 +316,10 @@ function toggleSecret() {
 }
 function toggleLogsplugKey() {
     const inp = document.getElementById('logsplug-key-input');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+function toggleMailPassword() {
+    const inp = document.getElementById('mail-password-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 document.getElementById('vn-toggle').addEventListener('change', function() {

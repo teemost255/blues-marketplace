@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class SettingsController extends Controller
 {
@@ -22,6 +23,14 @@ class SettingsController extends Controller
             'logsplug_api_url'         => Setting::get('logsplug_api_url', 'https://logsplug.com/api'),
             'virtual_number_enabled'   => Setting::get('virtual_number_enabled', '1'),
             'whatsapp_number'          => Setting::get('whatsapp_number', ''),
+            'mail_mailer'              => Setting::get('mail_mailer', 'smtp'),
+            'mail_host'                => Setting::get('mail_host', ''),
+            'mail_port'                => Setting::get('mail_port', '587'),
+            'mail_username'            => Setting::get('mail_username', ''),
+            'mail_password'            => Setting::get('mail_password', ''),
+            'mail_encryption'          => Setting::get('mail_encryption', 'tls'),
+            'mail_from_address'        => Setting::get('mail_from_address', ''),
+            'mail_from_name'           => Setting::get('mail_from_name', 'Blues Marketplace'),
         ];
         return view('admin.settings', compact('settings'));
     }
@@ -40,12 +49,22 @@ class SettingsController extends Controller
             'logsplug_api_key'        => 'nullable|string',
             'logsplug_api_url'        => 'nullable|url',
             'virtual_number_enabled'  => 'nullable|in:0,1',
+            'mail_mailer'             => 'nullable|string|in:smtp,sendmail,log',
+            'mail_host'               => 'nullable|string|max:255',
+            'mail_port'               => 'nullable|integer|min:1|max:65535',
+            'mail_username'           => 'nullable|string|max:255',
+            'mail_password'           => 'nullable|string|max:255',
+            'mail_encryption'         => 'nullable|string|in:tls,ssl,',
+            'mail_from_address'       => 'nullable|email',
+            'mail_from_name'          => 'nullable|string|max:100',
         ]);
 
         $keys = [
             'paystack_public_key', 'paystack_secret_key', 'paystack_webhook_secret',
             'site_name', 'support_email', 'min_deposit', 'max_deposit',
             'logsplug_api_key', 'logsplug_api_url', 'whatsapp_number',
+            'mail_mailer', 'mail_host', 'mail_port', 'mail_username',
+            'mail_password', 'mail_encryption', 'mail_from_address', 'mail_from_name',
         ];
 
         foreach ($keys as $key) {
@@ -55,5 +74,31 @@ class SettingsController extends Controller
         Setting::set('virtual_number_enabled', $request->boolean('virtual_number_enabled') ? '1' : '0');
 
         return back()->with('success', 'Settings saved successfully.');
+    }
+
+    public function sendTestEmail(Request $request)
+    {
+        $request->validate([
+            'test_email' => 'required|email',
+        ]);
+
+        try {
+            $fromAddress = Setting::get('mail_from_address', config('mail.from.address'));
+            $fromName    = Setting::get('mail_from_name', config('mail.from.name', 'Blues Marketplace'));
+            $siteName    = Setting::get('site_name', 'Blues Marketplace');
+
+            Mail::raw(
+                "This is a test email from {$siteName}.\n\nYour SMTP settings are configured correctly.",
+                function ($message) use ($request, $fromAddress, $fromName, $siteName) {
+                    $message->to($request->test_email)
+                            ->from($fromAddress, $fromName)
+                            ->subject("Test Email from {$siteName}");
+                }
+            );
+
+            return back()->with('success', "Test email sent successfully to {$request->test_email}.");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to send test email: ' . $e->getMessage());
+        }
     }
 }

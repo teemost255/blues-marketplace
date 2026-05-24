@@ -129,6 +129,7 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::get('/audit',                        [AuditController::class,        'index'])->name('audit');
     Route::get('/settings',                     [SettingsController::class,          'index'])->name('settings');
     Route::post('/settings',                    [SettingsController::class,          'update'])->name('settings.update');
+    Route::post('/settings/test-email',         [SettingsController::class,          'sendTestEmail'])->name('settings.test-email');
 
     Route::get('/virtual-numbers',                              [VirtualNumberOrdersController::class, 'index'])->name('virtual-numbers');
     Route::post('/virtual-numbers/{order}/status',             [VirtualNumberOrdersController::class, 'updateStatus'])->name('virtual-numbers.status');
