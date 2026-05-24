@@ -75,9 +75,10 @@
     </div>
 </div>
 
-{{-- Logsplug API Balance Widget (server-side rendered) --}}
-<div class="mb-6">
-    <div id="logsplug-balance-card" class="bg-slate-800 border {{ $logsplugBalance !== null ? 'border-slate-700' : 'border-slate-700' }} rounded-xl p-5 flex items-center justify-between">
+{{-- API Balance Widgets --}}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    {{-- Logsplug Balance --}}
+    <div id="logsplug-balance-card" class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-purple-900/40 flex items-center justify-center shrink-0">
                 <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
@@ -87,8 +88,7 @@
                 <p id="logsplug-balance-value" class="text-2xl font-bold text-white mt-0.5">
                     @if($logsplugBalance !== null)
                         {{ number_format((float)$logsplugBalance, 2) }}
-                    @else
-                        —
+                    @else —
                     @endif
                 </p>
                 <p id="logsplug-balance-note" class="text-xs mt-0.5 {{ $logsplugBalance !== null ? 'text-slate-500' : 'text-yellow-400' }}">
@@ -103,6 +103,38 @@
         <div class="flex items-center gap-3">
             <a href="{{ route('admin.settings') }}#virtual-numbers" class="text-xs text-purple-400 hover:underline">Configure →</a>
             <button onclick="refreshLogsplugBalance()" id="logsplug-refresh-btn"
+                class="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors" title="Refresh balance">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+        </div>
+    </div>
+
+    {{-- Hero-SMS Balance --}}
+    <div id="herosms-balance-card" class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-900/40 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/></svg>
+            </div>
+            <div>
+                <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Hero-SMS API Wallet</p>
+                <p id="herosms-balance-value" class="text-2xl font-bold text-white mt-0.5">
+                    @if($heroSmsBalance !== null)
+                        {{ number_format((float)$heroSmsBalance, 2) }}
+                    @else —
+                    @endif
+                </p>
+                <p id="herosms-balance-note" class="text-xs mt-0.5 {{ $heroSmsBalance !== null ? 'text-slate-500' : 'text-yellow-400' }}">
+                    @if($heroSmsBalance !== null)
+                        Available in API wallet · loaded at {{ now()->format('H:i') }}
+                    @else
+                        {{ $heroSmsError ?? 'Could not load balance.' }}
+                    @endif
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('admin.settings') }}#virtual-numbers" class="text-xs text-blue-400 hover:underline">Configure →</a>
+            <button onclick="refreshHeroSmsBalance()" id="herosms-refresh-btn"
                 class="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors" title="Refresh balance">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
             </button>
@@ -233,6 +265,47 @@ async function refreshLogsplugBalance() {
             } else {
                 noteEl.textContent = 'Available in API wallet · updated just now';
                 document.getElementById('logsplug-balance-card').classList.remove('border-red-700/50');
+            }
+        } else {
+            valueEl.textContent = '—';
+            noteEl.textContent = data.message || 'Could not load balance.';
+        }
+    } catch (e) {
+        valueEl.textContent = '—';
+        noteEl.textContent = 'Refresh failed. Check network.';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function refreshHeroSmsBalance() {
+    const valueEl = document.getElementById('herosms-balance-value');
+    const noteEl  = document.getElementById('herosms-balance-note');
+    const btn     = document.getElementById('herosms-refresh-btn');
+    if (!valueEl) return;
+
+    valueEl.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin align-middle"></span>';
+    noteEl.textContent = 'Refreshing…';
+    btn.disabled = true;
+
+    try {
+        const res  = await fetch('/admin/virtual-numbers/herosms-balance', {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await res.json();
+
+        if (data.success && data.balance !== null && data.balance !== undefined) {
+            const balance = parseFloat(data.balance);
+            valueEl.textContent = isNaN(balance) ? data.balance : balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const low = {{ (float) \App\Models\Setting::get('low_balance_threshold', '5') }};
+            if (!isNaN(balance) && balance <= low) {
+                noteEl.innerHTML = '<span class="text-red-400">⚠ Low balance — top up soon</span>';
+                document.getElementById('herosms-balance-card').classList.add('border-red-700/50');
+            } else {
+                noteEl.textContent = 'Available in API wallet · updated just now';
+                document.getElementById('herosms-balance-card').classList.remove('border-red-700/50');
             }
         } else {
             valueEl.textContent = '—';

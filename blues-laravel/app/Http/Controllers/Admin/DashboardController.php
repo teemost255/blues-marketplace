@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\{User, Listing, Purchase, SupportTicket, WalletTransaction, VirtualNumberOrder};
 use App\Services\LogsplugService;
+use App\Services\HeroSmsService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -57,10 +58,10 @@ class DashboardController extends Controller
         // Fetch Logsplug balance server-side
         $logsplugBalance = null;
         $logsplugError   = null;
-        $svc = new LogsplugService();
-        if ($svc->isConfigured()) {
+        $logsplugSvc = new LogsplugService();
+        if ($logsplugSvc->isConfigured()) {
             try {
-                $result = $svc->getBalance();
+                $result = $logsplugSvc->getBalance();
                 if ($result['success']) {
                     $logsplugBalance = $result['data']['data']['balance'] ?? ($result['data']['balance'] ?? null);
                 } else {
@@ -73,9 +74,29 @@ class DashboardController extends Controller
             $logsplugError = 'API not configured. Add your Logsplug key in Settings.';
         }
 
+        // Fetch Hero-SMS balance server-side
+        $heroSmsBalance = null;
+        $heroSmsError   = null;
+        $heroSmsSvc = new HeroSmsService();
+        if ($heroSmsSvc->isConfigured()) {
+            try {
+                $result = $heroSmsSvc->getBalance();
+                if ($result['success']) {
+                    $heroSmsBalance = $result['data']['balance'] ?? null;
+                } else {
+                    $heroSmsError = $result['message'] ?? 'Could not fetch balance.';
+                }
+            } catch (\Throwable $e) {
+                $heroSmsError = 'Balance fetch failed. Check API connectivity.';
+            }
+        } else {
+            $heroSmsError = 'API not configured. Add your Hero-SMS key in Settings.';
+        }
+
         return view('admin.dashboard', compact(
             'stats', 'chartLabels', 'chartRevenue', 'chartOrders',
-            'logsplugBalance', 'logsplugError'
+            'logsplugBalance', 'logsplugError',
+            'heroSmsBalance', 'heroSmsError'
         ));
     }
 }

@@ -90,8 +90,11 @@
         {{-- Search --}}
         <div class="relative flex-1 min-w-[180px]">
             <svg class="absolute left-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input id="svc-search" type="text" placeholder="Search by service or country…" oninput="applyFilter()"
-                class="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl text-sm focus:outline-none focus:border-brand placeholder-slate-500">
+            <input id="svc-search" type="text" placeholder="Search services…" oninput="handleSearchInput()"
+                class="w-full pl-9 pr-8 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl text-sm focus:outline-none focus:border-brand placeholder-slate-500">
+            <button id="svc-search-clear" onclick="clearSearch()" class="hidden absolute right-2.5 top-2.5 text-slate-500 hover:text-white transition-colors" title="Clear search">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
         </div>
 
         {{-- Country dropdown --}}
@@ -351,6 +354,7 @@ function switchTab(tab) {
 function switchServer(s) {
     currentServer   = s;
     currentProvider = (s === 'herosms') ? 'herosms' : 'logsplug';
+    allServices     = [];
 
     document.querySelectorAll('.stab').forEach(b => {
         b.classList.remove('bg-brand','text-white');
@@ -358,6 +362,12 @@ function switchServer(s) {
     });
     const active = document.getElementById('stab-' + s);
     if (active) { active.classList.add('bg-brand','text-white'); active.classList.remove('text-slate-400'); }
+
+    // Reset search
+    const searchEl = document.getElementById('svc-search');
+    if (searchEl) searchEl.value = '';
+    const clearBtn = document.getElementById('svc-search-clear');
+    if (clearBtn) clearBtn.classList.add('hidden');
 
     const cWrap = document.getElementById('country-select');
     cWrap.innerHTML = '<option value="">All Countries</option>';
@@ -431,10 +441,35 @@ function flagEmoji(iso) {
     ).join('');
 }
 
+// ── Search helpers ────────────────────────────────────────────────────────────
+let searchDebounceTimer = null;
+
+function handleSearchInput() {
+    const q        = document.getElementById('svc-search').value;
+    const clearBtn = document.getElementById('svc-search-clear');
+    clearBtn.classList.toggle('hidden', q.length === 0);
+
+    // If services aren't loaded yet and user is typing, auto-load (no country filter)
+    if (allServices.length === 0 && q.length >= 2) {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => loadServices(), 400);
+        return;
+    }
+    applyFilter();
+}
+
+function clearSearch() {
+    const input    = document.getElementById('svc-search');
+    const clearBtn = document.getElementById('svc-search-clear');
+    input.value    = '';
+    clearBtn.classList.add('hidden');
+    applyFilter();
+    input.focus();
+}
+
 // ── Load services ─────────────────────────────────────────────────────────────
 async function loadServices() {
     showState('loading');
-    document.getElementById('svc-search').value = '';
 
     const country = document.getElementById('country-select').value;
     let url = SERVICES_URL + '?server=' + currentServer + '&provider=' + currentProvider;
