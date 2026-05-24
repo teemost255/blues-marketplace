@@ -155,7 +155,7 @@ async function refreshLogsplugBalance() {
             const balance = parseFloat(data.balance);
             valueEl.textContent = isNaN(balance) ? data.balance : balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-            const low = parseFloat('{{ \App\Models\Setting::get('low_balance_threshold', '5') }}');
+            const low = {{ (float) \App\Models\Setting::get('low_balance_threshold', '5') }};
             if (!isNaN(balance) && balance <= low) {
                 noteEl.innerHTML = '<span class="text-red-400">⚠ Low balance — top up soon</span>';
                 document.getElementById('logsplug-balance-card').classList.add('border-red-700/50');
