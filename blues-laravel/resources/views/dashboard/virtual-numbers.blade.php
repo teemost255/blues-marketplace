@@ -79,8 +79,8 @@
                 class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
                 🇷🇺 Server 1
             </button>
-            @if($smsPoolConfigured)
-            <button onclick="switchServer('smspool')" id="stab-smspool"
+            @if($heroSmsConfigured)
+            <button onclick="switchServer('herosms')" id="stab-herosms"
                 class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
                 🌐 Server 3
             </button>
@@ -350,7 +350,7 @@ function switchTab(tab) {
 // ── Server tab switch ─────────────────────────────────────────────────────────
 function switchServer(s) {
     currentServer   = s;
-    currentProvider = (s === 'smspool') ? 'smspool' : 'logsplug';
+    currentProvider = (s === 'herosms') ? 'herosms' : 'logsplug';
 
     document.querySelectorAll('.stab').forEach(b => {
         b.classList.remove('bg-brand','text-white');
@@ -362,8 +362,8 @@ function switchServer(s) {
     const cWrap = document.getElementById('country-select');
     cWrap.innerHTML = '<option value="">All Countries</option>';
 
-    // Both smspool and logsplug server2 support country selection
-    if (s === 'server2' || s === 'smspool') loadCountries();
+    // Both herosms and logsplug server2 support country selection
+    if (s === 'server2' || s === 'herosms') loadCountries();
     else loadServices();
 }
 
@@ -383,10 +383,10 @@ async function loadCountries() {
             const sel = document.getElementById('country-select');
             sel.innerHTML = '<option value="">— Select a country —</option>';
 
-            if (currentProvider === 'smspool') {
-                // SMSPool: [{ID, name, region}]
+            if (currentProvider === 'herosms') {
+                // Hero-SMS: [{id, name}]
                 data.data.forEach(c => {
-                    const code = String(c.ID ?? c.id ?? c.name);
+                    const code = String(c.id ?? c.name);
                     countriesCache[code] = { name: c.name, iso: '' };
                     const opt  = document.createElement('option');
                     opt.value  = code;
@@ -449,18 +449,17 @@ async function loadServices() {
         const data = await res.json();
 
         if (data.success && Array.isArray(data.data) && data.data.length) {
-            // Normalize SMSPool format to match Logsplug format
-            if (currentProvider === 'smspool') {
+            // Normalize Hero-SMS format to match Logsplug format
+            if (currentProvider === 'herosms') {
                 const countryName = country ? (countriesCache[country]?.name || country) : 'All Countries';
                 allServices = data.data.map(s => ({
-                    // SMSPool /service/retrieve_all returns {ID, name, favourite}
-                    // The purchase API accepts the service name or ID; use name
-                    serviceId:    String(s.name ?? s.ID ?? ''),
+                    // Hero-SMS getPrices returns [{serviceId, name, count, cost}]
+                    serviceId:    String(s.serviceId ?? s.name ?? ''),
                     name:         s.name ?? '',
-                    apiPrice:     0,          // price determined at order time by SMSPool
+                    apiPrice:     parseFloat(s.cost ?? 0),
                     country:      countryName,
                     countryCode:  country || '',
-                    _provider:    'smspool',
+                    _provider:    'herosms',
                 }));
             } else {
                 allServices = data.data;
@@ -642,7 +641,7 @@ function openModal(serviceId, serviceName, price, country, countryCode) {
     }
 
     document.getElementById('f-provider').value   = currentProvider;
-    document.getElementById('f-server').value     = currentProvider === 'smspool' ? 'server2' : currentServer;
+    document.getElementById('f-server').value     = currentProvider === 'herosms' ? 'server2' : currentServer;
     document.getElementById('f-service-id').value = serviceId;
     document.getElementById('f-country').value    = countryCode;
     document.getElementById('f-price').value      = price;

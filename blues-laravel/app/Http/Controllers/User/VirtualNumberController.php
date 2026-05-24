@@ -7,7 +7,7 @@ use App\Models\VirtualNumberOrder;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\LogsplugService;
-use App\Services\SmsPoolService;
+use App\Services\HeroSmsService;
 use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,8 +18,8 @@ class VirtualNumberController extends Controller
     {
         $enabled           = Setting::get('virtual_number_enabled', '1') === '1';
         $logsplugConfigured = (new LogsplugService())->isConfigured();
-        $smsPoolConfigured  = (new SmsPoolService())->isConfigured();
-        $configured         = $logsplugConfigured || $smsPoolConfigured;
+        $heroSmsConfigured  = (new HeroSmsService())->isConfigured();
+        $configured         = $logsplugConfigured || $heroSmsConfigured;
 
         $orders       = VirtualNumberOrder::where('user_id', auth()->id())->latest()->paginate(10);
         $wallet       = Wallet::firstOrCreate(['user_id' => auth()->id()], ['balance' => 0]);
@@ -31,7 +31,7 @@ class VirtualNumberController extends Controller
         $historyOrders = $orders->getCollection()->filter(fn($o) => $o->status !== 'active');
 
         return view('dashboard.virtual-numbers', compact(
-            'enabled', 'configured', 'logsplugConfigured', 'smsPoolConfigured',
+            'enabled', 'configured', 'logsplugConfigured', 'heroSmsConfigured',
             'orders', 'wallet', 'commissionType', 'commissionValue',
             'activeOrders', 'historyOrders'
         ));
@@ -44,10 +44,10 @@ class VirtualNumberController extends Controller
         $server   = $request->get('server', 'server2');
         $provider = $request->get('provider', 'logsplug');
 
-        if ($provider === 'smspool') {
-            $svc = new SmsPoolService();
+        if ($provider === 'herosms') {
+            $svc = new HeroSmsService();
             if (!$svc->isConfigured()) {
-                return response()->json(['success' => false, 'message' => 'SMSPool API not configured.']);
+                return response()->json(['success' => false, 'message' => 'Hero-SMS API not configured.']);
             }
             $result = $svc->getCountries();
             if ($result['success']) {
@@ -86,10 +86,10 @@ class VirtualNumberController extends Controller
         $country  = $request->get('country');
         $provider = $request->get('provider', 'logsplug');
 
-        if ($provider === 'smspool') {
-            $svc = new SmsPoolService();
+        if ($provider === 'herosms') {
+            $svc = new HeroSmsService();
             if (!$svc->isConfigured()) {
-                return response()->json(['success' => false, 'message' => 'SMSPool API not configured.']);
+                return response()->json(['success' => false, 'message' => 'Hero-SMS API not configured.']);
             }
             $result = $svc->getServices($country ?: null);
             if ($result['success']) {
@@ -119,7 +119,7 @@ class VirtualNumberController extends Controller
         $provider = $request->input('provider', 'logsplug');
 
         $request->validate([
-            'provider'     => 'required|string|in:logsplug,smspool',
+            'provider'     => 'required|string|in:logsplug,herosms',
             'server'       => 'nullable|string|in:server1,server2',
             'service_id'   => 'required|string',
             'country'      => 'nullable|string',
@@ -143,8 +143,8 @@ class VirtualNumberController extends Controller
             return back()->with('error', 'Insufficient wallet balance. Please top up your wallet.');
         }
 
-        if ($provider === 'smspool') {
-            return $this->orderSmsPool($request, $wallet, $apiCost, $commission, $cost);
+        if ($provider === 'herosms') {
+            return $this->orderHeroSms($request, $wallet, $apiCost, $commission, $cost);
         }
 
         return $this->orderLogsplug($request, $wallet, $apiCost, $commission, $cost);
@@ -194,11 +194,11 @@ class VirtualNumberController extends Controller
         return back()->with('success', 'Virtual number ordered successfully! Check your active orders below.');
     }
 
-    private function orderSmsPool(Request $request, Wallet $wallet, float $apiCost, float $commission, float $cost)
+    private function orderHeroSms(Request $request, Wallet $wallet, float $apiCost, float $commission, float $cost)
     {
-        $svc = new SmsPoolService();
+        $svc = new HeroSmsService();
         if (!$svc->isConfigured()) {
-            return back()->with('error', 'SMSPool is not configured yet.');
+            return back()->with('error', 'Hero-SMS is not configured yet.');
         }
 
         $result = $svc->orderNumber($request->country ?? '', $request->service_id);
@@ -212,7 +212,7 @@ class VirtualNumberController extends Controller
         DB::transaction(function () use ($data, $request, $cost, $wallet, $serviceName) {
             $order = VirtualNumberOrder::create([
                 'user_id'           => auth()->id(),
-                'provider'          => 'smspool',
+                'provider'          => 'herosms',
                 'external_order_id' => (string)($data['order_id'] ?? ''),
                 'service'           => $serviceName,
                 'country'           => $request->country ?? '',
@@ -228,7 +228,7 @@ class VirtualNumberController extends Controller
                     'user_id'     => auth()->id(),
                     'type'        => 'withdrawal',
                     'amount'      => $cost,
-                    'description' => 'Virtual number (SMSPool): ' . $serviceName,
+                    'description' => 'Virtual number (Hero-SMS): ' . $serviceName,
                     'reference'   => 'VN-' . $order->id . '-' . time(),
                 ]);
             }
@@ -250,8 +250,8 @@ class VirtualNumberController extends Controller
             return response()->json(['success' => false, 'message' => 'No external order ID.']);
         }
 
-        if ($order->provider === 'smspool') {
-            return $this->checkSmsSmsPool($order);
+        if (in_array($order->provider, ['herosms', 'smspool'])) {
+            return $this->checkSmsHeroSms($order);
         }
 
         return $this->checkSmsLogsplug($order);
@@ -289,14 +289,14 @@ class VirtualNumberController extends Controller
         return response()->json(['success' => false, 'message' => $result['message']]);
     }
 
-    private function checkSmsSmsPool(VirtualNumberOrder $order)
+    private function checkSmsHeroSms(VirtualNumberOrder $order)
     {
-        $svc    = new SmsPoolService();
+        $svc    = new HeroSmsService();
         $result = $svc->checkSms($order->external_order_id);
 
         if ($result['success']) {
             $data   = $result['data'];
-            // SMSPool status: 1=pending, 2=in-use, 3=completed, 6=refunded/cancelled
+            // 1=pending, 3=completed (STATUS_OK), 6=cancelled (STATUS_CANCEL)
             $status = (int)($data['status'] ?? 1);
             $sms    = $data['sms'] ?? null;
 
@@ -330,8 +330,8 @@ class VirtualNumberController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
-        if ($order->provider === 'smspool') {
-            return $this->cancelSmsPool($order);
+        if (in_array($order->provider, ['herosms', 'smspool'])) {
+            return $this->cancelHeroSms($order);
         }
 
         return $this->cancelLogsplug($order);
@@ -362,9 +362,9 @@ class VirtualNumberController extends Controller
         return back()->with('error', 'Could not cancel: ' . $result['message']);
     }
 
-    private function cancelSmsPool(VirtualNumberOrder $order)
+    private function cancelHeroSms(VirtualNumberOrder $order)
     {
-        $svc    = new SmsPoolService();
+        $svc    = new HeroSmsService();
         $result = ['success' => true, 'data' => []];
 
         if ($order->external_order_id) {
@@ -373,7 +373,6 @@ class VirtualNumberController extends Controller
 
         if ($result['success']) {
             $order->update(['status' => 'cancelled']);
-            // SMSPool refunds automatically on cancel
             if ($order->cost > 0) {
                 $this->processRefund($order);
             }

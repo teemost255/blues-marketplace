@@ -230,28 +230,28 @@
         </div>
     </div>
 
-    {{-- Virtual Numbers / SMSPool --}}
+    {{-- Virtual Numbers / Hero-SMS --}}
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
         <div class="flex items-center gap-3 mb-5">
             <div class="w-9 h-9 rounded-lg bg-cyan-900/50 flex items-center justify-center">
                 <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
             </div>
             <div>
-                <h2 class="font-semibold text-white">Virtual Numbers — SMSPool</h2>
-                <p class="text-xs text-slate-400">API credentials for SMSPool virtual number provisioning</p>
+                <h2 class="font-semibold text-white">Virtual Numbers — Hero-SMS (Server 3)</h2>
+                <p class="text-xs text-slate-400">API credentials for Hero-SMS virtual number provisioning</p>
             </div>
         </div>
         <div class="space-y-4">
             <div>
-                <label class="block text-xs text-slate-400 mb-1.5">SMSPool API Key</label>
+                <label class="block text-xs text-slate-400 mb-1.5">Hero-SMS API Key</label>
                 <div class="relative">
-                    <input type="password" name="smspool_api_key" id="smspool-key-input" value="{{ $settings['smspool_api_key'] }}"
-                        placeholder="Paste your SMSPool API key here" class="font-mono text-xs pr-10">
-                    <button type="button" onclick="toggleSmsPoolKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                    <input type="password" name="herosms_api_key" id="herosms-key-input" value="{{ $settings['herosms_api_key'] }}"
+                        placeholder="Paste your Hero-SMS API key here" class="font-mono text-xs pr-10">
+                    <button type="button" onclick="toggleHeroSmsKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     </button>
                 </div>
-                <p class="text-xs text-slate-500 mt-1">Found in your <a href="https://www.smspool.net/my/api" target="_blank" class="text-cyan-400 hover:underline">SMSPool dashboard</a>. Keep this secret.</p>
+                <p class="text-xs text-slate-500 mt-1">Found in your <a href="https://hero-sms.com" target="_blank" class="text-cyan-400 hover:underline">Hero-SMS dashboard</a>. Keep this secret.</p>
             </div>
         </div>
     </div>
@@ -475,8 +475,8 @@ function toggleLogsplugKey() {
     const inp = document.getElementById('logsplug-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
-function toggleSmsPoolKey() {
-    const inp = document.getElementById('smspool-key-input');
+function toggleHeroSmsKey() {
+    const inp = document.getElementById('herosms-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 function toggleMailPassword() {

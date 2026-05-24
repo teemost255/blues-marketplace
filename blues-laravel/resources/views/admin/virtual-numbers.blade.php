@@ -63,11 +63,12 @@
                     <td class="px-5 py-3">
                         @php
                             $providerBadge = match($order->provider ?? 'logsplug') {
-                                'smspool'  => 'bg-cyan-900/50 text-cyan-300 border-cyan-700/50',
-                                default    => 'bg-purple-900/50 text-purple-300 border-purple-700/50',
+                                'herosms', 'smspool' => 'bg-cyan-900/50 text-cyan-300 border-cyan-700/50',
+                                default              => 'bg-purple-900/50 text-purple-300 border-purple-700/50',
                             };
                             $providerLabel = match($order->provider ?? 'logsplug') {
-                                'smspool'  => 'SMSPool',
+                                'herosms'  => 'Hero-SMS',
+                                'smspool'  => 'Hero-SMS',
                                 default    => 'Logsplug',
                             };
                         @endphp

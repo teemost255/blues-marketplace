@@ -26,8 +26,8 @@ class VirtualNumberOrder extends Model
         return $this->provider === 'logsplug';
     }
 
-    public function isSmsPool(): bool
+    public function isHeroSms(): bool
     {
-        return $this->provider === 'smspool';
+        return in_array($this->provider, ['herosms', 'smspool']);
     }
 }
