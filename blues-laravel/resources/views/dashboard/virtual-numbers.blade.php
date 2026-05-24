@@ -82,7 +82,7 @@
             @if($smsPoolConfigured)
             <button onclick="switchServer('smspool')" id="stab-smspool"
                 class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
-                💬 SMSPool
+                🌐 Server 3
             </button>
             @endif
         </div>
