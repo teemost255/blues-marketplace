@@ -30,6 +30,7 @@ use App\Http\Controllers\User\WishlistController;
 use App\Http\Controllers\User\NotificationsController;
 use App\Http\Controllers\User\SupportController;
 use App\Http\Controllers\User\ProfileController;
+use App\Http\Controllers\User\VirtualNumberController;
 
 // ── Public ────────────────────────────────────────────────────────────────────
 // Paystack webhook (no CSRF)
@@ -72,6 +73,11 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::post('/support',     [SupportController::class,      'store'])->name('support.store');
     Route::get('/profile',      [ProfileController::class,      'index'])->name('profile');
     Route::post('/profile',     [ProfileController::class,      'update'])->name('profile.update');
+
+    Route::get('/virtual-numbers',                  [VirtualNumberController::class, 'index'])->name('virtual-numbers');
+    Route::post('/virtual-numbers/order',           [VirtualNumberController::class, 'order'])->name('virtual-numbers.order');
+    Route::get('/virtual-numbers/{id}/sms',         [VirtualNumberController::class, 'checkSms'])->name('virtual-numbers.sms');
+    Route::delete('/virtual-numbers/{id}/cancel',   [VirtualNumberController::class, 'cancel'])->name('virtual-numbers.cancel');
 });
 
 // ── Admin Auth ────────────────────────────────────────────────────────────────

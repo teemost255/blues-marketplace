@@ -92,6 +92,54 @@
         </div>
     </div>
 
+    {{-- Virtual Numbers / Logsplug --}}
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-lg bg-purple-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-white">Virtual Numbers — Logsplug</h2>
+                <p class="text-xs text-slate-400">API credentials for virtual number provisioning</p>
+            </div>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1.5">API Base URL</label>
+                <input type="url" name="logsplug_api_url" value="{{ $settings['logsplug_api_url'] }}"
+                    placeholder="https://logsplug.com/api" class="font-mono text-xs">
+                <p class="text-xs text-slate-500 mt-1">The root endpoint of the Logsplug API (no trailing slash).</p>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1.5">API Key</label>
+                <div class="relative">
+                    <input type="password" name="logsplug_api_key" id="logsplug-key-input" value="{{ $settings['logsplug_api_key'] }}"
+                        placeholder="Paste your Logsplug API key here" class="font-mono text-xs pr-10">
+                    <button type="button" onclick="toggleLogsplugKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">Keep this secret. Used to authenticate all virtual number requests.</p>
+            </div>
+            <div class="pt-2 border-t border-slate-700">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <div class="relative">
+                        <input type="checkbox" name="virtual_number_enabled" value="1" id="vn-toggle"
+                            {{ $settings['virtual_number_enabled'] === '1' ? 'checked' : '' }} class="sr-only">
+                        <div class="w-10 h-6 rounded-full transition-colors" id="vn-toggle-bg"
+                             style="background: {{ $settings['virtual_number_enabled'] === '1' ? '#0ea5e9' : '#475569' }}"></div>
+                        <div class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform" id="vn-toggle-dot"
+                             style="transform: {{ $settings['virtual_number_enabled'] === '1' ? 'translateX(1rem)' : 'translateX(0)' }}"></div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-white font-medium">Enable Virtual Numbers</p>
+                        <p class="text-xs text-slate-400">Toggle the Virtual Numbers section in the user dashboard</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+    </div>
+
     {{-- System Info --}}
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
         <h2 class="font-semibold text-white mb-4">System Info</h2>
@@ -127,5 +175,13 @@ function toggleSecret() {
     const inp = document.getElementById('secret-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
+function toggleLogsplugKey() {
+    const inp = document.getElementById('logsplug-key-input');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+document.getElementById('vn-toggle').addEventListener('change', function() {
+    document.getElementById('vn-toggle-bg').style.background = this.checked ? '#0ea5e9' : '#475569';
+    document.getElementById('vn-toggle-dot').style.transform = this.checked ? 'translateX(1rem)' : 'translateX(0)';
+});
 </script>
 @endsection
