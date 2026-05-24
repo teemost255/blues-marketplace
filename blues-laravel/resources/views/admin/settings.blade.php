@@ -78,10 +78,35 @@
                     <label class="block text-xs text-slate-400 mb-1.5">Max Deposit (₦)</label>
                     <input type="number" name="max_deposit" value="{{ $settings['max_deposit'] }}" min="1" placeholder="1000000">
                 </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1.5">Referral Bonus ($)</label>
-                    <input type="number" name="referral_bonus" value="{{ $settings['referral_bonus'] }}" min="0" step="0.01" placeholder="0">
-                    <p class="text-xs text-slate-600 mt-1">Wallet credit for referrer when a friend registers. Set 0 to disable.</p>
+                <div class="sm:col-span-2 border-t border-slate-700 pt-4 mt-1">
+                    <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Referral Bonus Milestones</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1.5">🥉 Bronze Bonus (₦)</label>
+                            <input type="number" name="referral_bonus" value="{{ $settings['referral_bonus'] }}" min="0" step="0.01" placeholder="0">
+                            <p class="text-xs text-slate-600 mt-1">Paid from referral #1 to #{{ $settings['referral_bonus_tier2_threshold'] ?? 5 }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1.5">🥈 Silver Bonus (₦)</label>
+                            <input type="number" name="referral_bonus_tier2" value="{{ $settings['referral_bonus_tier2'] ?? '' }}" min="0" step="0.01" placeholder="0">
+                            <p class="text-xs text-slate-600 mt-1">Paid from referral #{{ $settings['referral_bonus_tier2_threshold'] ?? 6 }}+</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1.5">🥇 Gold Bonus (₦)</label>
+                            <input type="number" name="referral_bonus_tier3" value="{{ $settings['referral_bonus_tier3'] ?? '' }}" min="0" step="0.01" placeholder="0">
+                            <p class="text-xs text-slate-600 mt-1">Paid from referral #{{ $settings['referral_bonus_tier3_threshold'] ?? 16 }}+</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1.5">Silver Threshold (referral #)</label>
+                            <input type="number" name="referral_bonus_tier2_threshold" value="{{ $settings['referral_bonus_tier2_threshold'] ?? 6 }}" min="2" step="1" placeholder="6">
+                            <p class="text-xs text-slate-600 mt-1">Silver unlocks at this referral count</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1.5">Gold Threshold (referral #)</label>
+                            <input type="number" name="referral_bonus_tier3_threshold" value="{{ $settings['referral_bonus_tier3_threshold'] ?? 16 }}" min="2" step="1" placeholder="16">
+                            <p class="text-xs text-slate-600 mt-1">Gold unlocks at this referral count</p>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="pt-2 border-t border-slate-700">

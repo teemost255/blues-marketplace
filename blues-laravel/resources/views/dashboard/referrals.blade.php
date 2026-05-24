@@ -24,16 +24,93 @@
         </div>
     </div>
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
-            <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div class="w-12 h-12 rounded-xl
+            {{ $currentTier === 3 ? 'bg-yellow-500/10' : ($currentTier === 2 ? 'bg-slate-400/10' : 'bg-amber-700/10') }}
+            flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 {{ $currentTier === 3 ? 'text-yellow-400' : ($currentTier === 2 ? 'text-slate-300' : 'text-amber-600') }}"
+                fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         </div>
         <div>
-            <p class="text-2xl font-bold text-yellow-400">
-                {{ $bonusRate > 0 ? '₦' . number_format($bonusRate, 2) : 'Active' }}
+            <p class="text-lg font-bold
+                {{ $currentTier === 3 ? 'text-yellow-400' : ($currentTier === 2 ? 'text-slate-300' : 'text-amber-600') }}">
+                {{ ['', 'Bronze', 'Silver', 'Gold'][$currentTier] }} Tier
             </p>
-            <p class="text-sm text-slate-400">Bonus Per Referral</p>
+            <p class="text-sm text-slate-400">
+                {{ $currentBonus > 0 ? '₦' . number_format($currentBonus, 2) . ' / referral' : 'Current tier' }}
+            </p>
         </div>
     </div>
+</div>
+
+{{-- Milestone progress --}}
+<div class="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+    <div class="flex items-center justify-between mb-5">
+        <div>
+            <h2 class="font-bold text-white text-base">Milestone Progress</h2>
+            <p class="text-slate-400 text-sm mt-0.5">Refer more friends to unlock higher bonuses</p>
+        </div>
+        @if($nextThreshold)
+        <span class="text-xs text-slate-400 bg-slate-700 rounded-lg px-3 py-1.5">
+            {{ $nextThreshold - $referralCount }} more to reach next tier
+        </span>
+        @else
+        <span class="text-xs text-yellow-400 bg-yellow-900/30 border border-yellow-700/30 rounded-lg px-3 py-1.5 font-semibold">
+            🏆 Maximum tier reached!
+        </span>
+        @endif
+    </div>
+
+    {{-- Tier cards --}}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+        @foreach($milestones as $m)
+        @php
+            $active  = $currentTier === $m['tier'];
+            $unlocked = $referralCount >= $m['threshold'];
+            $colors  = [
+                'amber'  => ['border-amber-600/60',  'bg-amber-900/20',  'text-amber-400',  'bg-amber-600'],
+                'slate'  => ['border-slate-400/40',  'bg-slate-700/30',  'text-slate-300',  'bg-slate-400'],
+                'yellow' => ['border-yellow-500/60', 'bg-yellow-900/20', 'text-yellow-400', 'bg-yellow-500'],
+            ][$m['color']];
+        @endphp
+        <div class="rounded-xl border p-4 transition-all {{ $active
+            ? $colors[0] . ' ' . $colors[1] . ' ring-2 ring-offset-1 ring-offset-slate-800 ring-' . $m['color'] . '-500/40'
+            : 'border-slate-700 bg-slate-700/20' }}">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full {{ $unlocked ? $colors[3] : 'bg-slate-600' }} flex items-center justify-center">
+                        @if($unlocked)
+                            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                        @else
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        @endif
+                    </span>
+                    <span class="font-bold text-sm {{ $unlocked ? $colors[2] : 'text-slate-500' }}">{{ $m['label'] }}</span>
+                    @if($active)<span class="text-xs bg-brand/20 text-brand px-1.5 py-0.5 rounded font-semibold">Current</span>@endif
+                </div>
+            </div>
+            <p class="text-xs text-slate-400 mb-1">Unlock at <span class="{{ $unlocked ? $colors[2] : 'text-slate-300' }} font-semibold">{{ $m['threshold'] }} referral{{ $m['threshold'] !== 1 ? 's' : '' }}</span></p>
+            <p class="text-xl font-bold {{ $unlocked ? $colors[2] : 'text-slate-600' }}">
+                {{ $m['bonus'] > 0 ? '₦' . number_format($m['bonus'], 2) : '₦0.00' }}
+            </p>
+            <p class="text-xs text-slate-500">per referral</p>
+        </div>
+        @endforeach
+    </div>
+
+    {{-- Progress bar to next tier --}}
+    @if($nextThreshold && $nextThreshold > 1)
+    <div>
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+            <span>{{ $referralCount }} referred</span>
+            <span>{{ $nextThreshold }} needed for next tier (+₦{{ number_format($nextBonus, 2) }})</span>
+        </div>
+        <div class="w-full bg-slate-700 rounded-full h-2.5">
+            <div class="bg-gradient-to-r from-brand to-sky-400 h-2.5 rounded-full transition-all duration-500"
+                style="width: {{ $progressPct }}%"></div>
+        </div>
+        <p class="text-xs text-slate-500 mt-1.5">{{ $progressPct }}% of the way to {{ ['','Silver','Gold'][$currentTier] ?? 'next tier' }}</p>
+    </div>
+    @endif
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -43,40 +120,35 @@
         <h2 class="font-bold text-white text-base mb-1">Your Referral Link</h2>
         <p class="text-slate-400 text-sm mb-6">Share this link — when a friend registers using it, you both benefit.</p>
 
-        {{-- Link --}}
         <div class="mb-5">
             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Referral Link</label>
             <div class="flex items-center gap-2">
                 <input id="referral-link" type="text" readonly
                     value="{{ url('/r/' . $profile->referral_code) }}"
                     class="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-200 text-sm font-mono select-all focus:outline-none focus:border-brand">
-                <button onclick="copyText('referral-link', 'link-btn', 'link-ok')"
-                    id="link-btn"
+                <button onclick="copyText('referral-link', 'link-ok')"
                     class="flex-shrink-0 flex items-center gap-1.5 bg-brand hover:bg-brand-dark text-white px-4 py-3 rounded-lg text-sm font-semibold transition-colors">
-                    <svg id="link-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
                     Copy
                 </button>
             </div>
             <p id="link-ok" class="text-green-400 text-xs mt-1.5 hidden">✓ Link copied!</p>
         </div>
 
-        {{-- Code --}}
         <div class="mb-6">
             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Referral Code</label>
             <div class="flex items-center gap-2">
                 <code id="referral-code-display"
                     class="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-brand font-mono font-bold text-lg tracking-[0.3em] select-all">{{ $profile->referral_code }}</code>
-                <button onclick="copyText('referral-code-display', 'code-btn', 'code-ok')"
-                    id="code-btn"
+                <button onclick="copyText('referral-code-display', 'code-ok')"
                     class="flex-shrink-0 flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-lg text-sm font-semibold transition-colors">
-                    <svg id="code-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
                     Copy
                 </button>
             </div>
             <p id="code-ok" class="text-green-400 text-xs mt-1.5 hidden">✓ Code copied!</p>
         </div>
 
-        {{-- Share buttons --}}
         <div>
             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Share via</label>
             <div class="flex flex-wrap gap-2">
@@ -108,18 +180,16 @@
         <h3 class="font-bold text-white text-base mb-5">How it works</h3>
         <ol class="space-y-5">
             @foreach([
-                ['step' => '1', 'color' => 'bg-brand', 'title' => 'Copy your link', 'desc' => 'Share your unique referral link or code with friends.'],
-                ['step' => '2', 'color' => 'bg-purple-500', 'title' => 'Friend registers', 'desc' => 'They sign up using your link — it tracks automatically.'],
-                ['step' => '3', 'color' => 'bg-green-500', 'title' => 'You earn', 'desc' => $bonusRate > 0
-                    ? '₦' . number_format($bonusRate, 2) . ' is instantly added to your wallet.'
-                    : 'A bonus is credited to your wallet instantly.'],
-                ['step' => '4', 'color' => 'bg-yellow-500', 'title' => 'No limit', 'desc' => 'Refer as many people as you like — earnings stack up.'],
-            ] as $s)
+                ['1', 'bg-brand',      'Copy your link',    'Share your unique referral link or code with friends.'],
+                ['2', 'bg-purple-500', 'Friend registers',  'They sign up using your link — it tracks automatically.'],
+                ['3', 'bg-green-500',  'You earn',          $currentBonus > 0 ? '₦' . number_format($currentBonus, 2) . ' added to your wallet instantly.' : 'A bonus is credited to your wallet.'],
+                ['4', 'bg-yellow-500', 'Level up',          'Hit milestones (6, 16 refs) to unlock bigger bonuses!'],
+            ] as [$n, $c, $t, $d])
             <li class="flex gap-3">
-                <span class="flex-shrink-0 w-7 h-7 rounded-full {{ $s['color'] }} text-white text-xs font-bold flex items-center justify-center">{{ $s['step'] }}</span>
+                <span class="flex-shrink-0 w-7 h-7 rounded-full {{ $c }} text-white text-xs font-bold flex items-center justify-center">{{ $n }}</span>
                 <div>
-                    <p class="text-sm font-semibold text-white">{{ $s['title'] }}</p>
-                    <p class="text-xs text-slate-400 mt-0.5">{{ $s['desc'] }}</p>
+                    <p class="text-sm font-semibold text-white">{{ $t }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ $d }}</p>
                 </div>
             </li>
             @endforeach
@@ -127,9 +197,8 @@
     </div>
 </div>
 
-{{-- Referred friends --}}
+{{-- Referred friends + Earnings history --}}
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
     <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
             <h3 class="font-semibold text-white">Friends You Referred</h3>
@@ -141,7 +210,7 @@
             <p class="text-slate-400 text-sm">No referrals yet. Share your link to get started!</p>
         </div>
         @else
-        <ul class="divide-y divide-slate-700/50">
+        <ul class="divide-y divide-slate-700/50 max-h-80 overflow-y-auto">
             @foreach($referrals as $ref)
             <li class="flex items-center gap-3 px-6 py-3">
                 <div class="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold text-sm flex-shrink-0">
@@ -151,8 +220,8 @@
                     <p class="text-sm font-medium text-white truncate">{{ $ref->name }}</p>
                     <p class="text-xs text-slate-500">Joined {{ $ref->created_at->diffForHumans() }}</p>
                 </div>
-                @if($bonusRate > 0)
-                <span class="text-xs text-green-400 font-semibold flex-shrink-0">+₦{{ number_format($bonusRate, 2) }}</span>
+                @if($currentBonus > 0)
+                <span class="text-xs text-green-400 font-semibold flex-shrink-0">+₦{{ number_format($currentBonus, 2) }}</span>
                 @endif
             </li>
             @endforeach
@@ -160,7 +229,6 @@
         @endif
     </div>
 
-    {{-- Earnings history --}}
     <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
             <h3 class="font-semibold text-white">Earnings History</h3>
@@ -172,7 +240,7 @@
             <p class="text-slate-400 text-sm">No earnings yet.</p>
         </div>
         @else
-        <ul class="divide-y divide-slate-700/50">
+        <ul class="divide-y divide-slate-700/50 max-h-80 overflow-y-auto">
             @foreach($earnings as $tx)
             <li class="flex items-center gap-3 px-6 py-3">
                 <div class="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
@@ -191,18 +259,13 @@
 </div>
 
 <script>
-function copyText(inputId, btnId, okId) {
-    const el = document.getElementById(inputId);
+function copyText(inputId, okId) {
+    const el   = document.getElementById(inputId);
     const text = el.tagName === 'INPUT' ? el.value : el.textContent.trim();
     navigator.clipboard.writeText(text).then(() => {
         const ok = document.getElementById(okId);
         ok.classList.remove('hidden');
-        const btn = document.getElementById(btnId);
-        btn.classList.add('opacity-75');
-        setTimeout(() => {
-            ok.classList.add('hidden');
-            btn.classList.remove('opacity-75');
-        }, 2500);
+        setTimeout(() => ok.classList.add('hidden'), 2500);
     });
 }
 </script>

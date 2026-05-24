@@ -11,69 +11,71 @@ use Illuminate\Support\Facades\DB;
 
 class VirtualNumberController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
         $enabled    = Setting::get('virtual_number_enabled', '1') === '1';
         $configured = (new LogsplugService())->isConfigured();
+        $orders     = \App\Models\VirtualNumberOrder::where('user_id', auth()->id())->latest()->paginate(10);
+        $wallet     = Wallet::firstOrCreate(['user_id' => auth()->id()], ['balance' => 0]);
 
-        $countries = [];
-        $services  = [];
-        $apiError  = null;
+        return view('dashboard.virtual-numbers', compact('enabled', 'configured', 'orders', 'wallet'));
+    }
 
-        if ($enabled && $configured) {
-            $svc = new LogsplugService();
+    public function getCountries(Request $request)
+    {
+        $server = $request->get('server', 'server2');
+        $svc    = new LogsplugService();
 
-            $selectedServer  = $request->get('server', 'server2');
-            $selectedCountry = $request->get('country');
-
-            if ($selectedServer === 'server2') {
-                $cResult = $svc->getCountries('server2');
-                if ($cResult['success']) {
-                    $countries = $cResult['data']['data'] ?? [];
-                } else {
-                    $apiError = $cResult['message'];
-                }
-
-                if (!$selectedCountry && !empty($countries)) {
-                    $selectedCountry = (string)($countries[0]['id'] ?? '');
-                }
-
-                if ($selectedCountry) {
-                    $sResult = $svc->getServices('server2', $selectedCountry);
-                    if ($sResult['success']) {
-                        $services = $sResult['data']['data'] ?? [];
-                    } elseif (!$apiError) {
-                        $apiError = $sResult['message'];
-                    }
-                }
-            } else {
-                $sResult = $svc->getServices('server1');
-                if ($sResult['success']) {
-                    $services = $sResult['data']['data'] ?? [];
-                } else {
-                    $apiError = $sResult['message'];
-                }
-            }
+        if (!$svc->isConfigured()) {
+            return response()->json(['success' => false, 'message' => 'API not configured.']);
         }
 
-        $orders = \App\Models\VirtualNumberOrder::where('user_id', auth()->id())
-            ->latest()
-            ->paginate(10);
+        if ($server === 'server1') {
+            return response()->json(['success' => true, 'data' => [], 'flow' => 'ONE_STEP']);
+        }
 
-        $wallet = Wallet::firstOrCreate(['user_id' => auth()->id()], ['balance' => 0]);
+        $result = $svc->getCountries($server);
 
-        return view('dashboard.virtual-numbers', compact(
-            'enabled', 'configured', 'countries', 'services', 'orders', 'wallet', 'apiError'
-        ));
+        if ($result['success']) {
+            return response()->json([
+                'success' => true,
+                'data'    => $result['data']['data'] ?? [],
+                'flow'    => 'TWO_STEP',
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => $result['message']]);
+    }
+
+    public function getServices(Request $request)
+    {
+        $server  = $request->get('server', 'server2');
+        $country = $request->get('country');
+        $svc     = new LogsplugService();
+
+        if (!$svc->isConfigured()) {
+            return response()->json(['success' => false, 'message' => 'API not configured.']);
+        }
+
+        $result = $svc->getServices($server, $country ?: null);
+
+        if ($result['success']) {
+            return response()->json([
+                'success' => true,
+                'data'    => $result['data']['data'] ?? [],
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => $result['message']]);
     }
 
     public function order(Request $request)
     {
         $request->validate([
-            'server'     => 'required|string|in:server1,server2',
-            'service_id' => 'required|string',
-            'country'    => 'nullable|string',
-            'price'      => 'nullable|numeric|min:0',
+            'server'       => 'required|string|in:server1,server2',
+            'service_id'   => 'required|string',
+            'country'      => 'nullable|string',
+            'price'        => 'nullable|numeric|min:0',
             'service_name' => 'nullable|string',
         ]);
 
@@ -91,11 +93,7 @@ class VirtualNumberController extends Controller
             return back()->with('error', 'Insufficient wallet balance. Please top up your wallet.');
         }
 
-        $rentResult = $svc->rentNumber(
-            $request->server,
-            $request->service_id,
-            $request->country ?? ''
-        );
+        $rentResult = $svc->rentNumber($request->server, $request->service_id, $request->country ?? '');
 
         if (!$rentResult['success']) {
             return back()->with('error', 'Could not get a number: ' . $rentResult['message']);
@@ -146,10 +144,10 @@ class VirtualNumberController extends Controller
         $result = $svc->getOtp($order->external_order_id);
 
         if ($result['success']) {
-            $data   = $result['data']['data'] ?? $result['data'];
-            $codes  = $data['code'] ?? [];
-            $sms    = is_array($codes) ? implode(', ', $codes) : (string)$codes;
-            $status = strtolower((string)($data['status'] ?? ''));
+            $data      = $result['data']['data'] ?? $result['data'];
+            $codes     = $data['code'] ?? [];
+            $sms       = is_array($codes) ? implode(', ', $codes) : (string)$codes;
+            $status    = strtolower((string)($data['status'] ?? ''));
 
             $newStatus = match($status) {
                 'received', 'completed', 'success' => 'completed',
@@ -188,7 +186,6 @@ class VirtualNumberController extends Controller
 
         if ($result['success']) {
             $order->update(['status' => 'cancelled']);
-
             $refunded = $result['data']['data']['refunded'] ?? false;
 
             if ($order->cost > 0 && $refunded) {
