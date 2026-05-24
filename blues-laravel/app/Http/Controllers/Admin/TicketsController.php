@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
-use App\Models\SupportTicket;
+use App\Models\{SupportTicket, Notification};
 use Illuminate\Http\Request;
 
 class TicketsController extends Controller
@@ -16,6 +16,14 @@ class TicketsController extends Controller
     {
         $request->validate(['admin_reply' => 'required|string', 'status' => 'required|in:open,in_progress,resolved,closed']);
         $ticket->update(['admin_reply' => $request->admin_reply, 'status' => $request->status]);
+
+        Notification::create([
+            'user_id' => $ticket->user_id,
+            'title'   => 'Support Ticket Update',
+            'message' => 'Your support ticket has received a reply. Status: ' . ucfirst(str_replace('_', ' ', $request->status)) . '.',
+            'type'    => 'info',
+        ]);
+
         return back()->with('success', 'Reply sent.');
     }
 }

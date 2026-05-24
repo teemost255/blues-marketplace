@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\TicketsController;
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\VirtualNumberOrdersController;
+use App\Http\Controllers\Admin\AnnouncementsController;
 
 // Public imports
 use App\Http\Controllers\Auth\LoginController;
@@ -70,6 +71,7 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::post('/wishlist',    [WishlistController::class,     'store'])->name('wishlist.store');
     Route::delete('/wishlist/{id}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
     Route::get('/notifications',[NotificationsController::class,'index'])->name('notifications');
+    Route::post('/notifications/mark-all-read',[NotificationsController::class,'markAllRead'])->name('notifications.mark-all-read');
     Route::get('/support',      [SupportController::class,      'index'])->name('support');
     Route::post('/support',     [SupportController::class,      'store'])->name('support.store');
     Route::get('/profile',      [ProfileController::class,      'index'])->name('profile');
@@ -131,4 +133,7 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::get('/virtual-numbers',                              [VirtualNumberOrdersController::class, 'index'])->name('virtual-numbers');
     Route::post('/virtual-numbers/{order}/status',             [VirtualNumberOrdersController::class, 'updateStatus'])->name('virtual-numbers.status');
     Route::delete('/virtual-numbers/{order}',                  [VirtualNumberOrdersController::class, 'destroy'])->name('virtual-numbers.destroy');
+
+    Route::get('/announcements',  [AnnouncementsController::class, 'index'])->name('announcements');
+    Route::post('/announcements', [AnnouncementsController::class, 'store'])->name('announcements.store');
 });

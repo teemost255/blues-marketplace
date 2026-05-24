@@ -2,7 +2,7 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Wallet, WalletTransaction, Setting};
+use App\Models\{Wallet, WalletTransaction, Setting, Notification};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Auth, Http, Log};
 
@@ -142,6 +142,13 @@ class WalletController extends Controller
             'type'        => 'deposit',
             'reference'   => $reference,
             'description' => $description,
+        ]);
+
+        Notification::create([
+            'user_id' => $userId,
+            'title'   => 'Wallet Funded',
+            'message' => '₦' . number_format($amount, 2) . ' has been added to your wallet successfully.',
+            'type'    => 'success',
         ]);
     }
 }

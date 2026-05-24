@@ -13,4 +13,10 @@ class NotificationsController extends Controller
         Notification::where('user_id', Auth::id())->where('is_read', false)->update(['is_read' => true]);
         return view('dashboard.notifications', compact('notifications'));
     }
+
+    public function markAllRead()
+    {
+        Notification::where('user_id', Auth::id())->where('is_read', false)->update(['is_read' => true]);
+        return response()->json(['success' => true]);
+    }
 }
