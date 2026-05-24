@@ -51,7 +51,7 @@
       <div class="order-box">
         <div class="label">Order Details</div>
         <div class="row"><span class="key">Item</span><span class="val">{{ $listing->title }}</span></div>
-        <div class="row"><span class="key">Amount Paid</span><span class="val">${{ number_format($purchase->amount, 2) }}</span></div>
+        <div class="row"><span class="key">Amount Paid</span><span class="val">₦{{ number_format($purchase->amount, 2) }}</span></div>
         <div class="row"><span class="key">Order ID</span><span class="val">#{{ $purchase->id }}</span></div>
         <div class="row"><span class="key">Status</span><span class="val"><span class="badge">Completed</span></span></div>
         <div class="row"><span class="key">Date</span><span class="val">{{ $purchase->created_at->format('M d, Y H:i') }}</span></div>

@@ -75,7 +75,7 @@
                     </a>
                     <div class="mt-auto flex items-center justify-between pt-3 border-t border-slate-700">
                         <div>
-                            <span class="text-xl font-bold text-white">${{ number_format($listing->price, 2) }}</span>
+                            <span class="text-xl font-bold text-white">₦{{ number_format($listing->price, 2) }}</span>
                             <p class="text-xs text-slate-400">{{ $listing->stock }} in stock</p>
                         </div>
                         <div class="flex gap-2">

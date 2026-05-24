@@ -288,7 +288,7 @@
                 @endif
                 <h3 class="font-semibold text-slate-200 text-sm mt-1 mb-3 line-clamp-2 group-hover:text-white transition-colors leading-snug">{{ $listing->title }}</h3>
                 <div class="mt-auto flex items-center justify-between pt-3 border-t border-slate-700/60">
-                    <span class="text-xl font-extrabold text-white">${{ number_format($listing->price, 2) }}</span>
+                    <span class="text-xl font-extrabold text-white">₦{{ number_format($listing->price, 2) }}</span>
                     <span class="bg-brand/10 hover:bg-brand text-brand hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-brand/30 hover:border-brand transition-all">Buy Now</span>
                 </div>
             </div>
@@ -367,7 +367,7 @@
                 @endif
                 <h3 class="font-semibold text-white text-sm mt-0.5 truncate group-hover:text-green-300 transition-colors">{{ $listing->title }}</h3>
                 <div class="flex items-center gap-2 mt-1">
-                    <span class="text-white font-extrabold text-base">${{ number_format($listing->price, 2) }}</span>
+                    <span class="text-white font-extrabold text-base">₦{{ number_format($listing->price, 2) }}</span>
                     <span class="text-slate-500 text-xs">·</span>
                     <span class="text-slate-400 text-xs">{{ $listing->stock }} in stock</span>
                 </div>
@@ -779,7 +779,7 @@
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-white text-xs font-medium truncate"><span class="text-brand">{{ $act['user'] }}</span> bought <span class="text-slate-300">{{ \Illuminate\Support\Str::limit($act['listing'], 28) }}</span></p>
-                    <p class="text-slate-500 text-[11px] mt-0.5">${{ $act['price'] }} · {{ $act['ago'] }}</p>
+                    <p class="text-slate-500 text-[11px] mt-0.5">₦{{ $act['price'] }} · {{ $act['ago'] }}</p>
                 </div>
             </div>
             @endforeach

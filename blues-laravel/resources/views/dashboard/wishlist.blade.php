@@ -32,7 +32,7 @@
                     <h3 class="font-semibold text-white text-sm mt-1 line-clamp-2 group-hover:text-brand transition-colors">{{ $item->listing->title }}</h3>
                 </a>
                 <div class="mt-auto pt-3 border-t border-slate-700 flex items-center justify-between">
-                    <span class="text-lg font-bold text-white">${{ number_format($item->listing->price, 2) }}</span>
+                    <span class="text-lg font-bold text-white">₦{{ number_format($item->listing->price, 2) }}</span>
                     <div class="flex gap-2">
                         <form method="POST" action="{{ route('dashboard.wishlist.destroy', $item->listing->id) }}" class="inline">
                             @csrf @method('DELETE')

@@ -101,7 +101,7 @@
         <h1 class="text-base font-semibold text-white">@yield('page-title', 'Dashboard')</h1>
         <div class="flex items-center gap-3 text-sm text-slate-400">
             <span>Wallet:</span>
-            <span class="text-white font-semibold">${{ number_format(\App\Models\Wallet::where('user_id', auth()->id())->value('balance') ?? 0, 2) }}</span>
+            <span class="text-white font-semibold">₦{{ number_format(\App\Models\Wallet::where('user_id', auth()->id())->value('balance') ?? 0, 2) }}</span>
             <a href="{{ route('dashboard.wallet') }}" class="text-brand hover:text-sky-300 text-xs">Top up →</a>
         </div>
     </header>

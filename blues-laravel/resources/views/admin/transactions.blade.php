@@ -20,7 +20,7 @@
                         {{ $t->type === 'deposit' ? 'bg-green-900/50 text-green-400' : ($t->type === 'purchase' ? 'bg-blue-900/50 text-blue-400' : 'bg-slate-700 text-slate-300') }}">
                         {{ ucfirst($t->type) }}</span></td>
                     <td class="px-6 py-3 {{ $t->type === 'deposit' ? 'text-green-400' : 'text-red-400' }} font-medium">
-                        {{ $t->type === 'deposit' ? '+' : '-' }}${{ number_format(abs($t->amount), 2) }}</td>
+                        {{ $t->type === 'deposit' ? '+' : '-' }}₦{{ number_format(abs($t->amount), 2) }}</td>
                     <td class="px-6 py-3 text-slate-400">{{ $t->description ?? '—' }}</td>
                     <td class="px-6 py-3 text-slate-400">{{ $t->created_at->format('Y-m-d H:i') }}</td>
                 </tr>

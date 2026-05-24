@@ -39,7 +39,7 @@
             <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 mb-5">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-slate-400 text-sm">Price</span>
-                    <span class="text-3xl font-extrabold text-white">${{ number_format($listing->price, 2) }}</span>
+                    <span class="text-3xl font-extrabold text-white">₦{{ number_format($listing->price, 2) }}</span>
                 </div>
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-slate-400">Availability</span>
@@ -56,7 +56,7 @@
                     <form method="POST" action="{{ route('marketplace.buy', $listing->id) }}" class="mb-3">
                         @csrf
                         <button type="submit" class="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl text-base transition-colors">
-                            Buy Now — ${{ number_format($listing->price, 2) }}
+                            Buy Now — ₦{{ number_format($listing->price, 2) }}
                         </button>
                     </form>
                     <p class="text-xs text-slate-500 text-center">Deducted from your wallet balance. Delivery is instant.</p>
@@ -172,7 +172,7 @@
                 </div>
                 <div class="p-3">
                     <p class="text-white text-xs font-medium line-clamp-2 group-hover:text-brand transition-colors">{{ $item->title }}</p>
-                    <p class="text-brand font-bold text-sm mt-1">${{ number_format($item->price, 2) }}</p>
+                    <p class="text-brand font-bold text-sm mt-1">₦{{ number_format($item->price, 2) }}</p>
                 </div>
             </a>
             @endforeach

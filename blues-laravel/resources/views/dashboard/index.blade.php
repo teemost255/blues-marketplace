@@ -7,7 +7,7 @@
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Wallet Balance</p>
-        <p class="text-2xl font-bold text-white mt-1">${{ number_format($wallet->balance, 2) }}</p>
+        <p class="text-2xl font-bold text-white mt-1">₦{{ number_format($wallet->balance, 2) }}</p>
         <a href="{{ route('dashboard.wallet') }}" class="text-xs text-brand hover:underline mt-1 inline-block">Top up →</a>
     </div>
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
@@ -16,7 +16,7 @@
     </div>
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Spent</p>
-        <p class="text-2xl font-bold text-white mt-1">${{ number_format($totalSpent, 2) }}</p>
+        <p class="text-2xl font-bold text-white mt-1">₦{{ number_format($totalSpent, 2) }}</p>
     </div>
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Unread Notifications</p>
@@ -97,7 +97,7 @@
             @forelse($recentOrders as $order)
                 <tr class="border-b border-slate-700/50">
                     <td class="px-6 py-3 text-slate-300">{{ $order->listing?->title ?? 'Deleted listing' }}</td>
-                    <td class="px-6 py-3 text-white font-medium">${{ number_format($order->amount, 2) }}</td>
+                    <td class="px-6 py-3 text-white font-medium">₦{{ number_format($order->amount, 2) }}</td>
                     <td class="px-6 py-3">
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $order->status === 'completed' ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400' }}">
                             {{ ucfirst($order->status) }}

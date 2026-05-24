@@ -17,7 +17,7 @@
     </div>
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Bonus Per Referral</p>
-        <p class="text-3xl font-bold text-green-400 mt-1">${{ number_format($referralBonusRate, 2) }}</p>
+        <p class="text-3xl font-bold text-green-400 mt-1">₦{{ number_format($referralBonusRate, 2) }}</p>
         <p class="text-xs text-slate-500 mt-1">Configurable in Settings</p>
     </div>
 </div>
@@ -70,7 +70,7 @@
                             {{ number_format($entry['referral_count']) }} referrals
                         </span>
                     </td>
-                    <td class="px-6 py-3 text-green-400 font-semibold">${{ number_format($entry['total_bonus'], 2) }}</td>
+                    <td class="px-6 py-3 text-green-400 font-semibold">₦{{ number_format($entry['total_bonus'], 2) }}</td>
                     <td class="px-6 py-3 text-slate-400 text-xs">{{ $u->created_at->format('M j, Y') }}</td>
                 </tr>
             @empty
