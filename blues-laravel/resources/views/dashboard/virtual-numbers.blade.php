@@ -282,8 +282,8 @@
 @endif
 
 <script>
-const COUNTRIES_URL = '{{ route("dashboard.virtual-numbers.countries") }}';
-const SERVICES_URL  = '{{ route("dashboard.virtual-numbers.services") }}';
+const COUNTRIES_URL = '/dashboard/virtual-numbers/api/countries';
+const SERVICES_URL  = '/dashboard/virtual-numbers/api/services';
 
 let currentServer   = 'server2';
 let allServices     = [];
@@ -322,14 +322,23 @@ async function loadCountries() {
     resetSelection();
 
     try {
-        const res  = await fetch(COUNTRIES_URL + '?server=' + currentServer, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const res  = await fetch(COUNTRIES_URL + '?server=' + currentServer, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        });
+        if (!res.ok) {
+            console.error('Countries API HTTP error:', res.status, res.statusText);
+            showServiceState('error', 'API error (' + res.status + '). Please try again.');
+            return;
+        }
         const data = await res.json();
+        console.log('Countries response:', data);
 
-        if (data.success && data.data.length) {
+        if (data.success && Array.isArray(data.data) && data.data.length) {
             sel.innerHTML = data.data.map(c => {
-                const id   = c.id ?? c.code ?? '';
-                const name = c.name ?? id;
-                return `<option value="${id}">${name}</option>`;
+                const val  = c.code ?? c.id ?? '';   // numeric code e.g. 93
+                const name = c.name ?? c.id ?? val;
+                return `<option value="${val}">${name}</option>`;
             }).join('');
             loadServices();
         } else {
@@ -337,6 +346,7 @@ async function loadCountries() {
             showServiceState('empty', data.message || 'No countries found.');
         }
     } catch (e) {
+        console.error('Countries fetch error:', e);
         showServiceState('error', 'Failed to load countries. Check your connection.');
     }
 }
@@ -352,10 +362,19 @@ async function loadServices() {
     const url     = SERVICES_URL + '?server=' + currentServer + (country ? '&country=' + encodeURIComponent(country) : '');
 
     try {
-        const res  = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const res  = await fetch(url, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        });
+        if (!res.ok) {
+            console.error('Services API HTTP error:', res.status, res.statusText);
+            showServiceState('error', 'API error (' + res.status + '). Please try again.');
+            return;
+        }
         const data = await res.json();
+        console.log('Services response:', data);
 
-        if (data.success && data.data.length) {
+        if (data.success && Array.isArray(data.data) && data.data.length) {
             allServices = data.data;
             renderServices(allServices);
         } else {
@@ -363,6 +382,7 @@ async function loadServices() {
             showServiceState('empty', data.message || 'No services available for this selection.');
         }
     } catch (e) {
+        console.error('Services fetch error:', e);
         showServiceState('error', 'Failed to load services. Please try again.');
     }
 }
