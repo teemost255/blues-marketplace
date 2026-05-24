@@ -21,11 +21,6 @@
 </div>
 @else
 
-@php
-    $activeOrders    = $orders->filter(fn($o) => $o->status === 'active');
-    $historyOrders   = $orders->filter(fn($o) => $o->status !== 'active');
-@endphp
-
 {{-- ── Top bar ────────────────────────────────────────────────────────────── --}}
 <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
     <div class="flex items-center gap-3">

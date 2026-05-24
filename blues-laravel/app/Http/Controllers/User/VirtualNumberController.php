@@ -21,15 +21,19 @@ class VirtualNumberController extends Controller
         $smsPoolConfigured  = (new SmsPoolService())->isConfigured();
         $configured         = $logsplugConfigured || $smsPoolConfigured;
 
-        $orders  = VirtualNumberOrder::where('user_id', auth()->id())->latest()->paginate(10);
-        $wallet  = Wallet::firstOrCreate(['user_id' => auth()->id()], ['balance' => 0]);
+        $orders       = VirtualNumberOrder::where('user_id', auth()->id())->latest()->paginate(10);
+        $wallet       = Wallet::firstOrCreate(['user_id' => auth()->id()], ['balance' => 0]);
 
         $commissionType  = Setting::get('vn_commission_type', 'flat');
         $commissionValue = (float) Setting::get('vn_commission_value', '0');
 
+        $activeOrders  = $orders->getCollection()->filter(fn($o) => $o->status === 'active');
+        $historyOrders = $orders->getCollection()->filter(fn($o) => $o->status !== 'active');
+
         return view('dashboard.virtual-numbers', compact(
             'enabled', 'configured', 'logsplugConfigured', 'smsPoolConfigured',
-            'orders', 'wallet', 'commissionType', 'commissionValue'
+            'orders', 'wallet', 'commissionType', 'commissionValue',
+            'activeOrders', 'historyOrders'
         ));
     }
 

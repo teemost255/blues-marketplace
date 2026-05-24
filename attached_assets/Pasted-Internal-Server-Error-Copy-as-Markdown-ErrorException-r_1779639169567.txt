@@ -1,0 +1,147 @@
+Internal Server Error
+
+Copy as Markdown
+ErrorException
+resources/views/dashboard/virtual-numbers.blade.php:676
+Undefined variable $activeOrders
+
+LARAVEL
+12.60.2
+PHP
+8.2.23
+UNHANDLED
+CODE 0
+500
+GET
+http://032af023-69e4-4f7c-b3c4-fa244cf2cd1c-00-2hn58dbhm32hr.kirk.replit.dev/dashboard/virtual-numbers
+
+Exception trace
+Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}(integer, string, string, integer)
+resources/views/dashboard/virtual-numbers.blade.php:676
+
+671});
+672
+673document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+674
+675// ── SMS polling ───────────────────────────────────────────────────────────────
+676const activeOrderIds = [{{ $activeOrders->pluck('id')->join(', ') }}];
+677
+678async function checkSmsOnce(orderId, btn) {
+679    const orig = btn?.innerHTML;
+680    if (btn) { btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Checking…'; btn.disabled = true; }
+681    try {
+682        const res  = await fetch(`/dashboard/virtual-numbers/${orderId}/sms`, {
+683            credentials: 'same-origin',
+684            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+685        });
+686        const data = await res.json();
+687        if (data.success) {
+688
+13 vendor frames
+
+Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(object(Illuminate\Http\Request))
+app/Http/Middleware/UserAuth.php:14
+
+43 vendor frames
+
+Illuminate\Foundation\Application->handleRequest(object(Illuminate\Http\Request))
+public/index.php:20
+
+1 vendor frame
+
+Queries
+1-10 of 18
+sqlite
+select "value" from "settings" where "key" = 'mail_mailer' limit 1
+0.58ms
+sqlite
+select "value" from "settings" where "key" = 'mail_host' limit 1
+0.08ms
+sqlite
+select "value" from "settings" where "key" = 'mail_port' limit 1
+0.05ms
+sqlite
+select "value" from "settings" where "key" = 'mail_encryption' limit 1
+0.05ms
+sqlite
+select "value" from "settings" where "key" = 'mail_username' limit 1
+0.04ms
+sqlite
+select "value" from "settings" where "key" = 'mail_password' limit 1
+0.04ms
+sqlite
+select "value" from "settings" where "key" = 'mail_from_address' limit 1
+0.04ms
+sqlite
+select "value" from "settings" where "key" = 'mail_from_name' limit 1
+0.04ms
+sqlite
+select * from "sessions" where "id" = 'pokq2LMyZBDzVzRKKhEJHArl3dTiVdcwG5Z6gyIm' limit 1
+0.1ms
+sqlite
+select * from "users" where "id" = 1 limit 1
+0.11ms
+
+
+1
+2
+
+
+Headers
+host
+032af023-69e4-4f7c-b3c4-fa244cf2cd1c-00-2hn58dbhm32hr.kirk.replit.dev
+user-agent
+Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+accept
+text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+en-US,en;q=0.9
+cache-control
+max-age=0
+cookie
+XSRF-TOKEN=eyJpdiI6IlU0dEVGeTdBeXVjTllJdHVCSFd2eFE9PSIsInZhbHVlIjoiV1lETEtsZ1pzR3NvUEtDekxCN3I0cThaajByOFAwYi9SMEtEdkpaOU9MWGNvbFZrcjljUC8wdkxVNFNTSmF0V25UUThZYXVueDFvcGJUSEhaRk9pdHpMeDd4Y1JYQ2F2YVNTUktOQlBBNmpMY20xWlIyMnpyeW8vOXlNWFJFQWEiLCJtYWMiOiIzZDAwNDdmM2ZjZWRiZDY2NDExYjU4ZTQwZjI4Y2JmMTk2ZDRjYTFmZTdiNzYzNDk3ZDcwZWRhNDZhMjVmZmU5IiwidGFnIjoiIn0%3D; laravel-session=eyJpdiI6InJYUEZHekg4K2lsY0dvWloxUEpCTGc9PSIsInZhbHVlIjoiTDMrbVBpTUhkc292Um5XWEhsR2l0dGhiMlJmNTN6MkhuaHZrUGpVRHVMZ25BWVIwUEc0Ky9LS2xGSGlDUFJZZXJXcDd3OFdRaGZuWFNPTlBsN0dYU1ZoNEFTSDIzSTMvWmFGOWNTNTFkZEtlSGJCellWY01yVDk3bmNwTXFRamYiLCJtYWMiOiJhN2ZiMzA1OTg2YjQzYmU0YTIyMDFlMTAwOTg1YTdhMTc4NzJjNzQ5NjU0ZmY3ZjgwZTliNDQ4NWFmYzBmYzc5IiwidGFnIjoiIn0%3D
+dnt
+1
+sec-ch-ua
+"Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"Android"
+sec-fetch-dest
+document
+sec-fetch-mode
+navigate
+sec-fetch-site
+same-origin
+sec-fetch-user
+?1
+upgrade-insecure-requests
+1
+x-forwarded-for
+102.90.81.144, 10.82.6.51, 10.52.114.178, 127.0.0.1
+x-forwarded-host
+032af023-69e4-4f7c-b3c4-fa244cf2cd1c-00-2hn58dbhm32hr.kirk.replit.dev
+x-forwarded-proto
+https
+x-replit-user-bio
+x-replit-user-id
+x-replit-user-name
+x-replit-user-profile-image
+x-replit-user-roles
+x-replit-user-teams
+x-replit-user-url
+Body
+// No request body
+Routing
+controller
+App\Http\Controllers\User\VirtualNumberController@index
+route name
+dashboard.virtual-numbers
+middleware
+web, App\Http\Middleware\UserAuth
+Routing parameters
+// No routing parameters
+Made with ReplitBuild yours free →
