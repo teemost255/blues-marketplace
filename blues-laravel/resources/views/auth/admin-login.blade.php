@@ -54,9 +54,8 @@
                 </button>
             </form>
 
-            <div class="mt-6 text-center space-y-2 text-sm text-slate-400">
-                <p>Don't have an account? <a href="{{ route('admin.register') }}" class="text-sky-400 hover:underline">Register</a></p>
-                <p><a href="/" class="text-sky-400 hover:underline">← Back to marketplace</a></p>
+            <div class="mt-6 text-center text-sm text-slate-400">
+                <a href="/" class="text-sky-400 hover:underline">← Back to marketplace</a>
             </div>
         </div>
     </div>

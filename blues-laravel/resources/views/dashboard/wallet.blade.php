@@ -110,6 +110,40 @@
     </div>
 </div>
 
+@php $btEnabled = \App\Models\Setting::get('bank_transfer_enabled','0') === '1'; @endphp
+@if($btEnabled)
+<div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-8">
+    <div class="flex items-center gap-2 mb-5">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        </div>
+        <h2 class="font-semibold text-white">Fund Wallet via Bank Transfer</h2>
+    </div>
+    <form method="POST" action="{{ route('dashboard.wallet.bank-transfer') }}">
+        @csrf
+        <div class="flex flex-col sm:flex-row gap-3">
+            <div class="flex-1">
+                <label class="block text-xs text-slate-400 mb-1.5">Amount to Transfer (₦)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-sm">₦</span>
+                    <input type="number" name="amount" min="{{ $minDeposit }}" step="1"
+                        placeholder="{{ number_format($minDeposit, 0) }}" required
+                        class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-8 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm">
+                </div>
+                <p class="text-slate-500 text-xs mt-1">Min: ₦{{ number_format($minDeposit, 0) }} · Admin confirms manually</p>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-3 rounded-lg text-sm transition-colors whitespace-nowrap flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    Get Bank Details
+                </button>
+            </div>
+        </div>
+    </form>
+    <p class="text-xs text-slate-500 mt-4">You will receive our bank account details and a reference code. Transfer the exact amount and click "I Have Paid". Your wallet will be credited after admin verification.</p>
+</div>
+@endif
+
 {{-- Transaction history --}}
 <div class="bg-slate-800 border border-slate-700 rounded-xl">
     <div class="px-6 py-4 border-b border-slate-700 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">

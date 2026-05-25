@@ -60,6 +60,23 @@
                         </button>
                     </form>
                     <p class="text-xs text-slate-500 text-center">Deducted from your wallet balance. Delivery is instant.</p>
+
+                    @php $btEnabled = \App\Models\Setting::get('bank_transfer_enabled', '0') === '1'; @endphp
+                    @if($btEnabled)
+                        <div class="my-3 flex items-center gap-2">
+                            <div class="flex-1 h-px bg-slate-700"></div>
+                            <span class="text-xs text-slate-500">or</span>
+                            <div class="flex-1 h-px bg-slate-700"></div>
+                        </div>
+                        <form method="POST" action="{{ route('dashboard.marketplace.bank-transfer', $listing->id) }}" class="mb-1">
+                            @csrf
+                            <button type="submit" class="w-full border border-emerald-500/50 hover:border-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-semibold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                Pay via Bank Transfer
+                            </button>
+                        </form>
+                        <p class="text-xs text-slate-500 text-center">Transfer to our bank account — admin confirms manually.</p>
+                    @endif
                 @else
                     <button disabled class="w-full bg-slate-700 text-slate-500 font-bold py-3.5 rounded-xl text-base cursor-not-allowed">Out of Stock</button>
                 @endif

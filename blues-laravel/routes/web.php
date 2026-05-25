@@ -3,7 +3,7 @@ use Illuminate\Support\Facades\Route;
 
 // Admin imports
 use App\Http\Controllers\Auth\AdminLoginController;
-use App\Http\Controllers\Auth\AdminRegisterController;
+use App\Http\Controllers\Admin\BankTransferController as AdminBankTransferController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\ListingsController;
@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\AnnouncementsController;
 use App\Http\Controllers\Admin\ReferralLeaderboardController;
 use App\Http\Controllers\Admin\ReviewsController as AdminReviewsController;
 use App\Http\Controllers\User\ReviewController;
+use App\Http\Controllers\User\BankTransferController as UserBankTransferController;
 
 // Public imports
 use App\Http\Controllers\Auth\LoginController;
@@ -81,6 +82,12 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::post('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications');
     Route::post('/orders/{purchase}/review', [ReviewController::class, 'store'])->name('orders.review');
 
+    // Bank Transfer
+    Route::post('/marketplace/{id}/bank-transfer',   [UserBankTransferController::class, 'marketplace'])->name('marketplace.bank-transfer');
+    Route::post('/wallet/bank-transfer',             [UserBankTransferController::class, 'walletTopup'])->name('wallet.bank-transfer');
+    Route::get('/bank-transfer/{id}/pending',        [UserBankTransferController::class, 'pending'])->name('bank-transfer.pending');
+    Route::post('/bank-transfer/{id}/paid',          [UserBankTransferController::class, 'markPaid'])->name('bank-transfer.paid');
+
     Route::get('/referrals',        [ReferralPageController::class,  'index'])->name('referrals');
 
     // Marketplace (dashboard-only)
@@ -97,11 +104,9 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
 });
 
 // ── Admin Auth ────────────────────────────────────────────────────────────────
-Route::get('/adminlogin',    [AdminLoginController::class,    'show'])->name('admin.login');
-Route::post('/adminlogin',   [AdminLoginController::class,    'login'])->name('admin.login.post');
-Route::get('/adminregister', [AdminRegisterController::class, 'show'])->name('admin.register');
-Route::post('/adminregister',[AdminRegisterController::class, 'register'])->name('admin.register.post');
-Route::post('/admin/logout', [AdminLoginController::class,    'logout'])->name('admin.logout');
+Route::get('/adminlogin',    [AdminLoginController::class, 'show'])->name('admin.login');
+Route::post('/adminlogin',   [AdminLoginController::class, 'login'])->name('admin.login.post');
+Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');
 
 // ── Admin Panel ───────────────────────────────────────────────────────────────
 Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name('admin.')->group(function () {
@@ -156,4 +161,9 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::get('/referrals',      [ReferralLeaderboardController::class, 'index'])->name('referrals');
     Route::get('/reviews',        [AdminReviewsController::class,        'index'])->name('reviews');
     Route::delete('/reviews/{review}', [AdminReviewsController::class,   'destroy'])->name('reviews.destroy');
+
+    // Bank Transfers
+    Route::get('/bank-transfers',                [AdminBankTransferController::class, 'index'])->name('bank-transfers');
+    Route::post('/bank-transfers/{id}/confirm',  [AdminBankTransferController::class, 'confirm'])->name('bank-transfers.confirm');
+    Route::post('/bank-transfers/{id}/reject',   [AdminBankTransferController::class, 'reject'])->name('bank-transfers.reject');
 });

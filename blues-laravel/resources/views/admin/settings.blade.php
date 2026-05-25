@@ -400,6 +400,43 @@
         </div>
     </div>
 
+    {{-- Bank Transfer --}}
+    <div class="mb-8 bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-lg bg-emerald-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-white">Bank Transfer Payment</h2>
+                <p class="text-xs text-slate-400">Allow users to pay via direct bank transfer (manually confirmed by admin)</p>
+            </div>
+            <div class="ml-auto flex items-center gap-2">
+                <span class="text-xs text-slate-400">Enable</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="bank_transfer_enabled" id="bt-toggle" class="sr-only peer" {{ $settings['bank_transfer_enabled'] === '1' ? 'checked' : '' }}>
+                    <div id="bt-toggle-bg" class="w-10 h-5 rounded-full transition-colors relative" style="background:{{ $settings['bank_transfer_enabled'] === '1' ? '#10b981' : '#475569' }}">
+                        <div id="bt-toggle-dot" class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform" style="transform:{{ $settings['bank_transfer_enabled'] === '1' ? 'translateX(1.25rem)' : 'translateX(0)' }}"></div>
+                    </div>
+                </label>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1.5">Bank Name</label>
+                <input type="text" name="bank_name" value="{{ $settings['bank_name'] }}" placeholder="e.g. First Bank" class="w-full">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1.5">Account Number</label>
+                <input type="text" name="bank_account_number" value="{{ $settings['bank_account_number'] }}" placeholder="0123456789" class="w-full">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1.5">Account Name</label>
+                <input type="text" name="bank_account_name" value="{{ $settings['bank_account_name'] }}" placeholder="Blues Marketplace Ltd" class="w-full">
+            </div>
+        </div>
+        <p class="text-xs text-slate-500 mt-3">Users will see these details when they choose bank transfer at checkout. You must confirm each payment manually in the <a href="{{ route('admin.bank-transfers') }}" class="text-brand hover:underline">Bank Transfers</a> panel.</p>
+    </div>
+
     <button type="submit" class="btn-primary px-8 py-3 text-base">Save All Settings</button>
 </form>
 
@@ -456,6 +493,10 @@ function toggleMailPassword() {
 document.getElementById('vn-toggle').addEventListener('change', function() {
     document.getElementById('vn-toggle-bg').style.background = this.checked ? '#0ea5e9' : '#475569';
     document.getElementById('vn-toggle-dot').style.transform = this.checked ? 'translateX(1rem)' : 'translateX(0)';
+});
+document.getElementById('bt-toggle').addEventListener('change', function() {
+    document.getElementById('bt-toggle-bg').style.background = this.checked ? '#10b981' : '#475569';
+    document.getElementById('bt-toggle-dot').style.transform = this.checked ? 'translateX(1.25rem)' : 'translateX(0)';
 });
 document.getElementById('vn-commission-type').addEventListener('change', function() {
     const label = document.getElementById('vn-comm-label');
