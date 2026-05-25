@@ -109,7 +109,10 @@ class VirtualNumberController extends Controller
             if (!$country) {
                 return response()->json(['success' => false, 'message' => 'Please select a country first.']);
             }
-            $result = $svc->getServices($country);
+            // Parse operators list sent by the client (from countriesCache)
+            $operatorsRaw = $request->get('operators', '');
+            $operators    = array_values(array_filter(explode(',', $operatorsRaw)));
+            $result = $svc->getServices($country, $operators);
             if ($result['success']) {
                 return response()->json(['success' => true, 'data' => $result['data']]);
             }
@@ -155,6 +158,7 @@ class VirtualNumberController extends Controller
             'country'      => 'nullable|string',
             'price'        => 'nullable|numeric|min:0',
             'service_name' => 'nullable|string',
+            'operator'     => 'nullable|string|max:50',
         ]);
 
         $enabled = Setting::get('virtual_number_enabled', '1') === '1';
@@ -174,7 +178,7 @@ class VirtualNumberController extends Controller
         }
 
         if ($provider === 'fivesim') {
-            return $this->orderFiveSim($request, $wallet, $commission, $cost);
+            return $this->orderFiveSim($request, $wallet, $cost);
         }
 
         if ($provider === 'herosms') {
@@ -184,14 +188,15 @@ class VirtualNumberController extends Controller
         return $this->orderLogsplug($request, $wallet, $apiCost, $commission, $cost);
     }
 
-    private function orderFiveSim(Request $request, Wallet $wallet, float $commission, float $cost)
+    private function orderFiveSim(Request $request, Wallet $wallet, float $cost)
     {
         $svc = new FiveSimService();
         if (!$svc->isConfigured()) {
             return back()->with('error', '5SIM is not configured yet.');
         }
 
-        $result = $svc->orderNumber($request->country ?? '', $request->service_id);
+        $operator = $request->input('operator', 'any') ?: 'any';
+        $result   = $svc->orderNumber($request->country ?? '', $request->service_id, $operator);
         if (!$result['success']) {
             return back()->with('error', 'Could not get a number: ' . $result['message']);
         }

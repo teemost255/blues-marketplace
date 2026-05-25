@@ -274,6 +274,10 @@
                 <span class="text-sm text-slate-400">Country</span>
                 <span id="modal-country" class="text-sm text-white"></span>
             </div>
+            <div id="modal-carrier" class="hidden flex justify-between items-center">
+                <span class="text-sm text-slate-400">Carrier</span>
+                <span id="modal-carrier-name" class="text-sm text-blue-400 font-medium"></span>
+            </div>
             <div class="border-t border-slate-700 pt-2.5 flex justify-between items-center">
                 <span class="text-sm text-slate-400">Cost</span>
                 <span id="modal-price" class="text-lg font-bold text-white"></span>
@@ -296,6 +300,7 @@
             <input type="hidden" name="country"      id="f-country">
             <input type="hidden" name="price"        id="f-price">
             <input type="hidden" name="service_name" id="f-svc-name">
+            <input type="hidden" name="operator"     id="f-operator">
 
             <button type="submit" id="rent-confirm-btn"
                 class="w-full py-3 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all"
@@ -413,10 +418,10 @@ async function loadCountries() {
                     sel.appendChild(opt);
                 });
             } else if (currentProvider === 'fivesim') {
-                // 5SIM: [{code, name, iso}]
+                // 5SIM: [{code, name, iso, operators:[]}]
                 data.data.forEach(c => {
                     const code = c.code;
-                    countriesCache[code] = { name: c.name, iso: c.iso || '' };
+                    countriesCache[code] = { name: c.name, iso: c.iso || '', operators: c.operators || [] };
                     const opt  = document.createElement('option');
                     opt.value  = code;
                     opt.textContent = c.name;
@@ -493,6 +498,11 @@ async function loadServices() {
     const country = document.getElementById('country-select').value;
     let url = SERVICES_URL + '?server=' + currentServer + '&provider=' + currentProvider;
     if (country) url += '&country=' + encodeURIComponent(country);
+    // For 5SIM, send operators so server can fetch per-carrier pricing
+    if (currentProvider === 'fivesim' && country) {
+        const ops = (countriesCache[country]?.operators || []).join(',');
+        if (ops) url += '&operators=' + encodeURIComponent(ops);
+    }
 
     try {
         const res  = await fetch(url, {
@@ -518,9 +528,10 @@ async function loadServices() {
                 allServices = data.data.map(s => ({
                     serviceId:    String(s.serviceId ?? ''),
                     name:         s.name ?? '',
-                    apiPrice:     parseFloat(s.cost_ngn ?? 0),
+                    apiPrice:     parseFloat(s.cost_ngn ?? 0),  // cheapest operator NGN price
                     country:      countryName,
                     countryCode:  country || '',
+                    operators:    s.operators || [],             // per-carrier breakdown
                     _provider:    'fivesim',
                 }));
             } else {
@@ -603,6 +614,11 @@ function renderServices(list) {
 }
 
 function buildCard(s, countryName, emoji) {
+    // 5SIM services get a special multi-operator card
+    if (s._provider === 'fivesim' && s.operators && s.operators.length > 0) {
+        return buildCard5Sim(s, countryName, emoji);
+    }
+
     const id         = s.serviceId ?? '';
     const name       = s.name ?? id;
     const apiPrice   = parseFloat(s.apiPrice ?? 0);
@@ -647,6 +663,79 @@ function buildCard(s, countryName, emoji) {
     </div>`;
 }
 
+function fmtOperatorLabel(op) {
+    if (op === 'any') return 'Any Carrier';
+    // virtual28 → "Carrier 28"
+    return op.replace(/^virtual/, 'Carrier ');
+}
+
+function buildCard5Sim(s, countryName, emoji) {
+    const id      = s.serviceId ?? '';
+    const name    = s.name ?? id;
+    const country = s.country ?? countryName;
+    const code    = s.countryCode ?? '';
+
+    // Build operator rows — skip 'any' row since each real carrier is already shown
+    const realOps = s.operators.filter(op => op.operator !== 'any');
+    const anyOp   = s.operators.find(op => op.operator === 'any');
+    const opsToShow = realOps.length > 0 ? realOps : (anyOp ? [anyOp] : s.operators);
+
+    const rows = opsToShow.map(op => {
+        const priceNgn  = parseFloat(op.price_ngn ?? 0);
+        const comm      = calcCommission(priceNgn);
+        const total     = Math.round((priceNgn + comm) * 100) / 100;
+        const totalFmt  = '₦' + total.toLocaleString('en-NG', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+        const stockFmt  = Number(op.qty).toLocaleString();
+        const label     = escHtml(fmtOperatorLabel(op.operator));
+        const opVal     = escHtml(op.operator);
+        return `
+        <tr class="border-t border-slate-700/40">
+            <td class="py-2 pr-2 text-xs text-slate-300 font-medium whitespace-nowrap">${label}</td>
+            <td class="py-2 pr-2 text-xs text-slate-500 whitespace-nowrap">${stockFmt}</td>
+            <td class="py-2 pr-2 text-xs font-bold text-green-400 whitespace-nowrap">${totalFmt}</td>
+            <td class="py-2 text-right">
+                <button onclick="openModal('${escHtml(id)}','${escHtml(name)}',${priceNgn},'${escHtml(country)}','${escHtml(code)}','${opVal}')"
+                    class="rent-btn px-3 py-1 rounded-lg text-white font-bold text-xs flex items-center gap-1 ml-auto">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    Rent
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    // If there's a cheapest 'any' option different from real carriers, note it
+    const anyRow = (anyOp && realOps.length > 0) ? `
+        <tr class="border-t border-slate-700/40 bg-slate-800/20">
+            <td colspan="4" class="py-1.5 text-center">
+                <button onclick="openModal('${escHtml(id)}','${escHtml(name)}',${parseFloat(anyOp.price_ngn??0)},'${escHtml(country)}','${escHtml(code)}','any')"
+                    class="rent-btn px-4 py-1 rounded-lg text-white font-bold text-xs inline-flex items-center gap-1.5">
+                    ⚡ Auto-Select Cheapest (₦${Math.round((parseFloat(anyOp.price_ngn??0)+calcCommission(parseFloat(anyOp.price_ngn??0)))*100)/100})
+                </button>
+            </td>
+        </tr>` : '';
+
+    return `
+    <div class="service-card bg-[#131929] border border-slate-700/60 rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex items-center justify-between gap-2">
+            <p class="font-bold text-[#7b8cde] text-base truncate">${escHtml(name)}</p>
+            <span class="text-xs text-slate-400 shrink-0">${emoji} ${escHtml(country)}</span>
+        </div>
+        <div class="overflow-x-auto -mx-1">
+            <table class="w-full text-left">
+                <thead>
+                    <tr>
+                        <th class="pb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wide pr-2">Carrier</th>
+                        <th class="pb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wide pr-2">Stock</th>
+                        <th class="pb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wide pr-2">Price</th>
+                        <th class="pb-1"></th>
+                    </tr>
+                </thead>
+                <tbody>${rows}${anyRow}</tbody>
+            </table>
+        </div>
+    </div>`;
+}
+
 function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -670,7 +759,7 @@ function showState(type, msg) {
 
 // ── Confirmation modal ────────────────────────────────────────────────────────
 function openModalFromData(btn) {
-    openModal(btn.dataset.id, btn.dataset.name, parseFloat(btn.dataset.price), btn.dataset.country, btn.dataset.code);
+    openModal(btn.dataset.id, btn.dataset.name, parseFloat(btn.dataset.price), btn.dataset.country, btn.dataset.code, btn.dataset.operator || '');
 }
 
 function calcCommission(price) {
@@ -678,12 +767,25 @@ function calcCommission(price) {
     return COMM_TYPE === 'percent' ? Math.round(price * COMM_VALUE / 100 * 100) / 100 : COMM_VALUE;
 }
 
-function openModal(serviceId, serviceName, price, country, countryCode) {
+function openModal(serviceId, serviceName, price, country, countryCode, operator) {
     const commission = calcCommission(price);
     const total      = Math.round((price + commission) * 100) / 100;
 
     document.getElementById('modal-svc-name').textContent = serviceName;
     document.getElementById('modal-country').textContent  = country;
+
+    // Show carrier info in modal when a specific operator is selected
+    const carrierEl     = document.getElementById('modal-carrier');
+    const carrierNameEl = document.getElementById('modal-carrier-name');
+    if (carrierEl && carrierNameEl) {
+        if (operator && operator !== '') {
+            carrierNameEl.textContent = fmtOperatorLabel(operator);
+            carrierEl.classList.remove('hidden');
+        } else {
+            carrierEl.classList.add('hidden');
+            carrierNameEl.textContent = '';
+        }
+    }
 
     const priceEl = document.getElementById('modal-price');
     priceEl.textContent = total > 0 ? '₦' + total.toLocaleString('en-NG', { minimumFractionDigits: 2 }) : 'Free';
@@ -708,6 +810,7 @@ function openModal(serviceId, serviceName, price, country, countryCode) {
     document.getElementById('f-country').value    = countryCode;
     document.getElementById('f-price').value      = price;
     document.getElementById('f-svc-name').value   = serviceName;
+    document.getElementById('f-operator').value   = operator || '';
 
     const modal = document.getElementById('rent-modal');
     modal.classList.remove('hidden');
