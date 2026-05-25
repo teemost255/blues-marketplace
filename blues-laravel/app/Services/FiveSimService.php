@@ -67,12 +67,9 @@ class FiveSimService
         }
     }
 
-    /** Keys that are metadata, not operator names */
-    private const COUNTRY_META_KEYS = ['iso', 'prefix', 'text_en', 'text_ru'];
-
     /**
-     * Returns list of countries with their available operators.
-     * [{code, name, iso, operators:[]}]
+     * Returns list of countries.
+     * [{code, name}]
      */
     public function getCountries(): array
     {
@@ -89,19 +86,14 @@ class FiveSimService
             $countries = [];
             foreach ($data as $code => $info) {
                 if (!is_array($info)) continue;
-                $name   = $info['text_en'] ?? ucwords(str_replace('and', '& ', $code));
+                // API returns text_en for English name; iso is {"af":1} object
+                $name = $info['text_en'] ?? ucwords(str_replace('and', '& ', $code));
                 $isoObj = $info['iso'] ?? [];
-                $iso    = is_array($isoObj) ? (string)(array_key_first($isoObj) ?? '') : '';
-                // Operators are all keys that are not metadata
-                $operators = array_values(array_filter(
-                    array_keys($info),
-                    fn($k) => !in_array($k, self::COUNTRY_META_KEYS)
-                ));
+                $iso = is_array($isoObj) ? (string)(array_key_first($isoObj) ?? '') : '';
                 $countries[] = [
-                    'code'      => $code,
-                    'name'      => $name,
-                    'iso'       => $iso,
-                    'operators' => $operators,
+                    'code' => $code,
+                    'name' => $name,
+                    'iso'  => $iso,
                 ];
             }
 
@@ -114,74 +106,37 @@ class FiveSimService
     }
 
     /**
-     * Returns services for a country, fetching each operator in parallel.
-     * Each service entry has an `operators` array with per-carrier qty+price.
-     * [{serviceId, name, count, cost_usd, cost_ngn, operators:[{operator,qty,price_usd,price_ngn}]}]
+     * Returns services (products) for a country.
+     * [{serviceId, name, count, cost_usd, cost_ngn}]
      */
-    public function getServices(string $country, array $operators = []): array
+    public function getServices(string $country): array
     {
         try {
-            // Always include 'any' plus all real operators
-            $toFetch = array_unique(array_merge($operators, ['any']));
-            $baseUrl = $this->baseUrl;
+            $url      = $this->baseUrl . '/guest/products/' . urlencode($country) . '/any';
+            $response = $this->guestClient()->get($url);
+            Log::info('5SIM getServices [' . $country . '] HTTP ' . $response->status());
 
-            // Parallel HTTP requests — one per operator
-            $responses = Http::pool(function ($pool) use ($baseUrl, $country, $toFetch) {
-                $reqs = [];
-                foreach ($toFetch as $op) {
-                    $reqs[] = $pool->as($op)
-                        ->withHeaders(['Accept' => 'application/json'])
-                        ->timeout(15)
-                        ->get("{$baseUrl}/guest/products/{$country}/{$op}");
-                }
-                return $reqs;
-            });
-
-            // Merge: product → [operator entries]
-            $products = [];
-            foreach ($toFetch as $op) {
-                $res = $responses[$op] ?? null;
-                if (!$res || !$res->successful()) continue;
-                $data = $res->json();
-                if (!is_array($data)) continue;
-
-                foreach ($data as $product => $info) {
-                    $qty = (int)($info['Qty'] ?? 0);
-                    if ($qty <= 0) continue;
-                    $priceUsd = (float)($info['Price'] ?? 0);
-
-                    if (!isset($products[$product])) {
-                        $products[$product] = [
-                            'serviceId' => $product,
-                            'name'      => ucwords(str_replace('_', ' ', $product)),
-                            'operators' => [],
-                        ];
-                    }
-                    $products[$product]['operators'][] = [
-                        'operator'  => $op,
-                        'qty'       => $qty,
-                        'price_usd' => $priceUsd,
-                        'price_ngn' => $this->usdToNgn($priceUsd),
-                    ];
-                }
+            if (!$response->successful()) {
+                return ['success' => false, 'message' => 'HTTP ' . $response->status()];
             }
 
-            // Build final list: sort operators by price, derive top-level cost from cheapest
+            $data = $response->json();
+            if (!is_array($data)) {
+                return ['success' => false, 'message' => 'Unexpected services response.'];
+            }
+
             $services = [];
-            foreach ($products as $info) {
-                $ops = $info['operators'];
-                // Sort by price ascending; put 'any' last (it auto-picks cheapest real carrier)
-                usort($ops, function ($a, $b) {
-                    if ($a['operator'] === 'any') return 1;
-                    if ($b['operator'] === 'any') return -1;
-                    return $a['price_usd'] <=> $b['price_usd'];
-                });
-                $cheapest = $ops[0] ?? null;
-                $info['operators'] = $ops;
-                $info['count']     = array_sum(array_column($ops, 'qty'));
-                $info['cost_usd']  = $cheapest['price_usd'] ?? 0;
-                $info['cost_ngn']  = $cheapest['price_ngn'] ?? 0;
-                $services[] = $info;
+            foreach ($data as $product => $info) {
+                $qty = (int)($info['Qty'] ?? 0);
+                if ($qty <= 0) continue;
+                $priceUsd = (float)($info['Price'] ?? 0);
+                $services[] = [
+                    'serviceId' => $product,
+                    'name'      => ucwords(str_replace('_', ' ', $product)),
+                    'count'     => $qty,
+                    'cost_usd'  => $priceUsd,
+                    'cost_ngn'  => $this->usdToNgn($priceUsd),
+                ];
             }
 
             usort($services, fn($a, $b) => strcmp($a['name'], $b['name']));
@@ -193,17 +148,15 @@ class FiveSimService
     }
 
     /**
-     * Order a number from a specific operator (or 'any' for cheapest).
+     * Order a number.
      * Returns ['success'=>true, 'data'=>['order_id'=>'...','number'=>'...','cost_usd'=>X,'cost_ngn'=>X]]
      */
-    public function orderNumber(string $country, string $product, string $operator = 'any'): array
+    public function orderNumber(string $country, string $product): array
     {
         try {
-            $op  = $operator ?: 'any';
-            $url = $this->baseUrl . '/user/buy/activation/'
-                . urlencode($country) . '/' . urlencode($op) . '/' . urlencode($product);
+            $url      = $this->baseUrl . '/user/buy/activation/' . urlencode($country) . '/any/' . urlencode($product);
             $response = $this->authClient()->get($url);
-            Log::info('5SIM orderNumber [' . $country . '/' . $op . '/' . $product . '] HTTP ' . $response->status() . ' | ' . substr($response->body(), 0, 200));
+            Log::info('5SIM orderNumber [' . $country . '/' . $product . '] HTTP ' . $response->status() . ' | ' . substr($response->body(), 0, 200));
 
             if (!$response->successful()) {
                 $msg = $response->json('message') ?? ('HTTP ' . $response->status());
