@@ -28,17 +28,42 @@
         .status-active    { display:inline-flex;padding:.15rem .6rem;border-radius:9999px;font-size:.75rem;font-weight:500;background:rgba(16,185,129,.15);color:#34d399; }
         .status-suspended { display:inline-flex;padding:.15rem .6rem;border-radius:9999px;font-size:.75rem;font-weight:500;background:rgba(245,158,11,.15);color:#fbbf24; }
         .status-banned    { display:inline-flex;padding:.15rem .6rem;border-radius:9999px;font-size:.75rem;font-weight:500;background:rgba(239,68,68,.15);color:#f87171; }
+
+        /* Mobile sidebar transition */
+        #admin-sidebar {
+            transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+        }
+        #admin-sidebar.sidebar-open {
+            transform: translateX(0) !important;
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex">
 
-<aside class="w-64 bg-slate-800 border-r border-slate-700 flex flex-col min-h-screen fixed top-0 left-0 bottom-0 z-40">
-    <div class="px-6 py-5 border-b border-slate-700">
-        <div class="flex items-center gap-2">
-            <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-            <span class="font-bold text-white">Blues Marketplace</span>
+{{-- Mobile overlay --}}
+<div id="admin-overlay"
+    onclick="closeMobileSidebar()"
+    class="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm hidden lg:hidden"></div>
+
+{{-- Sidebar --}}
+<aside id="admin-sidebar"
+    class="w-64 bg-slate-800 border-r border-slate-700 flex flex-col min-h-screen fixed top-0 left-0 bottom-0 z-40
+           -translate-x-full lg:translate-x-0">
+    <div class="px-6 py-5 border-b border-slate-700 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2">
+                <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                <span class="font-bold text-white">Blues Marketplace</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Admin Panel</p>
         </div>
-        <p class="text-xs text-slate-400 mt-1">Admin Panel</p>
+        {{-- Close button (mobile only) --}}
+        <button onclick="closeMobileSidebar()"
+            class="lg:hidden text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
 
     <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
@@ -108,19 +133,29 @@
     </div>
 </aside>
 
-<div class="ml-64 flex-1 flex flex-col min-h-screen">
-    <header class="bg-slate-800 border-b border-slate-700 px-8 py-4 flex items-center justify-between sticky top-0 z-30">
-        <h1 class="text-lg font-semibold text-white">@yield('page-title', 'Dashboard')</h1>
+{{-- Main content --}}
+<div class="lg:ml-64 flex-1 flex flex-col min-h-screen">
+    <header class="bg-slate-800 border-b border-slate-700 px-4 lg:px-8 py-4 flex items-center justify-between sticky top-0 z-30">
         <div class="flex items-center gap-3">
-            <a href="{{ route('home') }}" target="_blank" class="text-xs text-slate-400 hover:text-sky-400 transition-colors">View Site →</a>
-            <span class="text-sm text-slate-400">{{ session('admin_name') ?? session('admin_email') }}</span>
-            <div class="w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center text-white text-sm font-bold">
+            {{-- Hamburger (mobile only) --}}
+            <button onclick="openMobileSidebar()"
+                class="lg:hidden text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-700 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            <h1 class="text-base lg:text-lg font-semibold text-white">@yield('page-title', 'Dashboard')</h1>
+        </div>
+        <div class="flex items-center gap-2 lg:gap-3">
+            <a href="{{ route('home') }}" target="_blank" class="hidden sm:block text-xs text-slate-400 hover:text-sky-400 transition-colors">View Site →</a>
+            <span class="hidden sm:block text-sm text-slate-400">{{ session('admin_name') ?? session('admin_email') }}</span>
+            <div class="w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
                 {{ strtoupper(substr(session('admin_name') ?? session('admin_email', 'A'), 0, 1)) }}
             </div>
         </div>
     </header>
 
-    <main class="flex-1 p-8">
+    <main class="flex-1 p-4 lg:p-8">
         @if(session('success'))
             <div class="mb-5 p-4 bg-green-900/40 border border-green-700 rounded-lg text-green-300 text-sm flex items-center gap-2">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -143,10 +178,23 @@
 </div>
 
 <script>
+function openMobileSidebar() {
+    document.getElementById('admin-sidebar').classList.add('sidebar-open');
+    document.getElementById('admin-overlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+function closeMobileSidebar() {
+    document.getElementById('admin-sidebar').classList.remove('sidebar-open');
+    document.getElementById('admin-overlay').classList.add('hidden');
+    document.body.style.overflow = '';
+}
 function openModal(id) { document.getElementById(id).style.display = 'flex'; document.body.style.overflow='hidden'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; document.body.style.overflow=''; }
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => { m.style.display='none'; document.body.style.overflow=''; });
+    if (e.key === 'Escape') {
+        closeMobileSidebar();
+        document.querySelectorAll('.modal-overlay').forEach(m => { m.style.display='none'; document.body.style.overflow=''; });
+    }
 });
 </script>
 @stack('scripts')

@@ -14,19 +14,41 @@
         .sidebar-link { display:flex; align-items:center; gap:0.75rem; padding:0.625rem 1rem; border-radius:0.5rem; color:#cbd5e1; font-size:0.875rem; font-weight:500; transition:all .15s; }
         .sidebar-link:hover { background:#334155; color:#fff; }
         .sidebar-link.active { background:#334155; color:#fff; }
+
+        /* Mobile sidebar transition */
+        #dash-sidebar {
+            transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+        }
+        #dash-sidebar.sidebar-open {
+            transform: translateX(0) !important;
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex">
 
+{{-- Mobile overlay --}}
+<div id="dash-overlay"
+    onclick="closeMobileSidebar()"
+    class="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm hidden lg:hidden"></div>
+
 {{-- Sidebar --}}
-<aside class="w-60 bg-slate-800 border-r border-slate-700 flex flex-col min-h-screen fixed top-0 left-0 bottom-0 z-40">
-    <div class="px-5 py-4 border-b border-slate-700">
+<aside id="dash-sidebar"
+    class="w-60 bg-slate-800 border-r border-slate-700 flex flex-col min-h-screen fixed top-0 left-0 bottom-0 z-40
+           -translate-x-full lg:translate-x-0">
+    <div class="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
         <a href="{{ route('home') }}" class="flex items-center gap-2">
             <div class="w-7 h-7 bg-brand rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
             <span class="font-bold text-white text-sm">Blues<span class="text-brand">Market</span></span>
         </a>
+        {{-- Close button (mobile only) --}}
+        <button onclick="closeMobileSidebar()"
+            class="lg:hidden text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
 
     <nav class="flex-1 px-3 py-4 space-y-0.5">
@@ -81,7 +103,7 @@
 
     <div class="px-4 py-4 border-t border-slate-700">
         <div class="flex items-center gap-3 mb-3">
-            <div class="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white text-sm font-bold">
+            <div class="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white text-sm font-bold shrink-0">
                 {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
             </div>
             <div class="min-w-0">
@@ -100,17 +122,26 @@
 </aside>
 
 {{-- Main --}}
-<div class="ml-60 flex-1 flex flex-col min-h-screen">
-    <header class="bg-slate-800 border-b border-slate-700 px-8 py-4 flex items-center justify-between">
-        <h1 class="text-base font-semibold text-white">@yield('page-title', 'Dashboard')</h1>
-        <div class="flex items-center gap-3 text-sm text-slate-400">
-            <span>Wallet:</span>
+<div class="lg:ml-60 flex-1 flex flex-col min-h-screen">
+    <header class="bg-slate-800 border-b border-slate-700 px-4 lg:px-8 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            {{-- Hamburger (mobile only) --}}
+            <button onclick="openMobileSidebar()"
+                class="lg:hidden text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-700 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            <h1 class="text-base font-semibold text-white">@yield('page-title', 'Dashboard')</h1>
+        </div>
+        <div class="flex items-center gap-2 lg:gap-3 text-sm text-slate-400">
+            <span class="hidden sm:inline">Wallet:</span>
             <span class="text-white font-semibold">₦{{ number_format(\App\Models\Wallet::where('user_id', auth()->id())->value('balance') ?? 0, 2) }}</span>
             <a href="{{ route('dashboard.wallet') }}" class="text-brand hover:text-sky-300 text-xs">Top up →</a>
         </div>
     </header>
 
-    <main class="flex-1 p-8">
+    <main class="flex-1 p-4 lg:p-8">
         @if(session('success'))
             <div class="mb-5 p-4 bg-green-900/40 border border-green-700 rounded-lg text-green-300 text-sm">{{ session('success') }}</div>
         @endif
@@ -125,6 +156,22 @@
         @yield('content')
     </main>
 </div>
+
+<script>
+function openMobileSidebar() {
+    document.getElementById('dash-sidebar').classList.add('sidebar-open');
+    document.getElementById('dash-overlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+function closeMobileSidebar() {
+    document.getElementById('dash-sidebar').classList.remove('sidebar-open');
+    document.getElementById('dash-overlay').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeMobileSidebar();
+});
+</script>
 
 </body>
 </html>

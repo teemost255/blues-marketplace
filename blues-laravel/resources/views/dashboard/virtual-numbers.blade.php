@@ -72,7 +72,7 @@
         {{-- Provider label --}}
         <div class="flex gap-1 bg-slate-800 border border-slate-700 rounded-xl p-1">
             <span class="stab px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand text-white">
-                🟢 GrizzlySMS
+                🟢 Server 1
             </span>
         </div>
 
@@ -419,36 +419,99 @@ function clearSearch() {
     input.focus();
 }
 
+// ── USA ↔ Canada cross-listing helpers ────────────────────────────────────────
+function isUSA(name) {
+    const n = (name || '').toLowerCase();
+    return n.includes('usa') || n.includes('united states') || n === 'us';
+}
+function isCanada(name) {
+    const n = (name || '').toLowerCase();
+    return n.includes('canada') || n === 'ca';
+}
+function findCountryCodeByPredicate(predicate) {
+    return Object.entries(countriesCache).find(([code, info]) => predicate(info.name))?.[0] || null;
+}
+
 // ── Load services ─────────────────────────────────────────────────────────────
 async function loadServices() {
     showState('loading');
 
     const country = document.getElementById('country-select').value;
-    let url = SERVICES_URL + '?server=' + currentServer + '&provider=' + currentProvider;
-    if (country) url += '&country=' + encodeURIComponent(country);
+    const selectedName = country ? (countriesCache[country]?.name || '') : '';
+    const fetchUSAAndCanada = country && (isUSA(selectedName) || isCanada(selectedName));
 
-    try {
-        const res  = await fetch(url, {
+    // Determine the display label for the selected country
+    let displayLabel = country ? selectedName : 'All Countries';
+
+    async function fetchForCode(code) {
+        let url = SERVICES_URL + '?server=' + currentServer + '&provider=' + currentProvider;
+        if (code) url += '&country=' + encodeURIComponent(code);
+        const res = await fetch(url, {
             credentials: 'same-origin',
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         });
-        if (!res.ok) { showState('error', 'API error (' + res.status + ').'); return; }
-        const data = await res.json();
+        if (!res.ok) return null;
+        return await res.json();
+    }
 
-        if (data.success && Array.isArray(data.data) && data.data.length) {
-            const countryName = country ? (countriesCache[country]?.name || country) : 'All Countries';
-            allServices = data.data.map(s => ({
+    try {
+        let primaryData = await fetchForCode(country);
+
+        if (!primaryData) { showState('error', 'API error.'); return; }
+
+        let services = [];
+
+        if (primaryData.success && Array.isArray(primaryData.data) && primaryData.data.length) {
+            services = primaryData.data.map(s => ({
                 serviceId:   String(s.serviceId ?? ''),
                 name:        s.name ?? '',
                 apiPrice:    parseFloat(s.cost_ngn ?? 0),
-                country:     countryName,
+                country:     displayLabel,
                 countryCode: country || '',
                 _provider:   'grizzlysms',
             }));
+        }
+
+        // Cross-list: if USA selected → also fetch Canada (shown as USA), and vice versa
+        if (fetchUSAAndCanada) {
+            let crossCode = null;
+            if (isUSA(selectedName)) {
+                crossCode = findCountryCodeByPredicate(isCanada);
+            } else if (isCanada(selectedName)) {
+                crossCode = findCountryCodeByPredicate(isUSA);
+            }
+
+            if (crossCode && crossCode !== country) {
+                try {
+                    const crossData = await fetchForCode(crossCode);
+                    if (crossData?.success && Array.isArray(crossData.data) && crossData.data.length) {
+                        const crossServices = crossData.data.map(s => ({
+                            serviceId:   String(s.serviceId ?? ''),
+                            name:        s.name ?? '',
+                            apiPrice:    parseFloat(s.cost_ngn ?? 0),
+                            country:     displayLabel,
+                            countryCode: country || '',
+                            _provider:   'grizzlysms',
+                        }));
+                        // Merge, de-duplicate by name
+                        const existingNames = new Set(services.map(s => s.name.toLowerCase()));
+                        crossServices.forEach(s => {
+                            if (!existingNames.has(s.name.toLowerCase())) {
+                                services.push(s);
+                                existingNames.add(s.name.toLowerCase());
+                            }
+                        });
+                    }
+                } catch(e) { /* silently ignore cross-fetch errors */ }
+            }
+        }
+
+        if (services.length) {
+            allServices = services;
             applyFilter();
         } else {
             allServices = [];
-            showState('empty', data.message || 'No services available for this selection.');
+            showState('empty', primaryData.message || 'No services available for this selection.');
         }
     } catch(e) {
         console.error('Services error:', e);
