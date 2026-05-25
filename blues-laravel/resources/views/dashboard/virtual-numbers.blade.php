@@ -730,7 +730,8 @@ function openModal(serviceId, serviceName, price, country, countryCode) {
     }
 
     document.getElementById('f-provider').value   = currentProvider;
-    document.getElementById('f-server').value     = (currentProvider === 'herosms' || currentProvider === 'fivesim') ? 'server2' : currentServer;
+    // grizzlysms, herosms and fivesim use their own servers — pass 'server2' as a neutral fallback
+    document.getElementById('f-server').value     = (currentProvider === 'herosms' || currentProvider === 'fivesim' || currentProvider === 'grizzlysms') ? 'server2' : currentServer;
     document.getElementById('f-service-id').value = serviceId;
     document.getElementById('f-country').value    = countryCode;
     document.getElementById('f-price').value      = price;

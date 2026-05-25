@@ -176,7 +176,7 @@ class VirtualNumberController extends Controller
 
         $request->validate([
             'provider'     => 'required|string|in:logsplug,herosms,fivesim,grizzlysms',
-            'server'       => 'nullable|string|in:server1,server2',
+            'server'       => 'nullable|string|in:server1,server2,grizzlysms,herosms,fivesim',
             'service_id'   => 'required|string',
             'country'      => 'nullable|string',
             'price'        => 'nullable|numeric|min:0',

@@ -195,7 +195,9 @@ class GrizzlySmsService
                 if (!is_array($priceInfo)) continue;
 
                 $count = (int)($priceInfo['count'] ?? 0);
-                if ($count <= 0) continue;
+                // Only skip if count is explicitly 0 and cost is also 0 (truly unavailable)
+                $priceUsdCheck = (float)($priceInfo['cost'] ?? 0);
+                if ($count <= 0 && $priceUsdCheck <= 0) continue;
 
                 $priceUsd = (float)($priceInfo['cost'] ?? 0);
                 $name     = self::SERVICE_NAMES[$serviceCode] ?? ucwords(str_replace('_', ' ', $serviceCode));
@@ -266,7 +268,7 @@ class GrizzlySmsService
     public function checkSms(string $orderId): array
     {
         try {
-            $resp = $this->request(['action' => 'getStatus', 'id' => $orderId]);
+            $resp = $this->request(['action' => 'getStatus', 'id' => (int) $orderId]);
 
             if (str_starts_with($resp, 'STATUS_OK:')) {
                 $code = substr($resp, strlen('STATUS_OK:'));
@@ -279,7 +281,12 @@ class GrizzlySmsService
             if ($resp === 'STATUS_CANCEL') {
                 return ['success' => true, 'data' => ['status' => 'cancelled', 'sms' => null]];
             }
-            // STATUS_WAIT_CODE, STATUS_WAIT_RESEND
+            // API-level errors — treat as pending so the UI can keep polling
+            if (in_array($resp, ['BAD_KEY', 'BAD_ACTION', 'NO_ACTIVATION', 'WRONG_ACTIVATION_ID'])) {
+                Log::warning('GrizzlySMS checkSms error response: ' . $resp . ' for order ' . $orderId);
+                return ['success' => false, 'message' => 'Activation error: ' . $resp];
+            }
+            // STATUS_WAIT_CODE, STATUS_WAIT_RESEND, or any other waiting state
             return ['success' => true, 'data' => ['status' => 'pending', 'sms' => null]];
         } catch (\Exception $e) {
             Log::error('GrizzlySMS checkSms: ' . $e->getMessage());
@@ -292,8 +299,23 @@ class GrizzlySmsService
     public function cancelOrder(string $orderId): array
     {
         try {
-            $resp = $this->request(['action' => 'setStatus', 'id' => $orderId, 'status' => -1]);
-            return ['success' => true, 'message' => $resp];
+            // Status 8 = cancel and return money (SMS-Activate compatible standard)
+            $resp = $this->request(['action' => 'setStatus', 'id' => $orderId, 'status' => 8]);
+            if ($resp === 'ACCESS_CANCEL') {
+                return ['success' => true, 'message' => 'Order cancelled successfully.'];
+            }
+            $msg = match($resp) {
+                'BAD_KEY'        => 'Invalid GrizzlySMS API key.',
+                'BAD_ACTION'     => 'Invalid action.',
+                'NO_ACTIVATION'  => 'Activation not found.',
+                'BAD_STATUS'     => 'Cannot cancel at this stage.',
+                default          => 'Cancel response: ' . $resp,
+            };
+            // If already cancelled or completed, treat as success
+            if (in_array($resp, ['ACCESS_CANCEL', 'STATUS_CANCEL', 'STATUS_OK'])) {
+                return ['success' => true, 'message' => $resp];
+            }
+            return ['success' => false, 'message' => $msg];
         } catch (\Exception $e) {
             Log::error('GrizzlySMS cancelOrder: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Could not reach GrizzlySMS API.'];
