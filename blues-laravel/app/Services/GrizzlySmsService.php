@@ -179,40 +179,31 @@ class GrizzlySmsService
     public function getServices(string $countryCode): array
     {
         try {
-            // Fetch ALL prices without country filter — returns reliable nested format:
-            // {serviceCode: {countryCode(int): {count, cost}}}
-            $resp = $this->request(['action' => 'getPrices']);
+            // API returns: {countryCode: {serviceCode: {count, cost, retry}}}
+            // Fetch with country param so the response is smaller/faster.
+            $resp = $this->request(['action' => 'getPrices', 'country' => $countryCode]);
             $data = json_decode($resp, true);
 
             if (!is_array($data) || empty($data)) {
-                // Fallback: try with country filter
-                $resp = $this->request(['action' => 'getPrices', 'country' => $countryCode]);
-                $data = json_decode($resp, true);
-                if (!is_array($data)) {
-                    return ['success' => false, 'message' => 'Unexpected response from GrizzlySMS: ' . substr($resp, 0, 100)];
-                }
+                return ['success' => false, 'message' => 'Unexpected response from GrizzlySMS: ' . substr($resp, 0, 100)];
             }
 
-            $countryInt = (int) $countryCode;
-            $services   = [];
+            // The outer key is the country code (as integer after json_decode).
+            $countryInt      = (int) $countryCode;
+            $countryServices = $data[$countryInt] ?? $data[$countryCode] ?? null;
 
-            foreach ($data as $serviceCode => $info) {
-                if (!is_array($info)) continue;
+            // If still not found, try any single key (some responses wrap in one country key)
+            if (!$countryServices && count($data) === 1) {
+                $countryServices = reset($data);
+            }
 
-                // Format A: {serviceCode: {countryCode(int): {count, cost}}} — full dump
-                // PHP json_decode converts numeric string keys to integers, so check int key
-                $priceInfo = null;
-                if (isset($info[$countryInt])) {
-                    $priceInfo = $info[$countryInt];
-                } elseif (isset($info[$countryCode])) {
-                    // String key fallback (non-numeric country codes)
-                    $priceInfo = $info[$countryCode];
-                } elseif (isset($info['count']) || isset($info['cost'])) {
-                    // Format B: flat {count, cost} — already filtered by country
-                    $priceInfo = $info;
-                }
+            if (!$countryServices || !is_array($countryServices)) {
+                return ['success' => false, 'message' => 'No services available for the selected country.'];
+            }
 
-                if (!$priceInfo || !is_array($priceInfo)) continue;
+            $services = [];
+            foreach ($countryServices as $serviceCode => $priceInfo) {
+                if (!is_array($priceInfo)) continue;
 
                 $count    = (int)($priceInfo['count'] ?? 0);
                 $priceUsd = (float)($priceInfo['cost'] ?? 0);
@@ -228,6 +219,10 @@ class GrizzlySmsService
                     'cost_usd'  => $priceUsd,
                     'cost_ngn'  => $this->usdToNgn($priceUsd),
                 ];
+            }
+
+            if (empty($services)) {
+                return ['success' => false, 'message' => 'No services available for the selected country.'];
             }
 
             usort($services, fn($a, $b) => strcmp($a['name'], $b['name']));
