@@ -75,72 +75,8 @@
     </div>
 </div>
 
-{{-- API Balance Widgets --}}
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    {{-- Logsplug Balance --}}
-    <div id="logsplug-balance-card" class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-purple-900/40 flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-            </div>
-            <div>
-                <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Logsplug API Wallet</p>
-                <p id="logsplug-balance-value" class="text-2xl font-bold text-white mt-0.5">
-                    @if($logsplugBalance !== null)
-                        {{ number_format((float)$logsplugBalance, 2) }}
-                    @else —
-                    @endif
-                </p>
-                <p id="logsplug-balance-note" class="text-xs mt-0.5 {{ $logsplugBalance !== null ? 'text-slate-500' : 'text-yellow-400' }}">
-                    @if($logsplugBalance !== null)
-                        Available in API wallet · loaded at {{ now()->format('H:i') }}
-                    @else
-                        {{ $logsplugError ?? 'Could not load balance.' }}
-                    @endif
-                </p>
-            </div>
-        </div>
-        <div class="flex items-center gap-3">
-            <a href="{{ route('admin.settings') }}#virtual-numbers" class="text-xs text-purple-400 hover:underline">Configure →</a>
-            <button onclick="refreshLogsplugBalance()" id="logsplug-refresh-btn"
-                class="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors" title="Refresh balance">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            </button>
-        </div>
-    </div>
-
-    {{-- 5SIM Balance --}}
-    <div id="fivesim-balance-card" class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-900/40 flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-            </div>
-            <div>
-                <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">5SIM API Wallet (Server 2)</p>
-                <p id="fivesim-balance-value" class="text-2xl font-bold text-white mt-0.5">
-                    @if($fiveSimBalance !== null)
-                        ${{ number_format((float)$fiveSimBalance, 4) }}
-                    @else —
-                    @endif
-                </p>
-                <p id="fivesim-balance-note" class="text-xs mt-0.5 {{ $fiveSimBalance !== null ? 'text-slate-500' : 'text-yellow-400' }}">
-                    @if($fiveSimBalance !== null)
-                        USD balance · loaded at {{ now()->format('H:i') }}
-                    @else
-                        {{ $fiveSimError ?? 'Could not load balance.' }}
-                    @endif
-                </p>
-            </div>
-        </div>
-        <div class="flex items-center gap-3">
-            <a href="{{ route('admin.settings') }}#virtual-numbers" class="text-xs text-indigo-400 hover:underline">Configure →</a>
-            <button onclick="refreshFiveSimBalance()" id="fivesim-refresh-btn"
-                class="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors" title="Refresh balance">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            </button>
-        </div>
-    </div>
-
+{{-- API Balance Widget --}}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
     {{-- GrizzlySMS Balance --}}
     <div id="grizzly-balance-card" class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -173,37 +109,6 @@
         </div>
     </div>
 
-    {{-- Hero-SMS Balance --}}
-    <div id="herosms-balance-card" class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-900/40 flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/></svg>
-            </div>
-            <div>
-                <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Hero-SMS API Wallet</p>
-                <p id="herosms-balance-value" class="text-2xl font-bold text-white mt-0.5">
-                    @if($heroSmsBalance !== null)
-                        {{ number_format((float)$heroSmsBalance, 2) }}
-                    @else —
-                    @endif
-                </p>
-                <p id="herosms-balance-note" class="text-xs mt-0.5 {{ $heroSmsBalance !== null ? 'text-slate-500' : 'text-yellow-400' }}">
-                    @if($heroSmsBalance !== null)
-                        Available in API wallet · loaded at {{ now()->format('H:i') }}
-                    @else
-                        {{ $heroSmsError ?? 'Could not load balance.' }}
-                    @endif
-                </p>
-            </div>
-        </div>
-        <div class="flex items-center gap-3">
-            <a href="{{ route('admin.settings') }}#virtual-numbers" class="text-xs text-blue-400 hover:underline">Configure →</a>
-            <button onclick="refreshHeroSmsBalance()" id="herosms-refresh-btn"
-                class="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors" title="Refresh balance">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            </button>
-        </div>
-    </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -301,81 +206,6 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-async function refreshLogsplugBalance() {
-    const valueEl = document.getElementById('logsplug-balance-value');
-    const noteEl  = document.getElementById('logsplug-balance-note');
-    const btn     = document.getElementById('logsplug-refresh-btn');
-    if (!valueEl) return;
-
-    valueEl.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin align-middle"></span>';
-    noteEl.textContent = 'Refreshing…';
-    btn.disabled = true;
-
-    try {
-        const res  = await fetch('/admin/virtual-numbers/logsplug-balance', {
-            credentials: 'same-origin',
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        const data = await res.json();
-
-        if (data.success && data.balance !== null && data.balance !== undefined) {
-            const balance = parseFloat(data.balance);
-            valueEl.textContent = isNaN(balance) ? data.balance : balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-            const low = {{ (float) \App\Models\Setting::get('low_balance_threshold', '5') }};
-            if (!isNaN(balance) && balance <= low) {
-                noteEl.innerHTML = '<span class="text-red-400">⚠ Low balance — top up soon</span>';
-                document.getElementById('logsplug-balance-card').classList.add('border-red-700/50');
-            } else {
-                noteEl.textContent = 'Available in API wallet · updated just now';
-                document.getElementById('logsplug-balance-card').classList.remove('border-red-700/50');
-            }
-        } else {
-            valueEl.textContent = '—';
-            noteEl.textContent = data.message || 'Could not load balance.';
-        }
-    } catch (e) {
-        valueEl.textContent = '—';
-        noteEl.textContent = 'Refresh failed. Check network.';
-    } finally {
-        btn.disabled = false;
-    }
-}
-
-async function refreshFiveSimBalance() {
-    const valueEl = document.getElementById('fivesim-balance-value');
-    const noteEl  = document.getElementById('fivesim-balance-note');
-    const btn     = document.getElementById('fivesim-refresh-btn');
-    if (!valueEl) return;
-
-    valueEl.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin align-middle"></span>';
-    noteEl.textContent = 'Refreshing…';
-    btn.disabled = true;
-
-    try {
-        const res  = await fetch('/admin/virtual-numbers/fivesim-balance', {
-            credentials: 'same-origin',
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        const data = await res.json();
-
-        if (data.success && data.balance !== null && data.balance !== undefined) {
-            const balance = parseFloat(data.balance);
-            valueEl.textContent = isNaN(balance) ? data.balance : ('$' + balance.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
-            noteEl.textContent = 'USD balance · updated just now';
-            document.getElementById('fivesim-balance-card').classList.remove('border-red-700/50');
-        } else {
-            valueEl.textContent = '—';
-            noteEl.textContent = data.message || 'Could not load balance.';
-        }
-    } catch (e) {
-        valueEl.textContent = '—';
-        noteEl.textContent = 'Refresh failed. Check network.';
-    } finally {
-        btn.disabled = false;
-    }
-}
-
 async function refreshGrizzlyBalance() {
     const valueEl = document.getElementById('grizzly-balance-value');
     const noteEl  = document.getElementById('grizzly-balance-note');
@@ -410,46 +240,7 @@ async function refreshGrizzlyBalance() {
     }
 }
 
-async function refreshHeroSmsBalance() {
-    const valueEl = document.getElementById('herosms-balance-value');
-    const noteEl  = document.getElementById('herosms-balance-note');
-    const btn     = document.getElementById('herosms-refresh-btn');
-    if (!valueEl) return;
 
-    valueEl.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin align-middle"></span>';
-    noteEl.textContent = 'Refreshing…';
-    btn.disabled = true;
-
-    try {
-        const res  = await fetch('/admin/virtual-numbers/herosms-balance', {
-            credentials: 'same-origin',
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        const data = await res.json();
-
-        if (data.success && data.balance !== null && data.balance !== undefined) {
-            const balance = parseFloat(data.balance);
-            valueEl.textContent = isNaN(balance) ? data.balance : balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-            const low = {{ (float) \App\Models\Setting::get('low_balance_threshold', '5') }};
-            if (!isNaN(balance) && balance <= low) {
-                noteEl.innerHTML = '<span class="text-red-400">⚠ Low balance — top up soon</span>';
-                document.getElementById('herosms-balance-card').classList.add('border-red-700/50');
-            } else {
-                noteEl.textContent = 'Available in API wallet · updated just now';
-                document.getElementById('herosms-balance-card').classList.remove('border-red-700/50');
-            }
-        } else {
-            valueEl.textContent = '—';
-            noteEl.textContent = data.message || 'Could not load balance.';
-        }
-    } catch (e) {
-        valueEl.textContent = '—';
-        noteEl.textContent = 'Refresh failed. Check network.';
-    } finally {
-        btn.disabled = false;
-    }
-}
 </script>
 <script>
 const ctx = document.getElementById('revenueChart').getContext('2d');

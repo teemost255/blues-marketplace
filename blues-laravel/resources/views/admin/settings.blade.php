@@ -198,89 +198,20 @@
         </div>
     </div>
 
-    {{-- Virtual Numbers / Logsplug --}}
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+    {{-- Virtual Numbers / GrizzlySMS --}}
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6" id="virtual-numbers">
         <div class="flex items-center gap-3 mb-5">
-            <div class="w-9 h-9 rounded-lg bg-purple-900/50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            <div class="w-9 h-9 rounded-lg bg-green-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
             </div>
             <div>
-                <h2 class="font-semibold text-white">Virtual Numbers — Logsplug</h2>
-                <p class="text-xs text-slate-400">API credentials for Logsplug virtual number provisioning</p>
+                <h2 class="font-semibold text-white">Virtual Numbers — GrizzlySMS</h2>
+                <p class="text-xs text-slate-400">API credentials for GrizzlySMS virtual number provisioning. Prices in USD, auto-converted to NGN.</p>
             </div>
         </div>
         <div class="space-y-4">
             <div>
-                <label class="block text-xs text-slate-400 mb-1.5">API Base URL</label>
-                <input type="url" name="logsplug_api_url" value="{{ $settings['logsplug_api_url'] }}"
-                    placeholder="https://v2.api.logsplug.com/api/v2" class="font-mono text-xs">
-                <p class="text-xs text-slate-500 mt-1">The root endpoint of the Logsplug v2 API (no trailing slash). Default: <code class="text-slate-400">https://v2.api.logsplug.com/api/v2</code></p>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1.5">API Key</label>
-                <div class="relative">
-                    <input type="password" name="logsplug_api_key" id="logsplug-key-input" value="{{ $settings['logsplug_api_key'] }}"
-                        placeholder="Paste your Logsplug API key here" class="font-mono text-xs pr-10">
-                    <button type="button" onclick="toggleLogsplugKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    </button>
-                </div>
-                <p class="text-xs text-slate-500 mt-1">Keep this secret. Used to authenticate all Logsplug requests.</p>
-            </div>
-        </div>
-    </div>
-
-    {{-- Virtual Numbers / Hero-SMS --}}
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
-        <div class="flex items-center gap-3 mb-5">
-            <div class="w-9 h-9 rounded-lg bg-cyan-900/50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-            </div>
-            <div>
-                <h2 class="font-semibold text-white">Virtual Numbers — Hero-SMS (Server 3)</h2>
-                <p class="text-xs text-slate-400">API credentials for Hero-SMS virtual number provisioning</p>
-            </div>
-        </div>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-xs text-slate-400 mb-1.5">Hero-SMS API Key</label>
-                <div class="relative">
-                    <input type="password" name="herosms_api_key" id="herosms-key-input" value="{{ $settings['herosms_api_key'] }}"
-                        placeholder="Paste your Hero-SMS API key here" class="font-mono text-xs pr-10">
-                    <button type="button" onclick="toggleHeroSmsKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    </button>
-                </div>
-                <p class="text-xs text-slate-500 mt-1">Found in your <a href="https://hero-sms.com" target="_blank" class="text-cyan-400 hover:underline">Hero-SMS dashboard</a>. Keep this secret.</p>
-            </div>
-        </div>
-    </div>
-
-    {{-- Virtual Numbers / 5SIM --}}
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
-        <div class="flex items-center gap-3 mb-5">
-            <div class="w-9 h-9 rounded-lg bg-indigo-900/50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-            </div>
-            <div>
-                <h2 class="font-semibold text-white">Virtual Numbers — 5SIM (Server 2) & GrizzlySMS (Server 3)</h2>
-                <p class="text-xs text-slate-400">API credentials for virtual number providers. Prices are in USD and auto-converted to NGN.</p>
-            </div>
-        </div>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-xs text-slate-400 mb-1.5">5SIM API Key</label>
-                <div class="relative">
-                    <input type="password" name="fivesim_api_key" id="fivesim-key-input" value="{{ $settings['fivesim_api_key'] }}"
-                        placeholder="Paste your 5SIM API key here" class="font-mono text-xs pr-10">
-                    <button type="button" onclick="toggleFiveSimKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    </button>
-                </div>
-                <p class="text-xs text-slate-500 mt-1">Found in your <a href="https://5sim.net/settings/security" target="_blank" class="text-indigo-400 hover:underline">5SIM dashboard → Security</a>. Keep this secret.</p>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1.5">GrizzlySMS API Key <span class="text-green-400 font-semibold">(Server 3 — Cheapest)</span></label>
+                <label class="block text-xs text-slate-400 mb-1.5">GrizzlySMS API Key</label>
                 <div class="relative">
                     <input type="password" name="grizzlysms_api_key" id="grizzlysms-key-input" value="{{ $settings['grizzlysms_api_key'] }}"
                         placeholder="Paste your GrizzlySMS API key here" class="font-mono text-xs pr-10">
@@ -294,7 +225,7 @@
                 <label class="block text-xs text-slate-400 mb-1.5">USD → NGN Exchange Rate</label>
                 <input type="number" name="usd_to_ngn_rate" value="{{ $settings['usd_to_ngn_rate'] }}"
                     min="1" step="1" placeholder="e.g. 1600" class="w-full">
-                <p class="text-xs text-slate-500 mt-1">Used to convert USD prices to Naira for display and billing (applies to 5SIM and GrizzlySMS). Update when exchange rate changes.</p>
+                <p class="text-xs text-slate-500 mt-1">Used to convert USD prices to Naira for display and billing. Update when the exchange rate changes.</p>
             </div>
         </div>
     </div>
@@ -512,18 +443,6 @@ document.getElementById('promo-banner-toggle').addEventListener('change', functi
 });
 function toggleSecret() {
     const inp = document.getElementById('secret-key-input');
-    inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-function toggleLogsplugKey() {
-    const inp = document.getElementById('logsplug-key-input');
-    inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-function toggleHeroSmsKey() {
-    const inp = document.getElementById('herosms-key-input');
-    inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-function toggleFiveSimKey() {
-    const inp = document.getElementById('fivesim-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 function toggleGrizzlyKey() {

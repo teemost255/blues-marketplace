@@ -69,34 +69,11 @@
 
     {{-- Server selector + filters --}}
     <div class="flex flex-wrap gap-3 mb-5">
-        {{-- Server / Provider tabs --}}
+        {{-- Provider label --}}
         <div class="flex gap-1 bg-slate-800 border border-slate-700 rounded-xl p-1">
-            <button onclick="switchServer('server2')" id="stab-server2"
-                class="stab px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand text-white transition-colors">
-                🌍 Global
-            </button>
-            <button onclick="switchServer('server1')" id="stab-server1"
-                class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
-                🇷🇺 Server 1
-            </button>
-            @if($fiveSimConfigured)
-            <button onclick="switchServer('fivesim')" id="stab-fivesim"
-                class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
-                🔵 Server 2
-            </button>
-            @endif
-            @if($heroSmsConfigured)
-            <button onclick="switchServer('herosms')" id="stab-herosms"
-                class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
-                🌐 Server 3
-            </button>
-            @endif
-            @if($grizzlySmsConfigured)
-            <button onclick="switchServer('grizzlysms')" id="stab-grizzlysms"
-                class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
-                🟢 Server 4
-            </button>
-            @endif
+            <span class="stab px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand text-white">
+                🟢 GrizzlySMS
+            </span>
         </div>
 
         {{-- Search --}}
@@ -332,8 +309,8 @@
 // ── State ─────────────────────────────────────────────────────────────────────
 const COUNTRIES_URL  = '/dashboard/virtual-numbers/api/countries';
 const SERVICES_URL   = '/dashboard/virtual-numbers/api/services';
-let currentServer    = 'server2';
-let currentProvider  = 'logsplug';
+let currentServer    = 'grizzlysms';
+let currentProvider  = 'grizzlysms';
 const USD_TO_NGN     = {{ $usdToNgn }};
 let allServices      = [];
 let walletBalance    = {{ $wallet->balance }};
@@ -363,35 +340,7 @@ function switchTab(tab) {
     else stopPolling();
 }
 
-// ── Server tab switch ─────────────────────────────────────────────────────────
-function switchServer(s) {
-    currentServer   = s;
-    if (s === 'herosms')       currentProvider = 'herosms';
-    else if (s === 'fivesim')  currentProvider = 'fivesim';
-    else if (s === 'grizzlysms') currentProvider = 'grizzlysms';
-    else currentProvider = 'logsplug';
-    allServices     = [];
-
-    document.querySelectorAll('.stab').forEach(b => {
-        b.classList.remove('bg-brand','text-white');
-        b.classList.add('text-slate-400');
-    });
-    const active = document.getElementById('stab-' + s);
-    if (active) { active.classList.add('bg-brand','text-white'); active.classList.remove('text-slate-400'); }
-
-    // Reset search
-    const searchEl = document.getElementById('svc-search');
-    if (searchEl) searchEl.value = '';
-    const clearBtn = document.getElementById('svc-search-clear');
-    if (clearBtn) clearBtn.classList.add('hidden');
-
-    const cWrap = document.getElementById('country-select');
-    cWrap.innerHTML = '<option value="">All Countries</option>';
-
-    // fivesim, herosms, grizzlysms and logsplug server2 support country selection
-    if (s === 'server2' || s === 'herosms' || s === 'fivesim' || s === 'grizzlysms') loadCountries();
-    else loadServices();
-}
+// ── (single provider — no server switching needed) ─────────────────────────
 
 // ── Load countries ────────────────────────────────────────────────────────────
 async function loadCountries() {
@@ -409,48 +358,15 @@ async function loadCountries() {
             const sel = document.getElementById('country-select');
             sel.innerHTML = '<option value="">— Select a country —</option>';
 
-            if (currentProvider === 'herosms') {
-                // Hero-SMS: [{id, name}]
-                data.data.forEach(c => {
-                    const code = String(c.id ?? c.name);
-                    countriesCache[code] = { name: c.name, iso: '' };
-                    const opt  = document.createElement('option');
-                    opt.value  = code;
-                    opt.textContent = c.name;
-                    sel.appendChild(opt);
-                });
-            } else if (currentProvider === 'fivesim') {
-                // 5SIM: [{code, name, iso}]
-                data.data.forEach(c => {
-                    const code = c.code;
-                    countriesCache[code] = { name: c.name, iso: c.iso || '' };
-                    const opt  = document.createElement('option');
-                    opt.value  = code;
-                    opt.textContent = c.name;
-                    sel.appendChild(opt);
-                });
-            } else if (currentProvider === 'grizzlysms') {
-                // GrizzlySMS: [{code, name, iso}]
-                data.data.forEach(c => {
-                    const code = String(c.code);
-                    countriesCache[code] = { name: c.name, iso: c.iso || '' };
-                    const opt  = document.createElement('option');
-                    opt.value  = code;
-                    opt.textContent = c.name;
-                    sel.appendChild(opt);
-                });
-            } else {
-                // Logsplug: [{code, name, flag}]
-                data.data.forEach(c => {
-                    const code = c.code;
-                    const iso  = flagFromUrl(c.flag);
-                    countriesCache[code] = { name: c.name, iso };
-                    const opt  = document.createElement('option');
-                    opt.value  = code;
-                    opt.textContent = c.name;
-                    sel.appendChild(opt);
-                });
-            }
+            // GrizzlySMS: [{code, name, iso}]
+            data.data.forEach(c => {
+                const code = String(c.code);
+                countriesCache[code] = { name: c.name, iso: c.iso || '' };
+                const opt  = document.createElement('option');
+                opt.value  = code;
+                opt.textContent = c.name;
+                sel.appendChild(opt);
+            });
 
             showState('empty', 'Select a country above to see available services.');
         } else {
@@ -520,39 +436,15 @@ async function loadServices() {
         const data = await res.json();
 
         if (data.success && Array.isArray(data.data) && data.data.length) {
-            if (currentProvider === 'herosms') {
-                const countryName = country ? (countriesCache[country]?.name || country) : 'All Countries';
-                allServices = data.data.map(s => ({
-                    serviceId:    String(s.serviceId ?? s.name ?? ''),
-                    name:         s.name ?? '',
-                    apiPrice:     parseFloat(s.cost ?? 0),
-                    country:      countryName,
-                    countryCode:  country || '',
-                    _provider:    'herosms',
-                }));
-            } else if (currentProvider === 'fivesim') {
-                const countryName = country ? (countriesCache[country]?.name || country) : 'All Countries';
-                allServices = data.data.map(s => ({
-                    serviceId:    String(s.serviceId ?? ''),
-                    name:         s.name ?? '',
-                    apiPrice:     parseFloat(s.cost_ngn ?? 0),
-                    country:      countryName,
-                    countryCode:  country || '',
-                    _provider:    'fivesim',
-                }));
-            } else if (currentProvider === 'grizzlysms') {
-                const countryName = country ? (countriesCache[country]?.name || country) : 'All Countries';
-                allServices = data.data.map(s => ({
-                    serviceId:    String(s.serviceId ?? ''),
-                    name:         s.name ?? '',
-                    apiPrice:     parseFloat(s.cost_ngn ?? 0),
-                    country:      countryName,
-                    countryCode:  country || '',
-                    _provider:    'grizzlysms',
-                }));
-            } else {
-                allServices = data.data;
-            }
+            const countryName = country ? (countriesCache[country]?.name || country) : 'All Countries';
+            allServices = data.data.map(s => ({
+                serviceId:   String(s.serviceId ?? ''),
+                name:        s.name ?? '',
+                apiPrice:    parseFloat(s.cost_ngn ?? 0),
+                country:     countryName,
+                countryCode: country || '',
+                _provider:   'grizzlysms',
+            }));
             applyFilter();
         } else {
             allServices = [];

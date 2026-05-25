@@ -179,31 +179,50 @@ class GrizzlySmsService
     public function getServices(string $countryCode): array
     {
         try {
-            $resp = $this->request(['action' => 'getPrices', 'country' => $countryCode]);
+            // Fetch ALL prices without country filter — returns reliable nested format:
+            // {serviceCode: {countryCode(int): {count, cost}}}
+            $resp = $this->request(['action' => 'getPrices']);
             $data = json_decode($resp, true);
 
-            if (!is_array($data)) {
-                return ['success' => false, 'message' => 'Unexpected response from GrizzlySMS.'];
+            if (!is_array($data) || empty($data)) {
+                // Fallback: try with country filter
+                $resp = $this->request(['action' => 'getPrices', 'country' => $countryCode]);
+                $data = json_decode($resp, true);
+                if (!is_array($data)) {
+                    return ['success' => false, 'message' => 'Unexpected response from GrizzlySMS: ' . substr($resp, 0, 100)];
+                }
             }
 
-            $services = [];
+            $countryInt = (int) $countryCode;
+            $services   = [];
+
             foreach ($data as $serviceCode => $info) {
                 if (!is_array($info)) continue;
 
-                // getPrices may return: {serviceCode: {countryCode: {count, cost}}} or {count, cost}
-                $priceInfo = $info[$countryCode] ?? $info;
-                if (!is_array($priceInfo)) continue;
+                // Format A: {serviceCode: {countryCode(int): {count, cost}}} — full dump
+                // PHP json_decode converts numeric string keys to integers, so check int key
+                $priceInfo = null;
+                if (isset($info[$countryInt])) {
+                    $priceInfo = $info[$countryInt];
+                } elseif (isset($info[$countryCode])) {
+                    // String key fallback (non-numeric country codes)
+                    $priceInfo = $info[$countryCode];
+                } elseif (isset($info['count']) || isset($info['cost'])) {
+                    // Format B: flat {count, cost} — already filtered by country
+                    $priceInfo = $info;
+                }
 
-                $count = (int)($priceInfo['count'] ?? 0);
-                // Only skip if count is explicitly 0 and cost is also 0 (truly unavailable)
-                $priceUsdCheck = (float)($priceInfo['cost'] ?? 0);
-                if ($count <= 0 && $priceUsdCheck <= 0) continue;
+                if (!$priceInfo || !is_array($priceInfo)) continue;
 
+                $count    = (int)($priceInfo['count'] ?? 0);
                 $priceUsd = (float)($priceInfo['cost'] ?? 0);
-                $name     = self::SERVICE_NAMES[$serviceCode] ?? ucwords(str_replace('_', ' ', $serviceCode));
+
+                if ($count <= 0) continue;
+
+                $name = self::SERVICE_NAMES[$serviceCode] ?? ucwords(str_replace('_', ' ', (string)$serviceCode));
 
                 $services[] = [
-                    'serviceId' => $serviceCode,
+                    'serviceId' => (string)$serviceCode,
                     'name'      => $name,
                     'count'     => $count,
                     'cost_usd'  => $priceUsd,
