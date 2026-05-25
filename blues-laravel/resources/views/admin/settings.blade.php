@@ -263,8 +263,8 @@
                 <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
             </div>
             <div>
-                <h2 class="font-semibold text-white">Virtual Numbers — 5SIM (Server 2)</h2>
-                <p class="text-xs text-slate-400">API credentials for 5SIM virtual number provisioning. Prices are in USD and auto-converted to NGN.</p>
+                <h2 class="font-semibold text-white">Virtual Numbers — 5SIM (Server 2) & GrizzlySMS (Server 3)</h2>
+                <p class="text-xs text-slate-400">API credentials for virtual number providers. Prices are in USD and auto-converted to NGN.</p>
             </div>
         </div>
         <div class="space-y-4">
@@ -280,10 +280,21 @@
                 <p class="text-xs text-slate-500 mt-1">Found in your <a href="https://5sim.net/settings/security" target="_blank" class="text-indigo-400 hover:underline">5SIM dashboard → Security</a>. Keep this secret.</p>
             </div>
             <div>
+                <label class="block text-xs text-slate-400 mb-1.5">GrizzlySMS API Key <span class="text-green-400 font-semibold">(Server 3 — Cheapest)</span></label>
+                <div class="relative">
+                    <input type="password" name="grizzlysms_api_key" id="grizzlysms-key-input" value="{{ $settings['grizzlysms_api_key'] }}"
+                        placeholder="Paste your GrizzlySMS API key here" class="font-mono text-xs pr-10">
+                    <button type="button" onclick="toggleGrizzlyKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">Get your API key from <a href="https://grizzlysms.com/profile-settings" target="_blank" class="text-green-400 hover:underline">GrizzlySMS → Profile Settings</a>. Numbers from $0.04.</p>
+            </div>
+            <div>
                 <label class="block text-xs text-slate-400 mb-1.5">USD → NGN Exchange Rate</label>
                 <input type="number" name="usd_to_ngn_rate" value="{{ $settings['usd_to_ngn_rate'] }}"
                     min="1" step="1" placeholder="e.g. 1600" class="w-full">
-                <p class="text-xs text-slate-500 mt-1">Used to convert 5SIM USD prices to Naira for display and billing. Update when exchange rate changes.</p>
+                <p class="text-xs text-slate-500 mt-1">Used to convert USD prices to Naira for display and billing (applies to 5SIM and GrizzlySMS). Update when exchange rate changes.</p>
             </div>
         </div>
     </div>
@@ -513,6 +524,10 @@ function toggleHeroSmsKey() {
 }
 function toggleFiveSimKey() {
     const inp = document.getElementById('fivesim-key-input');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+function toggleGrizzlyKey() {
+    const inp = document.getElementById('grizzlysms-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 function toggleMailPassword() {

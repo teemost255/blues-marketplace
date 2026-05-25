@@ -6,6 +6,7 @@ use App\Models\VirtualNumberOrder;
 use App\Services\LogsplugService;
 use App\Services\HeroSmsService;
 use App\Services\FiveSimService;
+use App\Services\GrizzlySmsService;
 use Illuminate\Http\Request;
 
 class VirtualNumberOrdersController extends Controller
@@ -91,6 +92,20 @@ class VirtualNumberOrdersController extends Controller
         $svc = new FiveSimService();
         if (!$svc->isConfigured()) {
             return response()->json(['success' => false, 'message' => '5SIM API not configured. Add your key in Settings.']);
+        }
+        $result = $svc->getBalance();
+        if ($result['success']) {
+            $balance = $result['data']['balance_usd'] ?? null;
+            return response()->json(['success' => true, 'balance' => $balance]);
+        }
+        return response()->json(['success' => false, 'message' => $result['message'] ?? 'Could not fetch balance.']);
+    }
+
+    public function grizzlySmsBalance()
+    {
+        $svc = new GrizzlySmsService();
+        if (!$svc->isConfigured()) {
+            return response()->json(['success' => false, 'message' => 'GrizzlySMS API not configured. Add your key in Settings.']);
         }
         $result = $svc->getBalance();
         if ($result['success']) {

@@ -6,6 +6,7 @@ use App\Models\{User, Listing, Purchase, SupportTicket, WalletTransaction, Virtu
 use App\Services\LogsplugService;
 use App\Services\HeroSmsService;
 use App\Services\FiveSimService;
+use App\Services\GrizzlySmsService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -113,11 +114,31 @@ class DashboardController extends Controller
             $fiveSimError = 'API not configured. Add your 5SIM key in Settings.';
         }
 
+        // Fetch GrizzlySMS balance server-side
+        $grizzlyBalance = null;
+        $grizzlyError   = null;
+        $grizzlySvc = new GrizzlySmsService();
+        if ($grizzlySvc->isConfigured()) {
+            try {
+                $result = $grizzlySvc->getBalance();
+                if ($result['success']) {
+                    $grizzlyBalance = $result['data']['balance_usd'] ?? null;
+                } else {
+                    $grizzlyError = $result['message'] ?? 'Could not fetch balance.';
+                }
+            } catch (\Throwable $e) {
+                $grizzlyError = 'Balance fetch failed. Check API connectivity.';
+            }
+        } else {
+            $grizzlyError = 'API not configured. Add your GrizzlySMS key in Settings.';
+        }
+
         return view('admin.dashboard', compact(
             'stats', 'chartLabels', 'chartRevenue', 'chartOrders',
             'logsplugBalance', 'logsplugError',
             'heroSmsBalance', 'heroSmsError',
-            'fiveSimBalance', 'fiveSimError'
+            'fiveSimBalance', 'fiveSimError',
+            'grizzlyBalance', 'grizzlyError'
         ));
     }
 }

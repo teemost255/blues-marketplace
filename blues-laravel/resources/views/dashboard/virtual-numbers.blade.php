@@ -91,6 +91,12 @@
                 🌐 Server 3
             </button>
             @endif
+            @if($grizzlySmsConfigured)
+            <button onclick="switchServer('grizzlysms')" id="stab-grizzlysms"
+                class="stab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+                🟢 Server 4
+            </button>
+            @endif
         </div>
 
         {{-- Search --}}
@@ -360,8 +366,9 @@ function switchTab(tab) {
 // ── Server tab switch ─────────────────────────────────────────────────────────
 function switchServer(s) {
     currentServer   = s;
-    if (s === 'herosms')  currentProvider = 'herosms';
-    else if (s === 'fivesim') currentProvider = 'fivesim';
+    if (s === 'herosms')       currentProvider = 'herosms';
+    else if (s === 'fivesim')  currentProvider = 'fivesim';
+    else if (s === 'grizzlysms') currentProvider = 'grizzlysms';
     else currentProvider = 'logsplug';
     allServices     = [];
 
@@ -381,8 +388,8 @@ function switchServer(s) {
     const cWrap = document.getElementById('country-select');
     cWrap.innerHTML = '<option value="">All Countries</option>';
 
-    // fivesim, herosms and logsplug server2 support country selection
-    if (s === 'server2' || s === 'herosms' || s === 'fivesim') loadCountries();
+    // fivesim, herosms, grizzlysms and logsplug server2 support country selection
+    if (s === 'server2' || s === 'herosms' || s === 'fivesim' || s === 'grizzlysms') loadCountries();
     else loadServices();
 }
 
@@ -416,6 +423,16 @@ async function loadCountries() {
                 // 5SIM: [{code, name, iso}]
                 data.data.forEach(c => {
                     const code = c.code;
+                    countriesCache[code] = { name: c.name, iso: c.iso || '' };
+                    const opt  = document.createElement('option');
+                    opt.value  = code;
+                    opt.textContent = c.name;
+                    sel.appendChild(opt);
+                });
+            } else if (currentProvider === 'grizzlysms') {
+                // GrizzlySMS: [{code, name, iso}]
+                data.data.forEach(c => {
+                    const code = String(c.code);
                     countriesCache[code] = { name: c.name, iso: c.iso || '' };
                     const opt  = document.createElement('option');
                     opt.value  = code;
@@ -522,6 +539,16 @@ async function loadServices() {
                     country:      countryName,
                     countryCode:  country || '',
                     _provider:    'fivesim',
+                }));
+            } else if (currentProvider === 'grizzlysms') {
+                const countryName = country ? (countriesCache[country]?.name || country) : 'All Countries';
+                allServices = data.data.map(s => ({
+                    serviceId:    String(s.serviceId ?? ''),
+                    name:         s.name ?? '',
+                    apiPrice:     parseFloat(s.cost_ngn ?? 0),
+                    country:      countryName,
+                    countryCode:  country || '',
+                    _provider:    'grizzlysms',
                 }));
             } else {
                 allServices = data.data;
