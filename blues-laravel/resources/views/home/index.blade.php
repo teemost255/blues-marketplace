@@ -267,8 +267,8 @@
            style="transition-delay:{{ $i * 70 }}ms">
             {{-- Thumbnail --}}
             <div class="h-36 bg-gradient-to-br from-slate-700 to-slate-600 relative overflow-hidden flex items-center justify-center">
-                @if($listing->image_url)
-                    <img src="{{ $listing->image_url }}" alt="{{ $listing->title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                @if($listing->image)
+                    <img src="{{ $listing->image }}" alt="{{ $listing->title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                 @else
                     @php
                     $catGrads = ['Facebook'=>'from-blue-600/40 to-blue-900/40','Instagram'=>'from-pink-600/40 to-purple-900/40','TikTok'=>'from-purple-600/40 to-black/60','2nd Numbers'=>'from-emerald-600/40 to-teal-900/40'];
@@ -355,8 +355,8 @@
                     $latCatGrads = ['Facebook'=>'from-blue-600/40 to-blue-900/40','Instagram'=>'from-pink-600/40 to-purple-900/40','TikTok'=>'from-purple-600/40 to-black/60','2nd Numbers'=>'from-emerald-600/40 to-teal-900/40'];
                     echo 'bg-gradient-to-br '.($latCatGrads[$listing->category] ?? 'from-brand/30 to-slate-700');
                 @endphp flex items-center justify-center relative">
-                @if($listing->image_url)
-                    <img src="{{ $listing->image_url }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
+                @if($listing->image)
+                    <img src="{{ $listing->image }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
                 @else
                     <svg class="w-7 h-7 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                 @endif

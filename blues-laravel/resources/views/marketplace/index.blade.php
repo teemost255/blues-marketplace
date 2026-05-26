@@ -59,8 +59,8 @@
             <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:border-brand/50 transition-all group flex flex-col">
                 <a href="{{ route('dashboard.marketplace.show', $listing->id) }}" class="block">
                     <div class="h-36 bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center overflow-hidden">
-                        @if($listing->image_url)
-                            <img src="{{ $listing->image_url }}" alt="{{ $listing->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                        @if($listing->image)
+                            <img src="{{ $listing->image }}" alt="{{ $listing->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
                         @else
                             <svg class="w-10 h-10 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                         @endif
