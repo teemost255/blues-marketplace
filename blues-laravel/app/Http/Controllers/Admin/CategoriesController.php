@@ -32,7 +32,7 @@ class CategoriesController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('categories', 'public');
+            $data['image_path'] = $this->storeImage($request->file('image'));
         }
 
         ListingCategory::create($data);
@@ -57,7 +57,7 @@ class CategoriesController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('categories', 'public');
+            $data['image_path'] = $this->storeImage($request->file('image'));
         }
 
         $category->update($data);
@@ -68,5 +68,16 @@ class CategoriesController extends Controller
     {
         $category->delete();
         return back()->with('success', 'Category deleted.');
+    }
+
+    private function storeImage($file): string
+    {
+        $dir = public_path('uploads/categories');
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $file->move($dir, $filename);
+        return 'uploads/categories/' . $filename;
     }
 }
