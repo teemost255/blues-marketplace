@@ -10,7 +10,9 @@ class ListingCategory extends Model
     {
         if (!$this->image_path) return null;
         if (str_starts_with($this->image_path, 'http')) return $this->image_path;
-        return asset($this->image_path);
+        $path = ltrim($this->image_path, '/');
+        return '/' . $path;
     }
+
     public function listings() { return $this->hasMany(Listing::class, 'category', 'slug'); }
 }
