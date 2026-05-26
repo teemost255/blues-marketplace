@@ -44,13 +44,6 @@
                 <tr class="border-b border-slate-700/50 hover:bg-slate-700/20">
                     <td class="px-5 py-3">
                         <div class="flex items-center gap-3">
-                            @if($l->image)
-                                <img src="{{ $l->image }}" alt="" class="w-10 h-10 rounded-lg object-cover shrink-0 border border-slate-600">
-                            @else
-                                <div class="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center shrink-0">
-                                    <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                </div>
-                            @endif
                             <div>
                                 <p class="text-white font-medium">{{ $l->title }}</p>
                                 @if($l->featured)<span class="text-xs bg-yellow-900/50 text-yellow-400 px-1.5 py-0.5 rounded">Featured</span>@endif
@@ -131,10 +124,6 @@
                 <div>
                     <label class="block text-xs text-slate-400 mb-1.5">Stock *</label>
                     <input type="number" min="0" name="stock" required placeholder="0">
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1.5">Image</label>
-                    <input type="file" name="image" accept="image/*" class="text-slate-300 file:bg-slate-700 file:border-0 file:text-slate-300 file:px-3 file:py-1 file:rounded file:mr-2 file:cursor-pointer">
                 </div>
                 <div class="col-span-2">
                     <label class="block text-xs text-slate-400 mb-1.5">Description</label>

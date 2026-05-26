@@ -20,16 +20,22 @@ class CategoriesController extends Controller
             'name'        => 'required|string|max:100|unique:listing_categories,name',
             'description' => 'nullable|string|max:500',
             'icon'        => 'nullable|string|max:100',
+            'image'       => 'nullable|image|max:2048',
         ]);
 
-        ListingCategory::create([
+        $data = [
             'name'        => $request->name,
             'slug'        => Str::slug($request->name),
             'description' => $request->description,
             'icon'        => $request->icon,
             'is_active'   => $request->boolean('is_active', true),
-        ]);
+        ];
 
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('categories', 'public');
+        }
+
+        ListingCategory::create($data);
         return back()->with('success', "Category \"{$request->name}\" created.");
     }
 
@@ -39,16 +45,22 @@ class CategoriesController extends Controller
             'name'        => 'required|string|max:100|unique:listing_categories,name,' . $category->id,
             'description' => 'nullable|string|max:500',
             'icon'        => 'nullable|string|max:100',
+            'image'       => 'nullable|image|max:2048',
         ]);
 
-        $category->update([
+        $data = [
             'name'        => $request->name,
             'slug'        => Str::slug($request->name),
             'description' => $request->description,
             'icon'        => $request->icon,
             'is_active'   => $request->boolean('is_active'),
-        ]);
+        ];
 
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('categories', 'public');
+        }
+
+        $category->update($data);
         return back()->with('success', "Category updated.");
     }
 

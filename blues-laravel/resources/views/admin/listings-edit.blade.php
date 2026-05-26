@@ -15,13 +15,6 @@
         <form method="POST" action="{{ route('admin.listings.update', $listing) }}" enctype="multipart/form-data" class="space-y-5">
             @csrf
 
-            @if($listing->image)
-                <div>
-                    <label class="block text-xs text-slate-400 mb-2">Current Image</label>
-                    <img src="{{ $listing->image }}" alt="" class="w-40 h-32 object-cover rounded-lg border border-slate-600">
-                </div>
-            @endif
-
             <div class="grid grid-cols-2 gap-5">
                 <div class="col-span-2">
                     <label class="block text-xs text-slate-400 mb-1.5">Title *</label>
@@ -43,10 +36,6 @@
                 <div>
                     <label class="block text-xs text-slate-400 mb-1.5">Stock *</label>
                     <input type="number" min="0" name="stock" value="{{ old('stock', $listing->stock) }}" required>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1.5">Replace Image</label>
-                    <input type="file" name="image" accept="image/*" class="text-slate-300 file:bg-slate-700 file:border-0 file:text-slate-300 file:px-3 file:py-1 file:rounded file:mr-2 file:cursor-pointer">
                 </div>
                 <div class="col-span-2">
                     <label class="block text-xs text-slate-400 mb-1.5">Description</label>

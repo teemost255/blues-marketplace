@@ -25,9 +25,15 @@
             @forelse($categories as $cat)
                 <tr class="border-b border-slate-700/50 hover:bg-slate-700/20">
                     <td class="px-5 py-3">
-                        <div class="flex items-center gap-2">
-                            @if($cat->icon)
-                                <span class="text-lg">{{ $cat->icon }}</span>
+                        <div class="flex items-center gap-3">
+                            @if($cat->image)
+                                <img src="{{ $cat->image }}" alt="{{ $cat->name }}" class="w-9 h-9 rounded-lg object-cover border border-slate-600 shrink-0">
+                            @elseif($cat->icon)
+                                <span class="text-xl w-9 h-9 flex items-center justify-center bg-slate-700 rounded-lg shrink-0">{{ $cat->icon }}</span>
+                            @else
+                                <div class="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center shrink-0">
+                                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </div>
                             @endif
                             <span class="text-white font-medium">{{ $cat->name }}</span>
                         </div>
@@ -61,7 +67,7 @@
                             <h3 class="font-semibold text-white">Edit Category</h3>
                             <button onclick="closeModal('modal-edit-cat-{{ $cat->id }}')" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
                         </div>
-                        <form method="POST" action="{{ route('admin.categories.update', $cat) }}" class="space-y-4">
+                        <form method="POST" action="{{ route('admin.categories.update', $cat) }}" enctype="multipart/form-data" class="space-y-4">
                             @csrf
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1.5">Name *</label>
@@ -74,6 +80,13 @@
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1.5">Description</label>
                                 <textarea name="description" rows="2">{{ $cat->description }}</textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1.5">Category Image</label>
+                                @if($cat->image)
+                                    <img src="{{ $cat->image }}" class="w-20 h-16 object-cover rounded-lg border border-slate-600 mb-2">
+                                @endif
+                                <input type="file" name="image" accept="image/*" class="text-slate-300 file:bg-slate-700 file:border-0 file:text-slate-300 file:px-3 file:py-1 file:rounded file:mr-2 file:cursor-pointer">
                             </div>
                             <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
                                 <input type="checkbox" name="is_active" value="1" {{ $cat->is_active ? 'checked' : '' }} class="w-4 h-4 rounded"> Active
@@ -116,7 +129,7 @@
             <h3 class="font-semibold text-white text-lg">New Category</h3>
             <button onclick="closeModal('modal-add-category')" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
         </div>
-        <form method="POST" action="{{ route('admin.categories.store') }}" class="space-y-4">
+        <form method="POST" action="{{ route('admin.categories.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">Name *</label>
@@ -125,6 +138,10 @@
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">Icon (emoji)</label>
                 <input type="text" name="icon" placeholder="e.g. 📘 🎵 📱">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1.5">Category Image</label>
+                <input type="file" name="image" accept="image/*" class="text-slate-300 file:bg-slate-700 file:border-0 file:text-slate-300 file:px-3 file:py-1 file:rounded file:mr-2 file:cursor-pointer">
             </div>
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">Description</label>
