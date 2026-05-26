@@ -8,8 +8,9 @@ class ListingCategory extends Model
 
     public function getImageAttribute(): ?string
     {
-        if ($this->image_path) return asset('storage/' . $this->image_path);
-        return null;
+        if (!$this->image_path) return null;
+        if (str_starts_with($this->image_path, 'http')) return $this->image_path;
+        return asset('storage/' . $this->image_path);
     }
     public function listings() { return $this->hasMany(Listing::class, 'category', 'slug'); }
 }
