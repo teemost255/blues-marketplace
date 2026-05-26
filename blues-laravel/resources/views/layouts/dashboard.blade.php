@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
     <title>@yield('title', 'Dashboard') — BluesMarketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -11,6 +12,29 @@
         }
     </script>
     <style>
+        /* ── Mobile overflow / zoom prevention ── */
+        *, *::before, *::after { box-sizing: border-box; }
+        html {
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+        img, video, svg { max-width: 100%; }
+
+        /* Prevent iOS auto-zoom on input focus (font-size must be ≥ 16px) */
+        @media screen and (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+
+        /* Horizontal-scroll wrapper for tables on mobile */
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
         .sidebar-link { display:flex; align-items:center; gap:0.75rem; padding:0.625rem 1rem; border-radius:0.5rem; color:#cbd5e1; font-size:0.875rem; font-weight:500; transition:all .15s; }
         .sidebar-link:hover { background:#334155; color:#fff; }
         .sidebar-link.active { background:#334155; color:#fff; }
@@ -115,7 +139,7 @@
 </aside>
 
 {{-- Main --}}
-<div class="lg:ml-60 flex-1 flex flex-col min-h-screen">
+<div class="lg:ml-60 flex-1 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
     <header class="bg-slate-800 border-b border-slate-700 px-4 lg:px-8 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
             {{-- Hamburger (mobile only) --}}

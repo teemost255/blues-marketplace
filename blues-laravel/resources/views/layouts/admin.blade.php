@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
     <title>@yield('title', 'Admin') — Blues Marketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -11,6 +12,22 @@
         }
     </script>
     <style>
+        /* ── Mobile overflow / zoom prevention ── */
+        *, *::before, *::after { box-sizing: border-box; }
+        html {
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+        img, video, svg { max-width: 100%; }
+
+        /* Horizontal-scroll wrapper for tables on mobile */
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
         [x-cloak] { display: none !important; }
         .sidebar-link { display:flex; align-items:center; gap:.75rem; padding:.625rem 1rem; border-radius:.5rem; color:#cbd5e1; font-size:.875rem; font-weight:500; transition:background .15s,color .15s; text-decoration:none; }
         .sidebar-link:hover { background:#334155; color:#fff; }
@@ -18,7 +35,10 @@
         .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem; }
         .modal-box { background:#1e293b;border:1px solid #334155;border-radius:1rem;padding:1.75rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto; }
         input[type=text],input[type=email],input[type=number],input[type=password],select,textarea {
-            width:100%;background:#0f172a;border:1px solid #475569;border-radius:.5rem;padding:.5rem .75rem;color:#fff;font-size:.875rem;outline:none;
+            width:100%;background:#0f172a;border:1px solid #475569;border-radius:.5rem;padding:.5rem .75rem;color:#fff;
+            /* 16px minimum prevents iOS auto-zoom on focus */
+            font-size:max(16px, .875rem);
+            outline:none;
         }
         input:focus,select:focus,textarea:focus { border-color:#0ea5e9; }
         .btn-primary { background:#0ea5e9;color:#fff;padding:.5rem 1.25rem;border-radius:.5rem;font-size:.875rem;font-weight:500;cursor:pointer;border:none;transition:background .15s; }
@@ -163,7 +183,7 @@
 </aside>
 
 {{-- Main content --}}
-<div class="lg:ml-64 flex-1 flex flex-col min-h-screen">
+<div class="lg:ml-64 flex-1 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
     <header class="bg-slate-800 border-b border-slate-700 px-4 lg:px-8 py-4 flex items-center justify-between sticky top-0 z-30">
         <div class="flex items-center gap-3">
             {{-- Hamburger (mobile only) --}}

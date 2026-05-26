@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
     <title>@yield('title', 'Blues Marketplace') — Buy Digital Accounts</title>
     <meta name="description" content="@yield('meta_description', 'Blues Marketplace — Buy verified Facebook, Instagram, TikTok accounts and second phone numbers.')">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,7 +19,30 @@
         }
     </script>
     <style>
-        body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+        /* ── Mobile overflow / zoom prevention ── */
+        *, *::before, *::after { box-sizing: border-box; }
+        html {
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+        img, video, svg { max-width: 100%; height: auto; }
+
+        /* Prevent iOS auto-zoom on input focus (font-size must be ≥ 16px) */
+        @media screen and (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+
+        /* Horizontal-scroll wrapper for tables */
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
         .nav-link { @apply text-slate-300 hover:text-white transition-colors text-sm font-medium; }
         .btn-primary { @apply inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm; }
         .btn-outline { @apply inline-flex items-center gap-2 border border-slate-600 hover:border-brand text-slate-300 hover:text-white font-medium px-5 py-2.5 rounded-lg transition-colors text-sm; }
