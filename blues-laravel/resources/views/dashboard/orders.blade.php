@@ -152,7 +152,7 @@
                 </div>
                 <button onclick="closeRateModal('rate-{{ $order->id }}')" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
             </div>
-            <form method="POST" action="{{ route('orders.review', $order->id) }}" class="px-6 py-5">
+            <form method="POST" action="{{ route('dashboard.orders.review', $order->id) }}" class="px-6 py-5">
                 @csrf
                 <p class="text-slate-400 text-xs mb-3">How would you rate this listing?</p>
                 <div class="flex items-center justify-center gap-2 mb-4" id="modal-stars-{{ $order->id }}">
