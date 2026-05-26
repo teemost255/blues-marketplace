@@ -67,7 +67,7 @@
                             <h3 class="font-semibold text-white">Edit Category</h3>
                             <button onclick="closeModal('modal-edit-cat-{{ $cat->id }}')" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
                         </div>
-                        <form method="POST" action="{{ route('admin.categories.update', $cat) }}" enctype="multipart/form-data" class="space-y-4">
+                        <form method="POST" action="{{ route('admin.categories.update', $cat) }}" class="space-y-4">
                             @csrf
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1.5">Name *</label>
@@ -82,11 +82,11 @@
                                 <textarea name="description" rows="2">{{ $cat->description }}</textarea>
                             </div>
                             <div>
-                                <label class="block text-xs text-slate-400 mb-1.5">Category Image</label>
+                                <label class="block text-xs text-slate-400 mb-1.5">Category Image URL</label>
                                 @if($cat->image)
                                     <img src="{{ $cat->image }}" class="w-20 h-16 object-cover rounded-lg border border-slate-600 mb-2">
                                 @endif
-                                <input type="file" name="image" accept="image/*" class="text-slate-300 file:bg-slate-700 file:border-0 file:text-slate-300 file:px-3 file:py-1 file:rounded file:mr-2 file:cursor-pointer">
+                                <input type="url" name="image_url" value="{{ $cat->image }}" placeholder="https://example.com/image.png">
                             </div>
                             <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
                                 <input type="checkbox" name="is_active" value="1" {{ $cat->is_active ? 'checked' : '' }} class="w-4 h-4 rounded"> Active
@@ -129,7 +129,7 @@
             <h3 class="font-semibold text-white text-lg">New Category</h3>
             <button onclick="closeModal('modal-add-category')" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
         </div>
-        <form method="POST" action="{{ route('admin.categories.store') }}" enctype="multipart/form-data" class="space-y-4">
+        <form method="POST" action="{{ route('admin.categories.store') }}" class="space-y-4">
             @csrf
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">Name *</label>
@@ -140,8 +140,8 @@
                 <input type="text" name="icon" placeholder="e.g. 📘 🎵 📱">
             </div>
             <div>
-                <label class="block text-xs text-slate-400 mb-1.5">Category Image</label>
-                <input type="file" name="image" accept="image/*" class="text-slate-300 file:bg-slate-700 file:border-0 file:text-slate-300 file:px-3 file:py-1 file:rounded file:mr-2 file:cursor-pointer">
+                <label class="block text-xs text-slate-400 mb-1.5">Category Image URL</label>
+                <input type="url" name="image_url" placeholder="https://example.com/image.png">
             </div>
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">Description</label>
