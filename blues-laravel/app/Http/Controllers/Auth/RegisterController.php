@@ -57,10 +57,12 @@ class RegisterController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard.index')->with('success',
+        $user->sendEmailVerificationNotification();
+
+        return redirect()->route('verification.notice')->with('success',
             $referrerId
-                ? 'Welcome! You joined via a referral link. Fund your wallet and make a purchase to activate your referrer\'s bonus.'
-                : 'Welcome to BluesMarketplace!'
+                ? 'Account created! Please verify your email to continue. You joined via a referral link.'
+                : 'Account created! Please check your email to verify your address before accessing the dashboard.'
         );
     }
 }

@@ -11,6 +11,9 @@ class UserAuth
         if (!Auth::check()) {
             return redirect()->route('login')->with('error', 'Please log in to continue.');
         }
+        if (!Auth::user()->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
         return $next($request);
     }
 }

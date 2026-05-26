@@ -80,6 +80,7 @@
         <div class="relative flex-1 min-w-[180px]">
             <svg class="absolute left-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             <input id="svc-search" type="text" placeholder="Search services…" oninput="handleSearchInput()"
+                style="font-size:16px"
                 class="w-full pl-9 pr-8 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl text-sm focus:outline-none focus:border-brand placeholder-slate-500">
             <button id="svc-search-clear" onclick="clearSearch()" class="hidden absolute right-2.5 top-2.5 text-slate-500 hover:text-white transition-colors" title="Clear search">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -134,39 +135,58 @@
     <div class="space-y-3" id="active-orders-list">
         @foreach($activeOrders as $order)
         <div id="active-card-{{ $order->id }}"
-            class="bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-wrap items-center gap-4">
-            <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-                    <p class="font-bold text-white capitalize truncate">{{ $order->service }}</p>
-                    @if($order->country)
-                    <span class="text-xs text-slate-400 uppercase">({{ $order->country }})</span>
-                    @endif
+            class="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col gap-3">
+
+            {{-- Service header --}}
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse flex-shrink-0"></span>
+                <p class="font-bold text-white capitalize truncate">{{ $order->service }}</p>
+                @if($order->country)
+                <span class="text-xs text-slate-400 uppercase flex-shrink-0">({{ $order->country }})</span>
+                @endif
+                <span class="ml-auto text-xs text-slate-500 flex-shrink-0">₦{{ number_format($order->cost, 2) }}</span>
+            </div>
+
+            {{-- Phone number row with copy --}}
+            <div class="flex items-center gap-2 bg-slate-700/40 rounded-xl px-3 py-2.5">
+                <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                <span class="font-mono text-base text-brand flex-1 select-all min-w-0 truncate" id="phone-{{ $order->id }}">{{ $order->phone_number ?? 'Assigning…' }}</span>
+                <button onclick="copyText('phone-{{ $order->id }}', this)" title="Copy number"
+                    class="flex-shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-brand hover:bg-brand/10 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </button>
+            </div>
+
+            {{-- SMS code row with copy --}}
+            <div class="flex items-center gap-2 bg-slate-700/40 rounded-xl px-3 py-2.5">
+                <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-slate-400 leading-none mb-0.5">SMS Code</p>
+                    <p id="sms-code-{{ $order->id }}" class="font-mono font-bold text-lg text-green-400 tracking-widest leading-tight">{{ $order->sms_code ?? '—' }}</p>
                 </div>
-                <p class="font-mono text-lg text-brand select-all tracking-widest">{{ $order->phone_number ?? 'Assigning…' }}</p>
-                <p class="text-xs text-slate-500 mt-1">Ordered {{ $order->created_at->diffForHumans() }} · ₦{{ number_format($order->cost, 2) }}</p>
+                <button onclick="copyText('sms-code-{{ $order->id }}', this)" title="Copy code"
+                    class="flex-shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-green-400 hover:bg-green-400/10 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </button>
             </div>
 
-            {{-- SMS code display --}}
-            <div class="flex flex-col items-center bg-slate-700/50 rounded-xl px-5 py-3 min-w-[140px]">
-                <p class="text-xs text-slate-400 mb-1">SMS Code</p>
-                <p id="sms-code-{{ $order->id }}" class="font-mono font-bold text-xl text-green-400 tracking-widest">
-                    {{ $order->sms_code ?? '—' }}
-                </p>
-                <p id="poll-status-{{ $order->id }}" class="text-xs text-slate-500 mt-1">Auto-checking…</p>
+            {{-- Status row --}}
+            <div class="flex items-center justify-between">
+                <p id="poll-status-{{ $order->id }}" class="text-xs text-slate-500">Auto-checking…</p>
+                <p class="text-xs text-slate-600">{{ $order->created_at->diffForHumans() }}</p>
             </div>
 
-            {{-- Actions --}}
-            <div class="flex flex-col gap-2">
+            {{-- Action buttons --}}
+            <div class="flex gap-2">
                 <button onclick="checkSmsOnce({{ $order->id }}, this)"
-                    class="flex items-center gap-1.5 px-4 py-2 bg-brand/10 hover:bg-brand/20 text-brand border border-brand/30 rounded-xl text-sm font-semibold transition-colors">
+                    class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-brand/10 hover:bg-brand/20 text-brand border border-brand/30 rounded-xl text-sm font-semibold transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     Check Now
                 </button>
                 <form method="POST" action="{{ route('dashboard.virtual-numbers.cancel', $order->id) }}"
-                    onsubmit="return confirm('Cancel this rental?')">
+                    onsubmit="return confirm('Cancel this rental?')" class="flex-1">
                     @csrf @method('DELETE')
-                    <button type="submit" class="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-700/30 rounded-xl text-sm font-semibold transition-colors">
+                    <button type="submit" class="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-700/30 rounded-xl text-sm font-semibold transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         Cancel
                     </button>
@@ -175,7 +195,7 @@
         </div>
         @endforeach
     </div>
-    <p class="text-xs text-slate-500 text-center mt-4">SMS codes are checked automatically every 10 seconds.</p>
+    <p class="text-xs text-slate-500 text-center mt-4">SMS codes are checked automatically every 5 seconds.</p>
     @endif
 </div>
 
@@ -752,15 +772,37 @@ async function checkSmsOnce(orderId, btn) {
 
 function startPolling() {
     if (pollInterval || !activeOrderIds.length) return;
-    // Run once immediately then every 10s
+    // Run once immediately then every 5s
     activeOrderIds.forEach(id => checkSmsOnce(id, null));
     pollInterval = setInterval(() => {
         activeOrderIds.forEach(id => checkSmsOnce(id, null));
-    }, 10000);
+    }, 5000);
 }
 
 function stopPolling() {
     if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+function copyText(elementId, btn) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const text = el.textContent.trim();
+    if (text === '—' || text === 'Assigning…') return;
+    const orig = btn.innerHTML;
+    const checkIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+    navigator.clipboard.writeText(text).then(() => {
+        btn.innerHTML = checkIcon;
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    }).catch(() => {
+        const range = document.createRange();
+        range.selectNode(el);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        document.execCommand('copy');
+        window.getSelection().removeAllRanges();
+        btn.innerHTML = checkIcon;
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    });
 }
 
 function updateActiveBadge() {

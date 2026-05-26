@@ -63,6 +63,29 @@ Route::post('/forgot-password', [ForgotPasswordController::class, 'sendReset'])-
 Route::get('/reset-password',   [ForgotPasswordController::class, 'showResetForm'])->name('reset-password');
 Route::post('/reset-password',  [ForgotPasswordController::class, 'resetPassword'])->name('reset-password.update');
 
+// ── Email Verification ────────────────────────────────────────────────────────
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', function () {
+        if (auth()->user()->hasVerifiedEmail()) {
+            return redirect()->route('dashboard.index');
+        }
+        return view('auth.verify-email');
+    })->name('verification.notice');
+
+    Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Foundation\Auth\EmailVerificationRequest $request) {
+        $request->fulfill();
+        return redirect()->route('dashboard.index')->with('success', 'Email verified! Welcome to BluesMarketplace.');
+    })->middleware('signed')->name('verification.verify');
+
+    Route::post('/email/verification-notification', function (Illuminate\Http\Request $request) {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->route('dashboard.index');
+        }
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('success', 'Verification link sent! Please check your email.');
+    })->middleware('throttle:6,1')->name('verification.send');
+});
+
 // ── User Dashboard ────────────────────────────────────────────────────────────
 Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->name('dashboard.')->group(function () {
     Route::get('/',             [DashboardController::class,    'index'])->name('index');

@@ -4,7 +4,7 @@
 
 @section('content')
 {{-- Stats row --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+<div class="grid grid-cols-2 gap-4 mb-8">
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Wallet Balance</p>
         <p class="text-2xl font-bold text-white mt-1">₦{{ number_format($wallet->balance, 2) }}</p>
@@ -13,15 +13,6 @@
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Orders</p>
         <p class="text-2xl font-bold text-white mt-1">{{ $orderCount }}</p>
-    </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Spent</p>
-        <p class="text-2xl font-bold text-white mt-1">₦{{ number_format($totalSpent, 2) }}</p>
-    </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Unread Notifications</p>
-        <p class="text-2xl font-bold text-brand mt-1">{{ $unreadCount }}</p>
-        <a href="{{ route('dashboard.notifications') }}" class="text-xs text-brand hover:underline mt-1 inline-block">View all →</a>
     </div>
 </div>
 

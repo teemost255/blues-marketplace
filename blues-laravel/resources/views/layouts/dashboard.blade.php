@@ -75,10 +75,6 @@
         <a href="{{ route('dashboard.notifications') }}" class="sidebar-link {{ request()->routeIs('dashboard.notifications') ? 'active' : '' }}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
             Notifications
-            @php $unread = \App\Models\Notification::where('user_id', auth()->id())->where('is_read', false)->count(); @endphp
-            @if($unread > 0)
-                <span class="ml-auto bg-brand text-white text-xs rounded-full px-1.5 py-0.5 leading-none">{{ $unread }}</span>
-            @endif
         </a>
         <a href="{{ route('dashboard.referrals') }}" class="sidebar-link {{ request()->routeIs('dashboard.referrals') ? 'active' : '' }}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -134,7 +130,14 @@
             </button>
             <h1 class="text-base font-semibold text-white">@yield('page-title', 'Dashboard')</h1>
         </div>
-        <div class="flex items-center gap-2 lg:gap-3 text-sm text-slate-400">
+        <div class="flex items-center gap-3 lg:gap-4 text-sm text-slate-400">
+            @php $headerUnread = \App\Models\Notification::where('user_id', auth()->id())->where('is_read', false)->count(); @endphp
+            <a href="{{ route('dashboard.notifications') }}" class="relative text-slate-400 hover:text-white transition-colors" title="Notifications">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                @if($headerUnread > 0)
+                    <span class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 bg-brand text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">{{ $headerUnread > 9 ? '9+' : $headerUnread }}</span>
+                @endif
+            </a>
             <span class="hidden sm:inline">Wallet:</span>
             <span class="text-white font-semibold">₦{{ number_format(\App\Models\Wallet::where('user_id', auth()->id())->value('balance') ?? 0, 2) }}</span>
             <a href="{{ route('dashboard.wallet') }}" class="text-brand hover:text-sky-300 text-xs">Top up →</a>
