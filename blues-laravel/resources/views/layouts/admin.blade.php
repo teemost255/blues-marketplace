@@ -91,13 +91,25 @@
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
             Transactions
         </a>
-        @php $pendingBankTransfers = \App\Models\BankTransferPayment::where('status','pending')->count(); @endphp
+        @php
+            $pendingBankTransfers  = \App\Models\BankTransferPayment::where('status','pending')->count();
+            $userConfirmedPending  = \App\Models\BankTransferPayment::where('status','pending')->whereNotNull('user_confirmed_at')->count();
+        @endphp
         <a href="{{ route('admin.bank-transfers') }}" class="sidebar-link {{ request()->routeIs('admin.bank-transfers*') ? 'active' : '' }}">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             Bank Transfers
-            @if($pendingBankTransfers > 0)
-                <span class="ml-auto bg-yellow-500 text-slate-900 text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $pendingBankTransfers }}</span>
-            @endif
+            <span id="bt-badge" class="ml-auto flex items-center gap-1">
+                @if($userConfirmedPending > 0)
+                    <span id="bt-paid-badge" class="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full" title="Users confirmed payment">{{ $userConfirmedPending }}</span>
+                @else
+                    <span id="bt-paid-badge" class="hidden bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full" title="Users confirmed payment"></span>
+                @endif
+                @if($pendingBankTransfers > 0)
+                    <span id="bt-total-badge" class="bg-yellow-500 text-slate-900 text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $pendingBankTransfers }}</span>
+                @else
+                    <span id="bt-total-badge" class="hidden bg-yellow-500 text-slate-900 text-xs font-bold px-1.5 py-0.5 rounded-full"></span>
+                @endif
+            </span>
         </a>
         <a href="{{ route('admin.tickets') }}" class="sidebar-link {{ request()->routeIs('admin.tickets') ? 'active' : '' }}">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
@@ -129,8 +141,17 @@
         </a>
     </nav>
 
-    <div class="px-4 py-4 border-t border-slate-700">
-        <p class="text-xs text-slate-400 truncate mb-2">{{ session('admin_email') }}</p>
+    <div class="px-4 py-4 border-t border-slate-700 space-y-1">
+        <a href="{{ route('admin.profile') }}" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-700 transition-colors group">
+            <div class="w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                {{ strtoupper(substr(session('admin_name') ?? session('admin_email', 'A'), 0, 1)) }}
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-white truncate">{{ session('admin_name') ?? 'Admin' }}</p>
+                <p class="text-xs text-slate-400 truncate">{{ session('admin_email') }}</p>
+            </div>
+            <svg class="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
         <form method="POST" action="{{ route('admin.logout') }}">
             @csrf
             <button type="submit" class="sidebar-link text-red-400 hover:text-red-300 w-full" style="background:transparent;border:none;cursor:pointer;">
@@ -156,10 +177,17 @@
         </div>
         <div class="flex items-center gap-2 lg:gap-3">
             <a href="{{ route('home') }}" target="_blank" class="hidden sm:block text-xs text-slate-400 hover:text-sky-400 transition-colors">View Site →</a>
-            <span class="hidden sm:block text-sm text-slate-400">{{ session('admin_name') ?? session('admin_email') }}</span>
-            <div class="w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                {{ strtoupper(substr(session('admin_name') ?? session('admin_email', 'A'), 0, 1)) }}
-            </div>
+            {{-- Live "I Have Paid" bell --}}
+            <a href="{{ route('admin.bank-transfers') }}" id="paid-bell-btn" class="relative hidden text-slate-400 hover:text-white transition-colors" title="Users awaiting payment confirmation">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                <span id="paid-bell-count" class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none"></span>
+            </a>
+            <a href="{{ route('admin.profile') }}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <span class="hidden sm:block text-sm text-slate-400">{{ session('admin_name') ?? session('admin_email') }}</span>
+                <div class="w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    {{ strtoupper(substr(session('admin_name') ?? session('admin_email', 'A'), 0, 1)) }}
+                </div>
+            </a>
         </div>
     </header>
 
@@ -204,6 +232,43 @@ document.addEventListener('keydown', function(e) {
         document.querySelectorAll('.modal-overlay').forEach(m => { m.style.display='none'; document.body.style.overflow=''; });
     }
 });
+
+// Live badge polling for bank transfers
+(function() {
+    const POLL_URL   = '{{ route("admin.api.pending-count") }}';
+    const paidBadge  = document.getElementById('bt-paid-badge');
+    const totalBadge = document.getElementById('bt-total-badge');
+    const bellBtn    = document.getElementById('paid-bell-btn');
+    const bellCount  = document.getElementById('paid-bell-count');
+
+    async function updateBadges() {
+        try {
+            const res  = await fetch(POLL_URL, { headers: { 'Accept': 'application/json' } });
+            const data = await res.json();
+
+            // Sidebar paid badge (red) — users who clicked "I Have Paid"
+            if (data.user_confirmed > 0) {
+                paidBadge.textContent = data.user_confirmed;
+                paidBadge.classList.remove('hidden');
+                bellBtn.classList.remove('hidden');
+                bellCount.textContent = data.user_confirmed;
+            } else {
+                paidBadge.classList.add('hidden');
+                bellBtn.classList.add('hidden');
+            }
+
+            // Sidebar total badge (yellow) — all pending
+            if (data.total_pending > 0) {
+                totalBadge.textContent = data.total_pending;
+                totalBadge.classList.remove('hidden');
+            } else {
+                totalBadge.classList.add('hidden');
+            }
+        } catch (e) {}
+    }
+
+    setInterval(updateBadges, 8000);
+})();
 </script>
 @stack('scripts')
 </body>

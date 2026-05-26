@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 // Admin imports
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Admin\BankTransferController as AdminBankTransferController;
+use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\ListingsController;
@@ -191,4 +192,10 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::get('/bank-transfers',                [AdminBankTransferController::class, 'index'])->name('bank-transfers');
     Route::post('/bank-transfers/{id}/confirm',  [AdminBankTransferController::class, 'confirm'])->name('bank-transfers.confirm');
     Route::post('/bank-transfers/{id}/reject',   [AdminBankTransferController::class, 'reject'])->name('bank-transfers.reject');
+
+    // Admin Profile
+    Route::get('/profile',           [AdminProfileController::class, 'index'])->name('profile');
+    Route::post('/profile',          [AdminProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/password', [AdminProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::get('/api/pending-count', [AdminProfileController::class, 'pendingCount'])->name('api.pending-count');
 });
