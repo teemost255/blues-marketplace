@@ -9,7 +9,7 @@ class LoginController extends Controller
 {
     public function show()
     {
-        if (Auth::check()) return redirect()->route('dashboard');
+        if (Auth::check()) return redirect()->route('dashboard.index');
         return view('auth.login');
     }
 
