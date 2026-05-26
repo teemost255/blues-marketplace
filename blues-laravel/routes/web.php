@@ -110,6 +110,8 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::post('/wallet/bank-transfer',             [UserBankTransferController::class, 'walletTopup'])->name('wallet.bank-transfer');
     Route::get('/bank-transfer/{id}/pending',        [UserBankTransferController::class, 'pending'])->name('bank-transfer.pending');
     Route::post('/bank-transfer/{id}/paid',          [UserBankTransferController::class, 'markPaid'])->name('bank-transfer.paid');
+    Route::get('/bank-transfer/{id}/status',         [UserBankTransferController::class, 'status'])->name('bank-transfer.status');
+    Route::get('/bank-transfer/{id}/success',        [UserBankTransferController::class, 'success'])->name('bank-transfer.success');
 
     Route::get('/referrals',        [ReferralPageController::class,  'index'])->name('referrals');
 

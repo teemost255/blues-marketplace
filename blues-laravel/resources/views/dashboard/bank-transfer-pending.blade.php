@@ -4,22 +4,15 @@
 
 @section('content')
 
-@if(session('success'))
-<div class="mb-6 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl px-4 py-3 flex items-center gap-2 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-    {{ session('success') }}
-</div>
-@endif
-
 <div class="max-w-lg mx-auto">
     {{-- Status Card --}}
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
         <div class="flex items-center gap-3 mb-5">
-            <div class="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center" id="status-icon">
                 <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
             <div>
-                <h2 class="font-bold text-white text-lg">
+                <h2 class="font-bold text-white text-lg" id="status-heading">
                     @if($btp->status === 'confirmed') Payment Confirmed
                     @elseif($btp->status === 'rejected') Payment Rejected
                     @else Awaiting Payment Confirmation
@@ -31,8 +24,9 @@
 
         @if($btp->status === 'confirmed')
             <div class="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm">
-                Your payment has been confirmed by the admin. Check your orders or wallet for the result.
+                Your payment has been confirmed. Redirecting…
             </div>
+            <script>window.location.href = "{{ route('dashboard.bank-transfer.success', $btp->id) }}";</script>
         @elseif($btp->status === 'rejected')
             <div class="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
                 Your payment was rejected. {{ $btp->admin_note ? 'Reason: '.$btp->admin_note : '' }} Please contact support.
@@ -76,13 +70,27 @@
             </div>
 
             {{-- I Have Paid button --}}
-            <form method="POST" action="{{ route('dashboard.bank-transfer.paid', $btp->id) }}">
-                @csrf
-                <button type="submit" class="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl text-base transition-colors">
+            <div id="pay-btn-wrap">
+                <button id="pay-btn" onclick="notifyAdmin()"
+                    class="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl text-base transition-colors">
                     I Have Paid — Notify Admin
                 </button>
-            </form>
-            <p class="text-xs text-slate-500 text-center mt-2">Click after making the transfer. Admin will confirm within a short time.</p>
+                <p class="text-xs text-slate-500 text-center mt-2">Click after making the transfer. Admin will verify and credit your account.</p>
+            </div>
+
+            {{-- Waiting state (hidden until button clicked) --}}
+            <div id="waiting-wrap" class="hidden">
+                <div class="bg-brand/10 border border-brand/30 rounded-xl px-4 py-4 text-center">
+                    <div class="flex items-center justify-center gap-2 mb-2">
+                        <svg class="w-5 h-5 text-brand animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                        </svg>
+                        <span class="text-brand font-semibold text-sm">Waiting for admin approval…</span>
+                    </div>
+                    <p class="text-slate-400 text-xs">This page will automatically update once your payment is confirmed. You can safely leave and come back.</p>
+                </div>
+            </div>
         @endif
     </div>
 
@@ -96,6 +104,12 @@
 </div>
 
 <script>
+const STATUS_URL  = "{{ route('dashboard.bank-transfer.status', $btp->id) }}";
+const PAID_URL    = "{{ route('dashboard.bank-transfer.paid', $btp->id) }}";
+const CSRF_TOKEN  = "{{ csrf_token() }}";
+
+let polling = false;
+
 function copyText(text, btn) {
     navigator.clipboard.writeText(text).then(() => {
         const orig = btn.innerHTML;
@@ -103,5 +117,57 @@ function copyText(text, btn) {
         setTimeout(() => btn.innerHTML = orig, 1500);
     });
 }
+
+async function notifyAdmin() {
+    const btn = document.getElementById('pay-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    try {
+        await fetch(PAID_URL, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+        });
+    } catch (e) {}
+
+    // Switch to waiting UI
+    document.getElementById('pay-btn-wrap').classList.add('hidden');
+    document.getElementById('waiting-wrap').classList.remove('hidden');
+
+    startPolling();
+}
+
+function startPolling() {
+    if (polling) return;
+    polling = true;
+    poll();
+}
+
+async function poll() {
+    try {
+        const res  = await fetch(STATUS_URL, { headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+
+        if (data.status === 'confirmed' && data.successUrl) {
+            window.location.href = data.successUrl;
+            return;
+        }
+        if (data.status === 'rejected') {
+            location.reload();
+            return;
+        }
+    } catch (e) {}
+
+    setTimeout(poll, 5000);
+}
+
+// If the page was previously confirmed/notified, auto-start polling
+@if($btp->user_confirmed_at && $btp->status === 'pending')
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('pay-btn-wrap').classList.add('hidden');
+        document.getElementById('waiting-wrap').classList.remove('hidden');
+        startPolling();
+    });
+@endif
 </script>
 @endsection

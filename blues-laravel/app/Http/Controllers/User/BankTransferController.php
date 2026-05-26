@@ -76,10 +76,37 @@ class BankTransferController extends Controller
             ->where('status', 'pending')
             ->findOrFail($id);
 
-        // Already notified on creation; send a follow-up "I have paid" email
+        $btp->update(['user_confirmed_at' => now()]);
+
         $this->notifyAdminPaid(Auth::user(), $btp);
 
-        return back()->with('success', 'Payment confirmation sent! Admin will verify and credit your account shortly.');
+        return response()->json(['ok' => true]);
+    }
+
+    // Polling endpoint — returns current status
+    public function status(int $id)
+    {
+        $btp = BankTransferPayment::where('user_id', Auth::id())->findOrFail($id);
+
+        $successUrl = null;
+        if ($btp->status === 'confirmed') {
+            $successUrl = route('dashboard.bank-transfer.success', $btp->id);
+        }
+
+        return response()->json([
+            'status'     => $btp->status,
+            'successUrl' => $successUrl,
+        ]);
+    }
+
+    // Success page shown after admin confirms
+    public function success(int $id)
+    {
+        $btp = BankTransferPayment::where('user_id', Auth::id())
+            ->where('status', 'confirmed')
+            ->findOrFail($id);
+
+        return view('dashboard.bank-transfer-success', compact('btp'));
     }
 
     private function notifyAdmin($user, BankTransferPayment $btp, string $itemName): void
