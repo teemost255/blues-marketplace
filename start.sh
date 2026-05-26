@@ -25,6 +25,11 @@ if [ -n "$DATABASE_URL" ]; then
   sed -i "/^DB_URL=/d" .env
 fi
 
+# Inject the correct APP_URL from Replit domain
+if [ -n "$REPLIT_DEV_DOMAIN" ]; then
+  grep -q "^APP_URL=" .env && sed -i "s|^APP_URL=.*|APP_URL=https://${REPLIT_DEV_DOMAIN}|" .env || echo "APP_URL=https://${REPLIT_DEV_DOMAIN}" >> .env
+fi
+
 # Generate app key if not set
 if ! grep -q "APP_KEY=base64:" .env 2>/dev/null; then
   php artisan key:generate --ansi

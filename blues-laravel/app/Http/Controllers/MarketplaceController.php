@@ -57,6 +57,10 @@ class MarketplaceController extends Controller
             ? Wishlist::where('user_id', Auth::id())->where('listing_id', $id)->exists()
             : false;
 
+        $listingCategory = $listing->category
+            ? ListingCategory::where('slug', $listing->category)->first()
+            : null;
+
         $reviews      = \App\Models\ListingReview::with('user')->where('listing_id', $id)->latest()->get();
         $avgRating    = $reviews->avg('rating') ? round($reviews->avg('rating'), 1) : null;
         $userReviewedPurchaseId = null;
@@ -69,7 +73,7 @@ class MarketplaceController extends Controller
             $userReviewedPurchaseId = $bought?->id;
         }
 
-        return view('marketplace.show', compact('listing', 'related', 'inWishlist', 'reviews', 'avgRating', 'userReviewedPurchaseId'));
+        return view('marketplace.show', compact('listing', 'related', 'inWishlist', 'listingCategory', 'reviews', 'avgRating', 'userReviewedPurchaseId'));
     }
 
     public function buy(Request $request, int $id)

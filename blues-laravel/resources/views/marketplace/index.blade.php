@@ -17,7 +17,7 @@
         <select name="category" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand">
             <option value="">All Categories</option>
             @foreach($categories as $cat)
-                <option value="{{ $cat->name }}" {{ request('category') === $cat->name ? 'selected' : '' }}>{{ $cat->name }}</option>
+                <option value="{{ $cat->slug }}" {{ request('category') === $cat->slug ? 'selected' : '' }}>{{ $cat->name }}</option>
             @endforeach
         </select>
         <select name="sort" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand">
@@ -47,7 +47,7 @@
     </form>
 
     @php
-        $categoryMap = $categories->keyBy('name');
+        $categoryMap = $categories->keyBy('slug');
     @endphp
 
     {{-- Grid --}}
