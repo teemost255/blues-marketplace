@@ -46,6 +46,10 @@
         @endif
     </form>
 
+    @php
+        $categoryMap = $categories->keyBy('name');
+    @endphp
+
     {{-- Grid --}}
     @if($listings->isEmpty())
         <div class="text-center py-20 text-slate-500">
@@ -56,41 +60,49 @@
     @else
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             @foreach($listings as $listing)
+            @php
+                $displayImage = $listing->image
+                    ?? ($categoryMap[$listing->category]->image ?? null);
+            @endphp
             <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:border-brand/50 transition-all group flex flex-col">
-                <a href="{{ route('dashboard.marketplace.show', $listing->id) }}" class="block">
-                    <div class="h-36 bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center overflow-hidden">
-                        @if($listing->image)
-                            <img src="{{ $listing->image }}" alt="{{ $listing->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                {{-- Logo-style image area --}}
+                <div class="flex items-center justify-center pt-6 pb-2 px-4">
+                    <div class="w-20 h-20 rounded-2xl overflow-hidden bg-slate-700 border border-slate-600 flex items-center justify-center shrink-0 shadow-lg">
+                        @if($displayImage)
+                            <img src="{{ $displayImage }}" alt="{{ $listing->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                         @else
-                            <svg class="w-10 h-10 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                            <svg class="w-9 h-9 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                         @endif
                     </div>
-                </a>
-                <div class="p-4 flex flex-col flex-1">
+                </div>
+
+                <div class="p-4 flex flex-col flex-1 text-center">
                     @if($listing->category)
                         <span class="text-xs text-brand font-medium">{{ $listing->category }}</span>
                     @endif
-                    <a href="{{ route('dashboard.marketplace.show', $listing->id) }}">
-                        <h3 class="font-semibold text-white text-sm mt-1 mb-2 line-clamp-2 group-hover:text-brand transition-colors">{{ $listing->title }}</h3>
-                    </a>
-                    <div class="mt-auto flex items-center justify-between pt-3 border-t border-slate-700">
-                        <div>
-                            <span class="text-xl font-bold text-white">₦{{ number_format($listing->price, 2) }}</span>
-                            <p class="text-xs text-slate-400">{{ $listing->stock }} in stock</p>
-                        </div>
-                        <div class="flex gap-2">
-                            @auth
-                                <form method="POST" action="{{ route('dashboard.wishlist.store') }}">
-                                    @csrf
-                                    <input type="hidden" name="listing_id" value="{{ $listing->id }}">
-                                    <button type="submit" title="{{ in_array($listing->id, $wishlistIds) ? 'In wishlist' : 'Add to wishlist' }}"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-600 hover:border-pink-400 transition-colors {{ in_array($listing->id, $wishlistIds) ? 'text-pink-400 border-pink-400' : 'text-slate-400' }}">
-                                        <svg class="w-4 h-4" fill="{{ in_array($listing->id, $wishlistIds) ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                                    </button>
-                                </form>
-                            @endauth
-                            <a href="{{ route('dashboard.marketplace.show', $listing->id) }}" class="bg-brand hover:bg-brand-dark text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Buy</a>
-                        </div>
+                    <h3 class="font-semibold text-white text-sm mt-1 mb-1 line-clamp-2">{{ $listing->title }}</h3>
+                    <p class="text-xs text-slate-400 mb-3">{{ $listing->stock }} in stock</p>
+                    <span class="text-2xl font-bold text-white block mb-4">₦{{ number_format($listing->price, 2) }}</span>
+
+                    <div class="mt-auto flex items-center gap-2">
+                        @auth
+                            <form method="POST" action="{{ route('dashboard.wishlist.store') }}" class="shrink-0">
+                                @csrf
+                                <input type="hidden" name="listing_id" value="{{ $listing->id }}">
+                                <button type="submit" title="{{ in_array($listing->id, $wishlistIds) ? 'In wishlist' : 'Add to wishlist' }}"
+                                    class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-600 hover:border-pink-400 transition-colors {{ in_array($listing->id, $wishlistIds) ? 'text-pink-400 border-pink-400' : 'text-slate-400' }}">
+                                    <svg class="w-4 h-4" fill="{{ in_array($listing->id, $wishlistIds) ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                                </button>
+                            </form>
+                        @endauth
+                        {{-- Direct buy: POST straight to checkout --}}
+                        <form method="POST" action="{{ route('dashboard.marketplace.buy', $listing->id) }}" class="flex-1"
+                              onsubmit="return confirm('Buy {{ addslashes($listing->title) }} for ₦{{ number_format($listing->price, 2) }}?')">
+                            @csrf
+                            <button type="submit" class="w-full bg-brand hover:bg-brand-dark text-white text-sm font-semibold py-2 rounded-lg transition-colors">
+                                Buy Now — ₦{{ number_format($listing->price, 0) }}
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

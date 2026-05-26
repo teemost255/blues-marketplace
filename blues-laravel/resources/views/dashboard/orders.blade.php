@@ -3,7 +3,24 @@
 @section('page-title', 'My Orders')
 @section('content')
 
-<div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+{{-- Summary strip --}}
+<div class="grid grid-cols-3 gap-3 mb-6">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold text-white">{{ $orders->total() }}</p>
+        <p class="text-xs text-slate-400 mt-0.5">Total Orders</p>
+    </div>
+    <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold text-green-400">{{ $orders->getCollection()->where('status','completed')->count() }}</p>
+        <p class="text-xs text-slate-400 mt-0.5">Completed</p>
+    </div>
+    <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-center">
+        <p class="text-xl font-bold text-white">₦{{ number_format($orders->getCollection()->sum('amount'), 0) }}</p>
+        <p class="text-xs text-slate-400 mt-0.5">This Page</p>
+    </div>
+</div>
+
+{{-- Desktop table (md and above) --}}
+<div class="hidden md:block bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
     <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
         <h2 class="font-semibold text-white">Order History</h2>
         <span class="text-xs text-slate-400">{{ $orders->total() }} total</span>
@@ -12,7 +29,6 @@
         <table class="w-full text-sm">
             <thead><tr class="border-b border-slate-700 text-slate-400 text-xs uppercase">
                 <th class="px-6 py-3 text-left">Item</th>
-                <th class="px-6 py-3 text-left">Category</th>
                 <th class="px-6 py-3 text-left">Amount</th>
                 <th class="px-6 py-3 text-left">Status</th>
                 <th class="px-6 py-3 text-left">Date</th>
@@ -24,8 +40,8 @@
                 <tr class="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
                     <td class="px-6 py-4">
                         <p class="text-white font-medium">{{ $order->listing?->title ?? 'Deleted listing' }}</p>
+                        <p class="text-xs text-slate-500 mt-0.5">{{ $order->listing?->category ?? '' }}</p>
                     </td>
-                    <td class="px-6 py-4 text-slate-400">{{ $order->listing?->category ?? '—' }}</td>
                     <td class="px-6 py-4 text-white font-semibold">₦{{ number_format($order->amount, 2) }}</td>
                     <td class="px-6 py-4">
                         @php
@@ -36,9 +52,7 @@
                                 default     => 'bg-red-900/50 text-red-400 border-red-700/50',
                             };
                         @endphp
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs border {{ $badge }}">
-                            {{ ucfirst($order->status) }}
-                        </span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs border {{ $badge }}">{{ ucfirst($order->status) }}</span>
                     </td>
                     <td class="px-6 py-4 text-slate-400 whitespace-nowrap">{{ $order->created_at->format('M j, Y') }}</td>
                     <td class="px-6 py-4">
@@ -49,7 +63,7 @@
                                 View Details
                             </button>
                         @elseif($order->status === 'completed')
-                            <span class="text-xs text-slate-500 italic">No details attached</span>
+                            <span class="text-xs text-slate-500 italic">No details</span>
                         @else
                             <span class="text-xs text-slate-600">—</span>
                         @endif
@@ -75,7 +89,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="px-6 py-16 text-center text-slate-500">
+                <tr><td colspan="6" class="px-6 py-16 text-center text-slate-500">
                     <svg class="w-10 h-10 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                     <p class="font-medium">No orders yet.</p>
                     <a href="{{ route('dashboard.marketplace') }}" class="text-brand hover:underline text-sm mt-1 inline-block">Browse the marketplace →</a>
@@ -86,6 +100,79 @@
     </div>
     @if($orders->hasPages())
         <div class="px-6 py-4 border-t border-slate-700">{{ $orders->links() }}</div>
+    @endif
+</div>
+
+{{-- Mobile cards (below md) --}}
+<div class="md:hidden space-y-3">
+    @forelse($orders as $order)
+    @php
+        $mbadge = match($order->status) {
+            'completed' => 'bg-green-900/50 text-green-400 border-green-700/50',
+            'pending'   => 'bg-yellow-900/50 text-yellow-400 border-yellow-700/50',
+            'refunded'  => 'bg-blue-900/50 text-blue-400 border-blue-700/50',
+            default     => 'bg-red-900/50 text-red-400 border-red-700/50',
+        };
+    @endphp
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        {{-- Title + Status --}}
+        <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="min-w-0">
+                <p class="text-white font-semibold text-sm leading-snug truncate">{{ $order->listing?->title ?? 'Deleted listing' }}</p>
+                @if($order->listing?->category)
+                    <p class="text-xs text-brand mt-0.5">{{ $order->listing->category }}</p>
+                @endif
+            </div>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs border {{ $mbadge }} shrink-0">{{ ucfirst($order->status) }}</span>
+        </div>
+
+        {{-- Amount + Date --}}
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-lg font-bold text-white">₦{{ number_format($order->amount, 2) }}</span>
+            <span class="text-xs text-slate-400">{{ $order->created_at->format('M j, Y') }}</span>
+        </div>
+
+        {{-- Actions --}}
+        <div class="flex items-center gap-2 pt-3 border-t border-slate-700">
+            @if($order->status === 'completed' && $order->delivery_data)
+                <button onclick="openDetailsModal('details-{{ $order->id }}')"
+                    class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-green-900/30 hover:bg-green-900/50 text-green-400 border border-green-700/40 rounded-lg text-xs font-medium transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                    View Login Details
+                </button>
+            @elseif($order->status === 'completed')
+                <span class="flex-1 text-center text-xs text-slate-500 italic py-2">No details attached</span>
+            @else
+                <span class="flex-1 text-center text-xs text-slate-600 py-2">—</span>
+            @endif
+
+            @if($order->status === 'completed')
+                @if($order->review)
+                    <div class="flex items-center gap-0.5 shrink-0">
+                        @for($s = 1; $s <= 5; $s++)
+                            <svg class="w-4 h-4 {{ $s <= $order->review->rating ? 'text-yellow-400' : 'text-slate-600' }}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        @endfor
+                    </div>
+                @else
+                    <button onclick="openRateModal('rate-{{ $order->id }}')"
+                        class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-yellow-900/20 hover:bg-yellow-900/40 text-yellow-400 border border-yellow-700/30 rounded-lg text-xs font-medium transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        Rate
+                    </button>
+                @endif
+            @endif
+        </div>
+    </div>
+    @empty
+        <div class="text-center py-16 text-slate-500 bg-slate-800 border border-slate-700 rounded-xl">
+            <svg class="w-10 h-10 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+            <p class="font-medium">No orders yet.</p>
+            <a href="{{ route('dashboard.marketplace') }}" class="text-brand hover:underline text-sm mt-1 inline-block">Browse the marketplace →</a>
+        </div>
+    @endforelse
+
+    @if($orders->hasPages())
+        <div class="pt-2">{{ $orders->links() }}</div>
     @endif
 </div>
 
@@ -103,7 +190,7 @@
                     </div>
                     <div>
                         <p class="text-white font-semibold text-sm">Login Details</p>
-                        <p class="text-xs text-slate-400">{{ $order->listing?->title ?? 'Order #'.$order->id }}</p>
+                        <p class="text-xs text-slate-400 truncate max-w-[200px]">{{ $order->listing?->title ?? 'Order #'.$order->id }}</p>
                     </div>
                 </div>
                 <button onclick="closeDetailsModal('details-{{ $order->id }}')" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
@@ -129,9 +216,7 @@
             <div class="px-6 pb-5 flex items-center justify-between">
                 <p class="text-xs text-slate-500">Purchased {{ $order->created_at->format('M j, Y') }}</p>
                 <button onclick="closeDetailsModal('details-{{ $order->id }}')"
-                    class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors">
-                    Close
-                </button>
+                    class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors">Close</button>
             </div>
         </div>
     </div>
@@ -155,7 +240,7 @@
             <form method="POST" action="{{ route('dashboard.orders.review', $order->id) }}" class="px-6 py-5">
                 @csrf
                 <p class="text-slate-400 text-xs mb-3">How would you rate this listing?</p>
-                <div class="flex items-center justify-center gap-2 mb-4" id="modal-stars-{{ $order->id }}">
+                <div class="flex items-center justify-center gap-2 mb-4">
                     @for($s = 1; $s <= 5; $s++)
                     <button type="button"
                         onclick="setModalRating('{{ $order->id }}', {{ $s }})"
@@ -180,16 +265,8 @@
 @endforeach
 
 <script>
-function openRateModal(id) {
-    const el = document.getElementById(id);
-    if (el) { el.style.display = 'flex'; }
-    document.body.style.overflow = 'hidden';
-}
-function closeRateModal(id) {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-    document.body.style.overflow = '';
-}
+function openRateModal(id) { document.getElementById(id).style.display='flex'; document.body.style.overflow='hidden'; }
+function closeRateModal(id) { document.getElementById(id).style.display='none'; document.body.style.overflow=''; }
 function setModalRating(orderId, n) {
     document.getElementById('modal-rating-' + orderId).value = n;
     document.querySelectorAll('[data-order="' + orderId + '"]').forEach((btn, i) => {
@@ -197,39 +274,27 @@ function setModalRating(orderId, n) {
         btn.classList.toggle('text-slate-600', i >= n);
     });
 }
-function openDetailsModal(id) {
-    const el = document.getElementById(id);
-    if (el) { el.style.display = 'flex'; }
-    document.body.style.overflow = 'hidden';
-}
-function closeDetailsModal(id) {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-    document.body.style.overflow = '';
-}
+function openDetailsModal(id) { document.getElementById(id).style.display='flex'; document.body.style.overflow='hidden'; }
+function closeDetailsModal(id) { document.getElementById(id).style.display='none'; document.body.style.overflow=''; }
 function copyDetails(orderId) {
     const text = document.getElementById('creds-' + orderId)?.textContent ?? '';
     const btn  = document.getElementById('copy-btn-' + orderId);
-    const origHtml = '<svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>Copy';
-    function markCopied() {
-        if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => { btn.innerHTML = origHtml; }, 2000); }
-    }
+    const orig = btn ? btn.innerHTML : '';
+    function done() { if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => btn.innerHTML = orig, 2000); } }
     if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(markCopied).catch(() => fallbackCopy(text, markCopied));
-    } else {
-        fallbackCopy(text, markCopied);
-    }
+        navigator.clipboard.writeText(text).then(done).catch(() => fallback(text, done));
+    } else { fallback(text, done); }
 }
-function fallbackCopy(text, cb) {
+function fallback(text, cb) {
     const ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
     document.body.appendChild(ta); ta.focus(); ta.select();
     try { document.execCommand('copy'); cb(); } catch(e) {}
     document.body.removeChild(ta);
 }
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-        document.querySelectorAll('.details-modal').forEach(el => { el.style.display = 'none'; });
+        document.querySelectorAll('.details-modal,.rate-modal').forEach(el => el.style.display='none');
         document.body.style.overflow = '';
     }
 });
