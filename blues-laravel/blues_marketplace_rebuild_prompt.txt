@@ -1,0 +1,823 @@
+================================================================================
+  BLUES MARKETPLACE — COMPLETE AI REBUILD PROMPT
+  Use this prompt with any AI coding assistant to recreate this app identically.
+================================================================================
+
+Build a complete web application called "Blues Marketplace" — a dark-themed
+digital goods and virtual numbers marketplace for Nigerian users. Use Laravel 12
+with PHP 8.2, PostgreSQL (or MySQL), Tailwind CSS v4, and Vite. Every detail
+below must be implemented exactly as described.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. TECH STACK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Framework:        Laravel 12, PHP 8.2
+- Database:         PostgreSQL (primary), MySQL compatible
+- Frontend:         Blade templating, Tailwind CSS v4 via Vite + @tailwindcss/vite
+- Asset bundler:    Vite with laravel-vite-plugin
+- Session driver:   database
+- Cache driver:     database
+- Queue driver:     database
+- Auth:             Laravel built-in auth (users) + custom session-based (admins)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. DESIGN SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Color Palette:
+  - Background:       bg-slate-900  (#0f172a)
+  - Card background:  bg-slate-800  (#1e293b)
+  - Card border:      border-slate-700
+  - Primary text:     text-white
+  - Secondary text:   text-slate-400
+  - Brand/accent:     Sky blue #0ea5e9 (referenced as "brand" color in CSS)
+  - Brand hover:      #0284c7
+  - Success:          text-green-400 / bg-green-900/50
+  - Warning:          text-yellow-400 / bg-yellow-900/50
+  - Danger:           text-red-400 / bg-red-900/50
+
+Global UI Patterns:
+  - All pages are dark mode only (no light mode toggle)
+  - Cards: bg-slate-800 border border-slate-700 rounded-xl p-5 (or p-6)
+  - Buttons (primary): bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl px-4 py-2.5
+  - Buttons (danger): bg-red-600 hover:bg-red-700 text-white rounded-lg px-4 py-2
+  - Tables: w-full text-sm, thead with border-b border-slate-700 text-slate-400 text-xs uppercase
+  - Table rows: border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors
+  - Form inputs: bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-brand
+  - Modals: fixed inset-0 z-50 flex items-center justify-center, background rgba(0,0,0,0.75), inner box bg-slate-800 border border-slate-700 rounded-2xl
+  - Icons: Inline SVG Heroicons (no icon font library)
+  - Flash messages: success (green), error (red) shown at top of page content
+  - All currency in Nigerian Naira (₦), formatted with number_format($val, 2)
+
+Layouts (3 total):
+  1. layouts/app.blade.php     — Public pages (home, marketplace, terms, privacy)
+     - Top nav: Logo (lightning bolt icon + "Blues Marketplace"), links (Marketplace, Terms, Privacy), Sign In + Get Started buttons
+     - Footer: minimal, dark
+  2. layouts/dashboard.blade.php — Authenticated user pages
+     - Sidebar navigation with links: Dashboard, Marketplace, Orders, Wallet, Virtual Numbers, Wishlist, Referrals, Notifications, Support, Profile
+     - Top bar: page title, notification bell with unread count badge, user avatar/name
+     - Sidebar collapses on mobile (hamburger toggle)
+  3. layouts/admin.blade.php   — Admin panel pages
+     - Sidebar: Dashboard, Users, Listings, Categories, Transactions, Bank Transfers, Tickets, Virtual Numbers, Referrals, Reviews, Announcements, Audit Log, Settings, Profile
+     - Top bar: admin name/avatar, pending bank transfer count badge, logout button
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. DATABASE MIGRATIONS (run in this exact order)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Migration 1: create_users_table (Laravel default)
+  Schema::create('users'):
+    id, name (string), email (unique string), email_verified_at (nullable timestamp),
+    password (string), remember_token, timestamps
+
+  Schema::create('password_reset_tokens'):
+    email (string primary), token (string), created_at (nullable timestamp)
+
+  Schema::create('sessions'):
+    id (string primary), user_id (nullable foreignId, indexed),
+    ip_address (nullable string 45), user_agent (nullable text),
+    payload (longText), last_activity (integer, indexed)
+
+Migration 2: create_cache_table (Laravel default)
+  Schema::create('cache'): key (string primary), value (mediumText), expiration (integer)
+  Schema::create('cache_locks'): key (string primary), owner (string), expiration (integer)
+
+Migration 3: create_jobs_table (Laravel default)
+  Schema::create('jobs'): id, queue (string, indexed), payload (longText),
+    attempts (unsignedTinyInt), reserved_at (nullable unsignedInt),
+    available_at (unsignedInt), created_at (unsignedInt)
+  Schema::create('job_batches'): id (string primary), name, total_jobs, pending_jobs,
+    failed_jobs, failed_job_ids (longText), options (mediumText nullable),
+    cancelled_at (nullable int), created_at (int), finished_at (nullable int)
+  Schema::create('failed_jobs'): id, uuid (unique string), connection (text),
+    queue (text), payload (longText), exception (longText), failed_at (timestamp, default CURRENT_TIMESTAMP)
+
+Migration 4: create_admins_users_table
+  Schema::create('admins_users'):
+    id, email (unique string), password_hash (string), display_name (nullable string),
+    avatar_url (nullable string), is_active (boolean, default true),
+    last_login (nullable timestamp), timestamps
+
+Migration 5: create_listings_table
+  Schema::create('listings'):
+    id, title (string), description (nullable text), category (nullable string),
+    price (decimal 10,2 default 0), stock (integer default 0),
+    is_active (boolean default true), image_url (nullable string), timestamps
+
+Migration 6: create_profiles_table
+  Schema::create('profiles'):
+    id, user_id (foreignId, constrained, cascade delete),
+    username (nullable unique string), display_name (nullable string),
+    avatar_url (nullable string), status (string default 'active'),
+    referral_code (nullable unique string), timestamps
+
+Migration 7: create_purchases_table
+  Schema::create('purchases'):
+    id, user_id (foreignId, constrained, cascade delete),
+    listing_id (nullable foreignId, nullOnDelete),
+    amount (decimal 10,2), status (string default 'pending'),
+    delivery_data (nullable text), timestamps
+
+Migration 8: create_wallet_transactions_table
+  Schema::create('wallet_transactions'):
+    id, user_id (foreignId, constrained, cascade delete),
+    amount (decimal 10,2), type (string), reference (nullable unique string),
+    description (nullable text), status (string default 'completed'), timestamps
+
+Migration 9: create_wallets_table
+  Schema::create('wallets'):
+    id, user_id (unique foreignId, constrained, cascade delete),
+    balance (decimal 12,2 default 0), timestamps
+
+Migration 10: create_support_tickets_table
+  Schema::create('support_tickets'):
+    id, user_id (foreignId, constrained, cascade delete),
+    subject (string), message (text), admin_reply (nullable text),
+    status (string default 'open'), priority (string default 'medium'), timestamps
+
+Migration 11: create_notifications_table
+  Schema::create('notifications'):
+    id, user_id (foreignId, constrained, cascade delete),
+    title (string), message (text), is_read (boolean default false),
+    type (string default 'info'), timestamps
+
+Migration 12: create_admin_audit_log_table
+  Schema::create('admin_audit_log'):
+    id, admin_id (foreignId references admins_users, cascade delete),
+    action (string), target_type (nullable string), target_id (nullable unsignedBigInt),
+    details (nullable json), ip_address (nullable string), timestamps
+
+Migration 13: add_status_to_users_table
+  Schema::table('users'): add status (string default 'active') after email_verified_at
+
+Migration 14: create_settings_table
+  Schema::create('settings'): id, key (unique string), value (nullable text), timestamps
+  Seed with default settings (key => value):
+    paystack_public_key => '', paystack_secret_key => '', paystack_webhook_secret => '',
+    site_name => 'Blues Marketplace', support_email => '',
+    min_deposit => '500', max_deposit => '1000000',
+    maintenance_mode => '0', grizzlysms_api_key => '', usd_to_ngn_rate => '1600',
+    virtual_number_enabled => '1', whatsapp_number => '',
+    mail_mailer => 'smtp', mail_host => '', mail_port => '587',
+    mail_username => '', mail_password => '', mail_encryption => 'tls',
+    mail_from_address => '', mail_from_name => 'Blues Marketplace',
+    referral_bonus => '0', referral_bonus_tier2 => '0', referral_bonus_tier3 => '0',
+    referral_bonus_tier2_threshold => '6', referral_bonus_tier3_threshold => '16',
+    promo_banner_enabled => '0', promo_banner_text => '', promo_banner_color => 'brand',
+    low_balance_threshold => '5', vn_commission_type => 'flat', vn_commission_value => '0',
+    bank_transfer_enabled => '0', bank_name => '', bank_account_number => '', bank_account_name => '',
+    logsplug_api_key => '', logsplug_api_url => 'https://v2.api.logsplug.com/api/v2'
+
+Migration 15: add_extra_fields_to_listings_table
+  Schema::table('listings'): add featured (boolean default false), image_path (nullable string)
+
+Migration 16: add_role_to_admins_users_table
+  Schema::table('admins_users'): add role (string default 'admin')
+
+Migration 17: create_password_reset_tokens_table (if not already from migration 1)
+  Already created above
+
+Migration 18: create_wishlists_table
+  Schema::create('wishlists'):
+    id, user_id (foreignId, constrained, cascade delete),
+    listing_id (foreignId, constrained, cascade delete),
+    timestamps; unique(['user_id','listing_id'])
+
+Migration 19: create_listing_categories_table
+  Schema::create('listing_categories'):
+    id, name (string), slug (nullable string),
+    description (nullable text), icon (nullable string),
+    is_active (boolean default true), timestamps
+
+Migration 20: add_extra_fields_to_listing_categories_table
+  Schema::table('listing_categories'): add twitter (nullable string), telegram (nullable string)
+
+Migration 21: create_announcements_table
+  Schema::create('announcements'):
+    id, title (string), message (text), type (string default 'info'),
+    sent_by (nullable string), email_sent (boolean default false),
+    recipients_count (integer default 0), timestamps
+
+Migration 22: update_listing_categories_add_twitter_telegram (already done above)
+
+Migration 23: create_virtual_number_orders_table
+  Schema::create('virtual_number_orders'):
+    id, user_id (foreignId, constrained, cascade delete),
+    external_order_id (nullable string, indexed), service (string), country (string default 'ng'),
+    phone_number (nullable string), sms_code (nullable string),
+    cost (decimal 10,2 default 0),
+    status (enum: pending/active/completed/cancelled/failed, default pending),
+    raw_response (nullable text), timestamps
+
+Migration 24: add_login_details_to_listings_table
+  Schema::table('listings'): add login_details (nullable text)
+
+Migration 25: add_email_notifications_to_users_table
+  Schema::table('users'): add email_notifications (boolean default true) after status
+
+Migration 26: add_referred_by_to_users_table
+  Schema::table('users'): add referred_by (nullable unsignedBigInt, indexed)
+
+Migration 27: create_listing_reviews_table
+  Schema::create('listing_reviews'):
+    id, user_id (foreignId, constrained, cascade delete),
+    listing_id (foreignId, constrained, cascade delete),
+    purchase_id (nullable foreignId, constrained, nullOnDelete),
+    rating (unsignedTinyInt), comment (nullable text), timestamps
+
+Migration 28: add_referral_tracking_to_users
+  Schema::table('users'):
+    add referral_deposited (boolean default false),
+    add referral_purchased (boolean default false),
+    add referral_bonus_paid (boolean default false)
+
+Migration 29: add_login_tracking_to_users
+  Schema::table('users'):
+    add last_login_at (nullable timestamp),
+    add last_login_ip (nullable string 45)
+
+Migration 30: create_bank_transfer_payments_table
+  Schema::create('bank_transfer_payments'):
+    id, user_id (foreignId, constrained, cascade delete),
+    type (string 20 default 'wallet_topup'),  -- wallet_topup | marketplace
+    listing_id (nullable foreignId, nullOnDelete),
+    purchase_id (nullable foreignId, nullOnDelete),
+    amount (decimal 10,2), reference (unique string 100),
+    status (string 20 default 'pending'),     -- pending | confirmed | rejected
+    admin_note (nullable text), confirmed_at (nullable timestamp),
+    timestamps
+
+Migration 31: add_provider_to_virtual_number_orders
+  Schema::table('virtual_number_orders'): add provider (string default 'grizzlysms') after user_id
+
+Migration 32: add_image_to_listing_categories
+  Schema::table('listing_categories'): add image_path (nullable string)
+
+Migration 33: add_user_confirmed_at_to_bank_transfer_payments
+  Schema::table('bank_transfer_payments'): add user_confirmed_at (nullable timestamp)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. MODELS & RELATIONSHIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+User (uses Laravel's Authenticatable + MustVerifyEmail):
+  - fillable: name, email, password, status, email_notifications, referred_by,
+              referral_deposited, referral_purchased, referral_bonus_paid,
+              last_login_at, last_login_ip
+  - hasOne: Profile, Wallet
+  - hasMany: purchases, walletTransactions, supportTickets, notifications,
+             wishlistItems, virtualNumberOrders
+
+Listing:
+  - fillable: title, description, category, price, stock, is_active, image_path,
+              image_url, featured, login_details
+  - getImageAttribute(): if image_path exists return asset(image_path),
+                         else if image_url exists return image_url, else null
+  - hasMany: purchases, reviews (as listing_reviews)
+
+ListingCategory:
+  - fillable: name, slug, description, icon, image_path, is_active
+  - getImageAttribute(): if no image_path return null;
+                         if starts with 'http' return image_path directly;
+                         else return asset(image_path)
+  - hasMany: listings (via 'category' FK matching 'slug')
+
+Purchase:
+  - fillable: user_id, listing_id, amount, status, delivery_data
+  - belongsTo: User, Listing
+  - hasOne: review (ListingReview)
+
+Wallet:
+  - fillable: user_id, balance
+  - belongsTo: User
+
+WalletTransaction:
+  - fillable: user_id, amount, type, reference, description, status
+  - Types: deposit, withdrawal, purchase, refund, referral_bonus, admin_credit, admin_debit
+
+Setting (static helper model):
+  - static get(key, default): returns value from settings table or default
+  - static set(key, value): upserts settings table
+
+AdminUser (table: admins_users):
+  - fillable: email, password_hash, display_name, avatar_url, is_active, role, last_login
+  - Roles: admin (full access), moderator (limited)
+
+Notification:
+  - fillable: user_id, title, message, is_read, type
+  - Types: info, success, warning, error
+
+VirtualNumberOrder:
+  - fillable: user_id, provider, external_order_id, service, country,
+              phone_number, sms_code, cost, status, raw_response
+  - Providers: logsplug, grizzlysms, fivesim, herosms
+  - Status: pending, active, completed, cancelled, failed
+
+BankTransferPayment:
+  - fillable: user_id, type, listing_id, purchase_id, amount, reference,
+              status, admin_note, confirmed_at, user_confirmed_at
+
+ListingReview (table: listing_reviews):
+  - fillable: user_id, listing_id, purchase_id, rating, comment
+  - belongsTo: User, Listing, Purchase
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. MIDDLEWARE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+UserAuth middleware (protects /dashboard routes):
+  - If not Auth::check() → redirect to login with error
+  - If email not verified → redirect to verification.notice
+  - If user status is 'suspended' or 'banned' → logout and redirect with error
+
+AdminAuth middleware (protects /admin routes):
+  - If session('admin_id') is empty → redirect to admin.login
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. ALL ROUTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PUBLIC ROUTES:
+  POST /paystack/webhook                    → WalletController@webhook (no CSRF)
+  GET  /                                    → HomeController@index               [home]
+  GET  /r/{code}                            → ReferralController@handle           [referral]
+  GET  /terms                               → PagesController@terms               [terms]
+  GET  /privacy                             → PagesController@privacy             [privacy]
+
+USER AUTH:
+  GET  /login                               → LoginController@show                [login]
+  POST /login                               → LoginController@login               [login.post]
+  POST /logout                              → LoginController@logout              [logout]
+  GET  /register                            → RegisterController@show             [register]
+  POST /register                            → RegisterController@register         [register.post]
+  GET  /forgot-password                     → ForgotPasswordController@showForgotForm
+  POST /forgot-password                     → ForgotPasswordController@sendReset  [forgot-password.send]
+  GET  /reset-password                      → ForgotPasswordController@showResetForm
+  POST /reset-password                      → ForgotPasswordController@resetPassword [reset-password.update]
+
+EMAIL VERIFICATION (middleware: auth):
+  GET  /email/verify                        → closure (show verify-email view)    [verification.notice]
+  GET  /email/verify/{id}/{hash}            → closure (fulfill + redirect)        [verification.verify]
+  POST /email/verification-notification     → closure (resend, throttle:6,1)      [verification.send]
+
+USER DASHBOARD (middleware: UserAuth, prefix: /dashboard, name prefix: dashboard.):
+  GET  /                                    → DashboardController@index           [dashboard.index]
+  GET  /wallet                              → WalletController@index              [dashboard.wallet]
+  POST /wallet/initiate                     → WalletController@initiate           [dashboard.wallet.initiate]
+  GET  /wallet/callback                     → WalletController@callback           [dashboard.wallet.callback]
+  POST /wallet/bank-transfer                → BankTransferController@walletTopup  [dashboard.wallet.bank-transfer]
+  GET  /orders                              → OrdersController@index              [dashboard.orders]
+  POST /orders/{purchase}/review            → ReviewController@store              [dashboard.orders.review]
+  GET  /wishlist                            → WishlistController@index            [dashboard.wishlist]
+  POST /wishlist                            → WishlistController@store            [dashboard.wishlist.store]
+  DELETE /wishlist/{id}                     → WishlistController@destroy          [dashboard.wishlist.destroy]
+  GET  /notifications                       → NotificationsController@index       [dashboard.notifications]
+  POST /notifications/mark-all-read         → NotificationsController@markAllRead [dashboard.notifications.mark-all-read]
+  GET  /support                             → SupportController@index             [dashboard.support]
+  POST /support                             → SupportController@store             [dashboard.support.store]
+  GET  /profile                             → ProfileController@index             [dashboard.profile]
+  POST /profile                             → ProfileController@update            [dashboard.profile.update]
+  POST /profile/notifications               → ProfileController@updateNotifications [dashboard.profile.notifications]
+  GET  /referrals                           → ReferralPageController@index        [dashboard.referrals]
+  GET  /marketplace                         → MarketplaceController@index         [dashboard.marketplace]
+  GET  /marketplace/{id}                    → MarketplaceController@show          [dashboard.marketplace.show]
+  POST /marketplace/{id}/buy                → MarketplaceController@buy           [dashboard.marketplace.buy]
+  POST /marketplace/{id}/bank-transfer      → BankTransferController@marketplace  [dashboard.marketplace.bank-transfer]
+  GET  /bank-transfer/{id}/pending          → BankTransferController@pending      [dashboard.bank-transfer.pending]
+  POST /bank-transfer/{id}/paid             → BankTransferController@markPaid     [dashboard.bank-transfer.paid]
+  GET  /bank-transfer/{id}/status           → BankTransferController@status       [dashboard.bank-transfer.status]
+  GET  /bank-transfer/{id}/success          → BankTransferController@success      [dashboard.bank-transfer.success]
+  GET  /virtual-numbers                     → VirtualNumberController@index       [dashboard.virtual-numbers]
+  GET  /virtual-numbers/api/countries       → VirtualNumberController@getCountries
+  GET  /virtual-numbers/api/services        → VirtualNumberController@getServices
+  POST /virtual-numbers/order               → VirtualNumberController@order       [dashboard.virtual-numbers.order]
+  GET  /virtual-numbers/{id}/sms            → VirtualNumberController@checkSms    [dashboard.virtual-numbers.sms]
+  DELETE /virtual-numbers/{id}/cancel       → VirtualNumberController@cancel      [dashboard.virtual-numbers.cancel]
+
+ADMIN AUTH:
+  GET  /adminlogin                          → AdminLoginController@show           [admin.login]
+  POST /adminlogin                          → AdminLoginController@login          [admin.login.post]
+  POST /admin/logout                        → AdminLoginController@logout         [admin.logout]
+
+ADMIN PANEL (middleware: AdminAuth, prefix: /admin, name prefix: admin.):
+  GET  /                                    → AdminDashboardController@index      [admin.dashboard]
+  GET  /users                               → UsersController@index               [admin.users]
+  POST /users                               → UsersController@store               [admin.users.store]
+  POST /users/{user}/status                 → UsersController@updateStatus        [admin.users.status]
+  POST /users/{user}/password               → UsersController@changePassword      [admin.users.password]
+  POST /users/{user}/wallet                 → UsersController@walletAdjust        [admin.users.wallet]
+  GET  /users/{user}/dashboard              → UsersController@impersonateDashboard [admin.impersonate.dashboard]
+  DELETE /users/{user}                      → UsersController@destroy             [admin.users.destroy]
+  GET  /listings                            → ListingsController@index            [admin.listings]
+  POST /listings                            → ListingsController@store            [admin.listings.store]
+  GET  /listings/{listing}/edit             → ListingsController@edit             [admin.listings.edit]
+  POST /listings/{listing}                  → ListingsController@update           [admin.listings.update]
+  DELETE /listings/{listing}                → ListingsController@destroy          [admin.listings.destroy]
+  GET  /categories                          → CategoriesController@index          [admin.categories]
+  POST /categories                          → CategoriesController@store          [admin.categories.store]
+  POST /categories/{category}               → CategoriesController@update         [admin.categories.update]
+  DELETE /categories/{category}             → CategoriesController@destroy        [admin.categories.destroy]
+  GET  /moderators                          → ModeratorsController@index          [admin.moderators]
+  POST /moderators                          → ModeratorsController@store          [admin.moderators.store]
+  POST /moderators/{admin}/role             → ModeratorsController@assignRole     [admin.moderators.role]
+  DELETE /moderators/{admin}                → ModeratorsController@destroy        [admin.moderators.destroy]
+  GET  /transactions                        → TransactionsController@index        [admin.transactions]
+  GET  /tickets                             → TicketsController@index             [admin.tickets]
+  POST /tickets/{ticket}/reply              → TicketsController@reply             [admin.tickets.reply]
+  GET  /audit                               → AuditController@index               [admin.audit]
+  GET  /settings                            → SettingsController@index            [admin.settings]
+  POST /settings                            → SettingsController@update           [admin.settings.update]
+  POST /settings/test-email                 → SettingsController@sendTestEmail    [admin.settings.test-email]
+  GET  /virtual-numbers                     → VirtualNumberOrdersController@index [admin.virtual-numbers]
+  GET  /virtual-numbers/grizzlysms-balance  → VirtualNumberOrdersController@grizzlySmsBalance
+  GET  /virtual-numbers/export              → VirtualNumberOrdersController@exportCsv
+  POST /virtual-numbers/{order}/status      → VirtualNumberOrdersController@updateStatus
+  DELETE /virtual-numbers/{order}           → VirtualNumberOrdersController@destroy
+  GET  /announcements                       → AnnouncementsController@index       [admin.announcements]
+  POST /announcements                       → AnnouncementsController@store       [admin.announcements.store]
+  GET  /referrals                           → ReferralLeaderboardController@index [admin.referrals]
+  GET  /reviews                             → ReviewsController@index             [admin.reviews]
+  DELETE /reviews/{review}                  → ReviewsController@destroy           [admin.reviews.destroy]
+  GET  /bank-transfers                      → BankTransferController@index        [admin.bank-transfers]
+  POST /bank-transfers/{id}/confirm         → BankTransferController@confirm      [admin.bank-transfers.confirm]
+  POST /bank-transfers/{id}/reject          → BankTransferController@reject       [admin.bank-transfers.reject]
+  GET  /profile                             → AdminProfileController@index        [admin.profile]
+  POST /profile                             → AdminProfileController@update       [admin.profile.update]
+  POST /profile/password                    → AdminProfileController@updatePassword [admin.profile.password]
+  GET  /api/pending-count                   → AdminProfileController@pendingCount [admin.api.pending-count]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. FEATURE SPECIFICATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── USER REGISTRATION & AUTH ──────────────────────────────────────────────────
+- Standard email/password registration, email verification required before dashboard access
+- On registration: create Profile (generate unique referral_code = 8-char uppercase random string),
+  create Wallet with balance=0
+- If ?ref=CODE in URL during registration, find user with that referral_code in profiles table,
+  store their user_id in new user's referred_by column
+- On login: update last_login_at and last_login_ip on the users table
+- Password reset via tokenized email link (custom implementation, not Laravel's built-in)
+- Suspended/banned users are logged out immediately on dashboard access attempt
+
+── HOME PAGE (public) ────────────────────────────────────────────────────────
+- Hero section: animated typing effect cycling through "Digital Accounts",
+  "Virtual Numbers", "Verified Accounts" etc. Dark gradient background with grid overlay.
+  Headline: "Buy Verified [animated word]". Subtitle: "Social Media accounts &
+  Virtual Numbers — all verified, delivered instantly."
+  CTA buttons: "Browse Marketplace" and "Get Started"
+- Features section: 3 cards (Instant Delivery, Secure Payments, 24/7 Support)
+- Stats section: Total listings, Active users, Categories, Satisfied customers
+- Category grid: show active listing_categories with images/icons and listing counts
+- Latest listings: 8 most recent active listings with image, title, category, price
+- Testimonials: static 3-card testimonials section
+- Announcement banner: if promo_banner_enabled=1 in settings, show sticky top banner
+  with promo_banner_text and color based on promo_banner_color setting
+
+── MARKETPLACE PAGE (dashboard) ──────────────────────────────────────────────
+- Grid of listing cards: image, category badge, title, price, stock count, "Buy Now" button
+- Filter sidebar/bar: search by title, filter by category (dropdown), price range
+- Pagination (15 per page)
+- Wishlist heart icon on each card (toggles via POST)
+- Out-of-stock items shown with grey "Out of Stock" badge
+
+── LISTING DETAIL PAGE (dashboard/marketplace/{id}) ──────────────────────────
+- 2-column layout: image left, details right
+- Shows: category badge, title, description, price (large), stock count
+- "Buy Now" button → POST /dashboard/marketplace/{id}/buy
+- Wallet deduction purchase flow: deduct balance → decrement stock → create Purchase
+  with status=completed → copy login_details to delivery_data → create Notification
+  → trigger ReferralService::markPurchased → send purchase confirmation email if enabled
+- If insufficient wallet balance: redirect back with error
+- Wishlist add/remove button
+- Reviews section: average star rating, review count, list of reviews
+- If user has a completed purchase of this listing and hasn't reviewed: show review form
+- Related listings: 4 other listings from same category
+- Route name for review form action: dashboard.orders.review
+
+── WALLET PAGE ───────────────────────────────────────────────────────────────
+- Current balance display (large)
+- Fund Wallet button → opens Paystack popup using paystackPublicKey from settings
+  Amount validated against min_deposit and max_deposit from settings
+- On Paystack success: verify transaction server-side → credit wallet → create WalletTransaction
+  → call ReferralService::markDeposited → create Notification
+- Transaction history table: type badge (color-coded), amount, description, date
+  Filter tabs: All / Deposits / Purchases / Referral Bonus
+- Summary cards: Total Deposited, Total Spent, Referral Earned
+
+── ORDERS PAGE ───────────────────────────────────────────────────────────────
+- Table: Item, Category, Amount, Status badge, Date, Login Details, Review
+- Status badges: completed (green), pending (yellow), refunded (blue), cancelled/disputed (red)
+- "View Details" button opens modal showing delivery_data in monospace font with Copy button
+- Copy button uses navigator.clipboard with fallback to execCommand
+- "Rate" button opens rating modal (1-5 stars + optional comment textarea)
+  Review form action: route('dashboard.orders.review', $order->id)
+- Pagination (15 per page)
+- Review modal on orders page shows listing title in header
+
+── VIRTUAL NUMBERS PAGE ──────────────────────────────────────────────────────
+- Provider tabs: LogsPlug, GrizzlySMS, 5Sim, HeroSMS (show based on which are configured)
+- Step 1: Select Country (dropdown populated via AJAX from /api/countries?provider=X)
+- Step 2: Select Service (dropdown populated via AJAX from /api/services?provider=X&country=Y)
+- Shows price in ₦ and available count
+- Step 3: Click "Get Number" → POST /virtual-numbers/order
+  Order flow: check virtual_number_enabled setting → calculate cost with commission
+  (flat or percentage) → deduct wallet → call provider API → store VirtualNumberOrder
+- Active order card: shows phone number, polling "Check SMS" button every 10s
+- Cancel button: calls provider cancel API → refund wallet if no SMS received
+- Active orders history table at bottom
+- Commission calculation: if vn_commission_type='flat' add vn_commission_value;
+  if 'percentage' multiply cost by (1 + vn_commission_value/100)
+
+── REFERRAL PAGE ─────────────────────────────────────────────────────────────
+- Shows user's referral link: APP_URL + /r/ + profile.referral_code
+- Copy link button
+- Stats: Total referrals, Successful referrals (bonus_paid=true), Total earned
+- Tier progress: Bronze → Silver (6 referrals) → Gold (16 referrals)
+  Show current tier badge, progress bar to next tier
+- Referral bonus amounts fetched from settings
+- How it works: 3-step explanation (Share → They Sign Up & Fund → You Earn)
+
+── NOTIFICATIONS PAGE ────────────────────────────────────────────────────────
+- List of all notifications: icon by type, title, message, timestamp
+- "Mark all as read" button
+- Unread notifications shown with brand-colored left border
+- Bell icon in header shows unread count badge
+
+── SUPPORT PAGE ──────────────────────────────────────────────────────────────
+- Ticket submission form: subject + message
+- List of user's existing tickets: status badge, subject, date, admin reply if exists
+- Ticket status: open (yellow), in_progress (blue), resolved (green), closed (slate)
+
+── PROFILE PAGE ──────────────────────────────────────────────────────────────
+- Update name and display_name
+- Email notification toggle (email_notifications field)
+- Shows referral code and link
+- Shows last login time and IP
+
+── WISHLIST PAGE ─────────────────────────────────────────────────────────────
+- Grid of wishlisted listings, same card style as marketplace
+- Remove from wishlist button on each card
+
+── DASHBOARD HOME ────────────────────────────────────────────────────────────
+- Stats row: Wallet Balance, Total Orders, Completed Orders, Total Spent
+- Recent orders table (last 5)
+- Quick links: Fund Wallet, Browse Marketplace, Virtual Numbers
+- Announcement banner if active (from announcements table, latest)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. ADMIN PANEL FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+AUTH: Custom session-based. AdminLoginController checks email + password_hash (Hash::check).
+  On success: session(['admin_id', 'admin_email', 'admin_name', 'admin_role'])
+  Login tracking: update last_login on admins_users
+
+DASHBOARD:
+  - Revenue last 30 days (sum of wallet_transactions type=deposit)
+  - New users last 30 days, total users, total listings, total orders
+  - Revenue chart (last 30 days, grouped by date)
+  - GrizzlySMS API balance shown (via GrizzlySmsService)
+  - Low balance warning if GrizzlySMS balance below low_balance_threshold setting
+
+USERS:
+  - Table: name, email, status badge, wallet balance, orders count, joined date
+  - Actions: Ban/Suspend/Activate toggle, Change password, Wallet Fund/Deduct, Delete
+  - Create new user (name, email, password)
+  - Impersonate user (login as them to their dashboard for support purposes)
+  - All sensitive actions logged to admin_audit_log
+
+LISTINGS:
+  - Table: image thumbnail, title, category, price, stock, status, featured badge
+  - Create listing: title, description, category (select from active categories),
+    price, stock, login_details (textarea), image upload, is_active toggle, featured toggle
+  - Edit listing: same fields, separate edit page
+  - Delete listing
+  - Image upload stores to public/uploads/listings/{uuid}.ext
+
+CATEGORIES:
+  - Table: image, name, slug, description, listing count, status
+  - Create: name, icon (emoji), image (file upload → public/uploads/categories/),
+    description, is_active
+  - Edit: same fields + shows current image
+  - Delete: listings in category keep their category slug but lose the category display name
+
+TRANSACTIONS:
+  - Table: user, type, amount, reference, description, status, date
+  - Filter by type and date range
+  - Export to CSV
+
+SUPPORT TICKETS:
+  - Table: user, subject, status badge, priority badge, date
+  - Reply form (admin_reply field) + status update dropdown
+  - Email notification sent to user when admin replies (if user has email_notifications=true)
+
+VIRTUAL NUMBERS:
+  - Table: user, provider, service, country, phone number, sms code, cost, status, date
+  - Status update (manual override)
+  - Export to CSV
+  - GrizzlySMS balance check button
+
+ANNOUNCEMENTS:
+  - Create: title, message, type (info/success/warning)
+  - On create: optionally send email to all users with email_notifications=true
+  - Table: title, type, recipients count, date, email sent badge
+
+REFERRAL LEADERBOARD:
+  - Table: user, referral code, total referrals, successful referrals, total earned, joined
+
+REVIEWS:
+  - Table: listing, user, rating (stars), comment, date
+  - Delete review
+
+BANK TRANSFERS:
+  - Table: user, type, amount, reference, status badge, date
+  - Confirm: creates purchase (if marketplace type), credits wallet (if wallet_topup type)
+  - Reject: with optional admin note
+  - Pending count shown as badge in admin header
+
+SETTINGS PAGE: (all stored in settings table, managed via Setting::get/set)
+  - Payment: Paystack public key, secret key, webhook secret
+  - Site: site name, support email
+  - Deposit limits: min_deposit, max_deposit
+  - Maintenance mode toggle
+  - Virtual Numbers: grizzlysms_api_key, usd_to_ngn_rate, virtual_number_enabled
+    logsplug_api_key, logsplug_api_url
+  - Commission: vn_commission_type (flat/percentage), vn_commission_value
+  - Bank Transfer: bank_transfer_enabled, bank_name, bank_account_number, bank_account_name
+  - Referral bonuses: referral_bonus, referral_bonus_tier2, referral_bonus_tier3
+    referral_bonus_tier2_threshold (default 6), referral_bonus_tier3_threshold (default 16)
+  - Promo banner: promo_banner_enabled, promo_banner_text, promo_banner_color
+  - Mail: mail_mailer, mail_host, mail_port, mail_username, mail_password,
+          mail_encryption, mail_from_address, mail_from_name
+  - WhatsApp support number: whatsapp_number
+  - Low balance threshold: low_balance_threshold
+  - Test email button: sends a test email to support_email
+  - Settings update also dynamically reconfigures Laravel mail config at runtime
+
+AUDIT LOG:
+  - Table: admin, action, target type, target id, details (JSON), IP, date
+  - Log entries for: user status changes, password changes, wallet adjustments,
+    user deletion, listing deletion, ticket replies, bank transfer confirm/reject
+
+ADMIN PROFILE:
+  - Update display_name, avatar_url
+  - Change password (verify current password first)
+  - pendingCount API endpoint: returns JSON count of pending bank transfers
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. SERVICES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LogsplugService (app/Services/LogsplugService.php):
+  - Reads logsplug_api_key and logsplug_api_url from settings table
+  - Uses x-api-key header for all requests
+  - Methods: isConfigured(), getBalance(), getServers(), getCountries(server),
+    getServices(server, country), rentNumber(server, serviceId, country),
+    getOtp(rentId), cancelRental(rentId)
+  - Base URL: https://v2.api.logsplug.com/api/v2
+  - API version 2 endpoints: /third-party/wallet/balance, /third-party/numbers/servers,
+    /third-party/numbers/countries, /third-party/numbers/services,
+    /third-party/numbers/rent, /third-party/numbers/rent/{id}/otp,
+    /third-party/numbers/rent/{id}/cancel
+
+GrizzlySmsService (app/Services/GrizzlySmsService.php):
+  - Base URL: https://api.grizzlysms.com/stubs/handler_api.php (all GET, plain-text responses)
+  - Reads grizzlysms_api_key and usd_to_ngn_rate from settings table
+  - All prices in USD, converted to NGN using usd_to_ngn_rate
+  - Hardcoded list of 60+ countries with numeric country codes (SMS-Activate compatible)
+  - Service name mapping (short codes like 'go'→'Google', 'tg'→'Telegram', etc.)
+  - Methods: isConfigured(), getBalance(), getCountries(), getServices(countryCode),
+    orderNumber(countryCode, serviceCode), checkSms(orderId), cancelOrder(orderId)
+  - getBalance() parses "ACCESS_BALANCE:X.XX"
+  - getServices() uses action=getPrices, parses JSON, filters count>0
+  - orderNumber() uses action=getNumber, parses "ACCESS_NUMBER:orderId:phoneNumber"
+  - checkSms() uses action=getStatus, parses STATUS_OK/STATUS_WAIT_CODE/STATUS_CANCEL
+  - cancelOrder() uses action=setStatus&status=8, expects "ACCESS_CANCEL"
+
+FiveSimService (app/Services/FiveSimService.php):
+  - API: https://5sim.net/v1
+  - Bearer token auth (from settings table: fivesim_api_key)
+  - Methods: getBalance(), getCountries(), getProducts(country, operator),
+    buyNumber(product, country, operator), checkOrder(orderId), cancelOrder(orderId)
+
+HeroSmsService (app/Services/HeroSmsService.php):
+  - Custom SMS provider integration (from settings: herosms_api_key)
+  - Similar interface: getBalance, getCountries, getServices, orderNumber, checkSms, cancel
+
+ReferralService (app/Services/ReferralService.php):
+  - Static methods only
+  - markDeposited(User $user): called after successful wallet deposit. Sets referral_deposited=true,
+    then calls checkAndAward()
+  - markPurchased(User $user): called after successful purchase. Sets referral_purchased=true,
+    then calls checkAndAward()
+  - checkAndAward(User $user): awards bonus to referrer ONLY if both referral_deposited AND
+    referral_purchased are true AND referral_bonus_paid is false.
+    Calculates tier by counting existing referral_bonus_paid=true referrals for that referrer:
+      nextCount < tier2_threshold → Bronze → referral_bonus
+      nextCount >= tier2_threshold → Silver → referral_bonus_tier2
+      nextCount >= tier3_threshold → Gold → referral_bonus_tier3
+    Sets referral_bonus_paid=true, credits referrer wallet, creates WalletTransaction
+    (type='referral_bonus'), creates Notification for referrer.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. FILE UPLOAD CONVENTION (CPANEL COMPATIBLE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+IMPORTANT: Do NOT use Laravel's storage disk for file uploads (no symlink needed on cPanel).
+Store all uploaded files directly in the public directory:
+  - Listing images  → public/uploads/listings/{uuid}.{ext}
+  - Category images → public/uploads/categories/{uuid}.{ext}
+  - Use Str::uuid() for filenames to prevent collisions
+  - Use $file->move(public_path('uploads/TYPE'), $filename) — not ->store()
+  - Stored path (in DB): 'uploads/listings/filename.jpg' (relative)
+  - Display URL: asset($image_path) — NOT asset('storage/' . $image_path)
+  - Model accessor checks if path starts with 'http' → return as-is (external URL)
+    otherwise → return asset($image_path)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. EMAIL NOTIFICATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Mail config is loaded dynamically from settings table at runtime (SettingsController::update
+calls Config::set(['mail.mailers.smtp.host'=>..., etc.]) after saving settings).
+
+Emails sent:
+  1. Email Verification (Laravel default, using signed URL)
+  2. Password Reset (custom: ForgotPasswordController generates token, stores in
+     password_reset_tokens table, sends email with reset link)
+  3. Purchase Confirmation (sent to buyer after successful purchase, if email_notifications=true)
+     Shows listing title, amount paid, delivery instructions
+  4. Support Reply (sent to user when admin replies to their ticket, if email_notifications=true)
+  5. Announcement Email (sent to all users with email_notifications=true when admin creates
+     an announcement with "Send Email" option checked)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. PAYSTACK INTEGRATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WalletController::initiate():
+  - Validate amount (min/max from settings)
+  - POST to https://api.paystack.co/transaction/initialize
+    with amount (in kobo = naira * 100), email, reference (WALLET-{uniqid})
+    Authorization: Bearer {paystack_secret_key}
+  - Return JSON with authorization_url (frontend opens popup)
+
+WalletController::callback():
+  - GET /wallet/callback?reference=X
+  - Verify via GET https://api.paystack.co/transaction/verify/{reference}
+  - If status=success and not already credited (check reference in wallet_transactions):
+    Credit wallet, create WalletTransaction (type=deposit), create Notification,
+    call ReferralService::markDeposited
+  - Redirect to wallet with success/error flash
+
+WalletController::webhook():
+  - Validate X-Paystack-Signature header using HMAC SHA512 of raw body + webhook secret
+  - Handle 'charge.success' event: same credit logic as callback (idempotent)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. DEPLOYMENT (CPANEL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a deploy.sh in the project root:
+  composer install --no-dev --optimize-autoloader --no-interaction
+  npm install && npm run build
+  php artisan key:generate (if APP_KEY not set)
+  php artisan migrate --force
+  mkdir -p public/uploads/listings public/uploads/categories
+  chmod -R 755 public/uploads
+  php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan cache:clear
+  php artisan config:cache && php artisan route:cache && php artisan view:cache
+
+.env key settings for cPanel:
+  APP_ENV=production
+  APP_DEBUG=false
+  APP_URL=https://yourdomain.com
+  DB_CONNECTION=mysql (or pgsql)
+  SESSION_DRIVER=database
+  CACHE_STORE=database
+  QUEUE_CONNECTION=database
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. ADDITIONAL NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Referral code generation: Profile::boot() creates profile with referral_code on user creation
+  Code = strtoupper(Str::random(8)), must be unique in profiles table
+- Referral URL: /r/{code} → ReferralController stores code in session('ref_code'),
+  RegisterController reads it on registration to set referred_by
+- Maintenance mode: if setting maintenance_mode=1, show maintenance page to all non-admin users
+- All money stored as decimal(10,2) in NGN (Naira)
+- Wallet balance can never go negative (check before deducting)
+- Stock can never go below 0 (check before purchase)
+- Purchase atomicity: wrap in DB::transaction() to prevent race conditions
+- Admin impersonation: stores original admin session, loads user dashboard as that user,
+  shows "Exit Impersonation" banner at top
+- All table data supports server-side pagination (15 or 20 per page)
+- Dates displayed as "May j, Y" format
+- The app has NO admin self-registration page (admins are created only via admin panel Moderators section)
+
+================================================================================
+END OF PROMPT — Blues Marketplace v1.0
+================================================================================

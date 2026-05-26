@@ -3,7 +3,6 @@ use Illuminate\Support\Facades\Route;
 
 // Admin imports
 use App\Http\Controllers\Auth\AdminLoginController;
-use App\Http\Controllers\Auth\AdminRegisterController;
 use App\Http\Controllers\Admin\BankTransferController as AdminBankTransferController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -134,8 +133,6 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
 Route::get('/adminlogin',      [AdminLoginController::class,    'show'])->name('admin.login');
 Route::post('/adminlogin',     [AdminLoginController::class,    'login'])->name('admin.login.post');
 Route::post('/admin/logout',   [AdminLoginController::class,    'logout'])->name('admin.logout');
-Route::get('/admin/register',  [AdminRegisterController::class, 'show'])->name('admin.register');
-Route::post('/admin/register', [AdminRegisterController::class, 'register'])->name('admin.register.post');
 
 // ── Admin Panel ───────────────────────────────────────────────────────────────
 Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name('admin.')->group(function () {
