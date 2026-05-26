@@ -9,7 +9,7 @@ class Listing extends Model
 
     public function getImageAttribute(): ?string
     {
-        if ($this->image_path) return asset('storage/' . $this->image_path);
+        if ($this->image_path) return asset($this->image_path);
         if ($this->image_url)  return $this->image_url;
         return null;
     }

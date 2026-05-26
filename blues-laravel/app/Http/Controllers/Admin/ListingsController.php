@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Listing;
 use App\Models\ListingCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ListingsController extends Controller
 {
@@ -28,6 +29,7 @@ class ListingsController extends Controller
             'price'    => 'required|numeric|min:0',
             'stock'    => 'required|integer|min:0',
             'category' => 'nullable|string|max:100',
+            'image'    => 'nullable|image|max:2048',
         ]);
 
         $data = $request->only('title', 'description', 'category', 'price', 'stock', 'login_details');
@@ -35,8 +37,7 @@ class ListingsController extends Controller
         $data['featured']  = $request->boolean('featured');
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('listings', 'public');
-            $data['image_path'] = $path;
+            $data['image_path'] = $this->storeImage($request->file('image'));
         }
 
         Listing::create($data);
@@ -56,6 +57,7 @@ class ListingsController extends Controller
             'price'    => 'required|numeric|min:0',
             'stock'    => 'required|integer|min:0',
             'category' => 'nullable|string|max:100',
+            'image'    => 'nullable|image|max:2048',
         ]);
 
         $data = $request->only('title', 'description', 'category', 'price', 'stock', 'login_details');
@@ -63,8 +65,7 @@ class ListingsController extends Controller
         $data['featured']  = $request->boolean('featured');
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('listings', 'public');
-            $data['image_path'] = $path;
+            $data['image_path'] = $this->storeImage($request->file('image'));
         }
 
         $listing->update($data);
@@ -75,5 +76,16 @@ class ListingsController extends Controller
     {
         $listing->delete();
         return back()->with('success', 'Listing deleted.');
+    }
+
+    private function storeImage($file): string
+    {
+        $dir = public_path('uploads/listings');
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $file->move($dir, $filename);
+        return 'uploads/listings/' . $filename;
     }
 }
