@@ -339,6 +339,22 @@ let countriesCache   = {};  // code → { name, flag }
 const COMM_TYPE      = '{{ $commissionType }}';
 const COMM_VALUE     = {{ $commissionValue }};
 
+// ── Social-media service keywords ─────────────────────────────────────────────
+const SOCIAL_MEDIA_KEYWORDS = [
+    'whatsapp','telegram','tiktok','instagram','facebook','twitter','snapchat',
+    'discord','viber','wechat','signal','youtube','linkedin','pinterest',
+    'threads','reddit','twitch','skype','imo','line','zalo','clubhouse',
+    'tumblr','kik','vk','weibo','hike','bigo','likee','kwai','shein',
+    'x.com','messenger','fbmessenger'
+];
+function isSocialMedia(name) {
+    const n = (name || '').toLowerCase();
+    return SOCIAL_MEDIA_KEYWORDS.some(k => n.includes(k));
+}
+function isWhatsApp(name) {
+    return (name || '').toLowerCase().includes('whatsapp');
+}
+
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
     ['browse','active','history'].forEach(t => {
@@ -456,12 +472,10 @@ function findCountryCodeByPredicate(predicate) {
 async function loadServices() {
     showState('loading');
 
-    const country = document.getElementById('country-select').value;
+    const country      = document.getElementById('country-select').value;
     const selectedName = country ? (countriesCache[country]?.name || '') : '';
-    const fetchUSAAndCanada = country && (isUSA(selectedName) || isCanada(selectedName));
-
-    // Determine the display label for the selected country
-    let displayLabel = country ? selectedName : 'All Countries';
+    const displayLabel = country ? selectedName : 'All Countries';
+    const usaSelected  = country && isUSA(selectedName);
 
     async function fetchForCode(code) {
         let url = SERVICES_URL + '?server=' + currentServer + '&provider=' + currentProvider;
@@ -474,56 +488,62 @@ async function loadServices() {
         return await res.json();
     }
 
+    function mapServices(data, label, code) {
+        return (data?.success && Array.isArray(data.data)) ? data.data.map(s => ({
+            serviceId:   String(s.serviceId ?? ''),
+            name:        s.name ?? '',
+            apiPrice:    parseFloat(s.cost_ngn ?? 0),
+            country:     label,
+            countryCode: code,
+            _provider:   'grizzlysms',
+        })) : [];
+    }
+
     try {
         let primaryData = await fetchForCode(country);
-
         if (!primaryData) { showState('error', 'API error.'); return; }
 
-        let services = [];
+        let services = mapServices(primaryData, displayLabel, country || '');
 
-        if (primaryData.success && Array.isArray(primaryData.data) && primaryData.data.length) {
-            services = primaryData.data.map(s => ({
-                serviceId:   String(s.serviceId ?? ''),
-                name:        s.name ?? '',
-                apiPrice:    parseFloat(s.cost_ngn ?? 0),
-                country:     displayLabel,
-                countryCode: country || '',
-                _provider:   'grizzlysms',
-            }));
-        }
+        if (usaSelected) {
+            // For USA: remove WhatsApp from USA results, then fetch Canada and use
+            // Canada's WhatsApp numbers — displayed as "United States" with US flag
+            services = services.filter(s => !isWhatsApp(s.name));
 
-        // Cross-list: if USA selected → also fetch Canada (shown as USA), and vice versa
-        if (fetchUSAAndCanada) {
-            let crossCode = null;
-            if (isUSA(selectedName)) {
-                crossCode = findCountryCodeByPredicate(isCanada);
-            } else if (isCanada(selectedName)) {
-                crossCode = findCountryCodeByPredicate(isUSA);
-            }
+            try {
+                const canadaCode = findCountryCodeByPredicate(isCanada);
+                if (canadaCode && canadaCode !== country) {
+                    const canadaData = await fetchForCode(canadaCode);
+                    const canadaAll  = mapServices(canadaData, displayLabel, country || '');
+                    // Only take WhatsApp entries from Canada, relabelled as USA
+                    const canadaWhatsApp = canadaAll.filter(s => isWhatsApp(s.name));
+                    // De-duplicate against existing services
+                    const existingNames  = new Set(services.map(s => s.name.toLowerCase()));
+                    canadaWhatsApp.forEach(s => {
+                        if (!existingNames.has(s.name.toLowerCase())) {
+                            services.push(s);
+                            existingNames.add(s.name.toLowerCase());
+                        }
+                    });
+                }
+            } catch(e) { /* ignore */ }
 
-            if (crossCode && crossCode !== country) {
-                try {
-                    const crossData = await fetchForCode(crossCode);
-                    if (crossData?.success && Array.isArray(crossData.data) && crossData.data.length) {
-                        const crossServices = crossData.data.map(s => ({
-                            serviceId:   String(s.serviceId ?? ''),
-                            name:        s.name ?? '',
-                            apiPrice:    parseFloat(s.cost_ngn ?? 0),
-                            country:     displayLabel,
-                            countryCode: country || '',
-                            _provider:   'grizzlysms',
-                        }));
-                        // Merge, de-duplicate by name
-                        const existingNames = new Set(services.map(s => s.name.toLowerCase()));
-                        crossServices.forEach(s => {
-                            if (!existingNames.has(s.name.toLowerCase())) {
-                                services.push(s);
-                                existingNames.add(s.name.toLowerCase());
-                            }
-                        });
-                    }
-                } catch(e) { /* silently ignore cross-fetch errors */ }
-            }
+        } else if (country && isCanada(selectedName)) {
+            // Canada selected: also merge USA non-WhatsApp (standard cross-list)
+            try {
+                const usaCode = findCountryCodeByPredicate(isUSA);
+                if (usaCode && usaCode !== country) {
+                    const usaData    = await fetchForCode(usaCode);
+                    const usaAll     = mapServices(usaData, displayLabel, country || '');
+                    const existingNames = new Set(services.map(s => s.name.toLowerCase()));
+                    usaAll.forEach(s => {
+                        if (!existingNames.has(s.name.toLowerCase())) {
+                            services.push(s);
+                            existingNames.add(s.name.toLowerCase());
+                        }
+                    });
+                }
+            } catch(e) { /* ignore */ }
         }
 
         if (services.length) {
@@ -541,14 +561,18 @@ async function loadServices() {
 
 // ── Filter + render ───────────────────────────────────────────────────────────
 function applyFilter() {
-    const q    = document.getElementById('svc-search').value.toLowerCase().trim();
-    const sort = document.getElementById('svc-sort').value;
+    const q       = document.getElementById('svc-search').value.toLowerCase().trim();
+    const sort    = document.getElementById('svc-sort').value;
+    const country = document.getElementById('country-select').value;
 
     let list = allServices.filter(s => {
+        // When any country is selected, only show social media services
+        if (country && !isSocialMedia(s.name)) return false;
+
         if (!q) return true;
-        const name    = (s.name ?? '').toLowerCase();
-        const country = (s.country ?? '').toLowerCase();
-        return name.includes(q) || country.includes(q);
+        const name = (s.name ?? '').toLowerCase();
+        const c    = (s.country ?? '').toLowerCase();
+        return name.includes(q) || c.includes(q);
     });
 
     if (sort === 'price_asc')  list.sort((a,b) => (a.apiPrice||0) - (b.apiPrice||0));
@@ -787,22 +811,22 @@ function copyText(elementId, btn) {
     const el = document.getElementById(elementId);
     if (!el) return;
     const text = el.textContent.trim();
-    if (text === '—' || text === 'Assigning…') return;
-    const orig = btn.innerHTML;
+    if (text === '—' || text === 'Assigning…' || !text) return;
+    const orig      = btn.innerHTML;
     const checkIcon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-    navigator.clipboard.writeText(text).then(() => {
-        btn.innerHTML = checkIcon;
-        setTimeout(() => { btn.innerHTML = orig; }, 2000);
-    }).catch(() => {
-        const range = document.createRange();
-        range.selectNode(el);
-        window.getSelection().removeAllRanges();
-        window.getSelection().addRange(range);
-        document.execCommand('copy');
-        window.getSelection().removeAllRanges();
-        btn.innerHTML = checkIcon;
-        setTimeout(() => { btn.innerHTML = orig; }, 2000);
-    });
+    function markDone() { btn.innerHTML = checkIcon; setTimeout(() => { btn.innerHTML = orig; }, 2000); }
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(markDone).catch(() => fallbackCopyText(text, markDone));
+    } else {
+        fallbackCopyText(text, markDone);
+    }
+}
+function fallbackCopyText(text, cb) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); if (cb) cb(); } catch(e) {}
+    document.body.removeChild(ta);
 }
 
 function updateActiveBadge() {

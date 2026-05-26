@@ -111,11 +111,21 @@ const CSRF_TOKEN  = "{{ csrf_token() }}";
 let polling = false;
 
 function copyText(text, btn) {
-    navigator.clipboard.writeText(text).then(() => {
-        const orig = btn.innerHTML;
-        btn.innerHTML = '<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-        setTimeout(() => btn.innerHTML = orig, 1500);
-    });
+    const orig      = btn.innerHTML;
+    const checkIcon = '<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+    function markDone() { btn.innerHTML = checkIcon; setTimeout(() => btn.innerHTML = orig, 1500); }
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(markDone).catch(() => _fbCopy(text, markDone));
+    } else {
+        _fbCopy(text, markDone);
+    }
+}
+function _fbCopy(text, cb) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); if (cb) cb(); } catch(e) {}
+    document.body.removeChild(ta);
 }
 
 async function notifyAdmin() {

@@ -314,12 +314,24 @@
 <script>
 function copyText(inputId, okId) {
     const el   = document.getElementById(inputId);
+    if (!el) return;
     const text = el.tagName === 'INPUT' ? el.value : el.textContent.trim();
-    navigator.clipboard.writeText(text).then(() => {
+    function markDone() {
         const ok = document.getElementById(okId);
-        ok.classList.remove('hidden');
-        setTimeout(() => ok.classList.add('hidden'), 2500);
-    });
+        if (ok) { ok.classList.remove('hidden'); setTimeout(() => ok.classList.add('hidden'), 2500); }
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(markDone).catch(() => _fbCopy(text, markDone));
+    } else {
+        _fbCopy(text, markDone);
+    }
+}
+function _fbCopy(text, cb) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); if (cb) cb(); } catch(e) {}
+    document.body.removeChild(ta);
 }
 </script>
 @endsection

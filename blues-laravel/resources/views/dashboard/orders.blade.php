@@ -210,14 +210,22 @@ function closeDetailsModal(id) {
 function copyDetails(orderId) {
     const text = document.getElementById('creds-' + orderId)?.textContent ?? '';
     const btn  = document.getElementById('copy-btn-' + orderId);
-    navigator.clipboard.writeText(text).then(() => {
-        if (btn) {
-            btn.textContent = '✓ Copied';
-            setTimeout(() => {
-                btn.innerHTML = '<svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>Copy';
-            }, 2000);
-        }
-    });
+    const origHtml = '<svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>Copy';
+    function markCopied() {
+        if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => { btn.innerHTML = origHtml; }, 2000); }
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(markCopied).catch(() => fallbackCopy(text, markCopied));
+    } else {
+        fallbackCopy(text, markCopied);
+    }
+}
+function fallbackCopy(text, cb) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); cb(); } catch(e) {}
+    document.body.removeChild(ta);
 }
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {

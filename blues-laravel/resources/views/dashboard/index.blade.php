@@ -24,11 +24,11 @@
         </div>
         <span class="text-sm font-medium text-white">Social Media Logs</span>
     </a>
-    <a href="{{ route('dashboard.wallet') }}" class="bg-slate-800 border border-slate-700 hover:border-brand/50 rounded-xl p-4 flex items-center gap-3 transition-all group">
+    <a href="{{ route('dashboard.virtual-numbers') }}" class="bg-slate-800 border border-slate-700 hover:border-brand/50 rounded-xl p-4 flex items-center gap-3 transition-all group">
         <div class="w-9 h-9 bg-green-500/10 rounded-lg flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
-            <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
         </div>
-        <span class="text-sm font-medium text-white">Top Up</span>
+        <span class="text-sm font-medium text-white">Virtual Numbers</span>
     </a>
     <a href="{{ route('dashboard.orders') }}" class="bg-slate-800 border border-slate-700 hover:border-brand/50 rounded-xl p-4 flex items-center gap-3 transition-all group">
         <div class="w-9 h-9 bg-purple-500/10 rounded-lg flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
@@ -36,11 +36,11 @@
         </div>
         <span class="text-sm font-medium text-white">My Orders</span>
     </a>
-    <a href="{{ route('dashboard.support') }}" class="bg-slate-800 border border-slate-700 hover:border-brand/50 rounded-xl p-4 flex items-center gap-3 transition-all group">
+    <a href="{{ route('dashboard.wallet') }}" class="bg-slate-800 border border-slate-700 hover:border-brand/50 rounded-xl p-4 flex items-center gap-3 transition-all group">
         <div class="w-9 h-9 bg-yellow-500/10 rounded-lg flex items-center justify-center group-hover:bg-yellow-500/20 transition-colors">
-            <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+            <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         </div>
-        <span class="text-sm font-medium text-white">Support</span>
+        <span class="text-sm font-medium text-white">Top Up</span>
     </a>
 </div>
 
@@ -109,8 +109,8 @@
 <script>
 function copyDashReferral() {
     const val = document.getElementById('dash-ref-link').value;
-    navigator.clipboard.writeText(val).then(() => {
-        const btn = document.getElementById('dash-copy-btn');
+    const btn = document.getElementById('dash-copy-btn');
+    function markDone() {
         btn.textContent = '✓ Copied!';
         btn.classList.add('bg-green-600');
         btn.classList.remove('bg-brand', 'hover:bg-brand-dark');
@@ -119,7 +119,19 @@ function copyDashReferral() {
             btn.classList.remove('bg-green-600');
             btn.classList.add('bg-brand', 'hover:bg-brand-dark');
         }, 2200);
-    });
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(val).then(markDone).catch(() => _fbCopy(val, markDone));
+    } else {
+        _fbCopy(val, markDone);
+    }
+}
+function _fbCopy(text, cb) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); if (cb) cb(); } catch(e) {}
+    document.body.removeChild(ta);
 }
 </script>
 @endpush
