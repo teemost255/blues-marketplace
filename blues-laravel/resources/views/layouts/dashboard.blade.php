@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="format-detection" content="telephone=no">
     <title>@yield('title', 'Dashboard') — BluesMarketplace</title>
+    <script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);if(t==='light')document.documentElement.classList.add('light-mode');}());</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -46,6 +47,59 @@
         #dash-sidebar.sidebar-open {
             transform: translateX(0) !important;
         }
+
+        /* ── Light Mode Overrides ── */
+        [data-theme="light"] body { background-color: #f1f5f9; color: #0f172a; }
+        [data-theme="light"] .bg-slate-950 { background-color: #e2e8f0 !important; }
+        [data-theme="light"] .bg-slate-900 { background-color: #f1f5f9 !important; }
+        [data-theme="light"] .bg-slate-800 { background-color: #ffffff !important; }
+        [data-theme="light"] .bg-slate-700 { background-color: #e2e8f0 !important; }
+        [data-theme="light"] .bg-slate-600 { background-color: #cbd5e1 !important; }
+        [data-theme="light"] .text-white   { color: #0f172a !important; }
+        [data-theme="light"] .text-slate-100 { color: #1e293b !important; }
+        [data-theme="light"] .text-slate-200 { color: #334155 !important; }
+        [data-theme="light"] .text-slate-300 { color: #475569 !important; }
+        [data-theme="light"] .text-slate-400 { color: #64748b !important; }
+        [data-theme="light"] .text-slate-500 { color: #94a3b8 !important; }
+        [data-theme="light"] .text-slate-600 { color: #cbd5e1 !important; }
+        [data-theme="light"] .border-slate-900 { border-color: #e2e8f0 !important; }
+        [data-theme="light"] .border-slate-800 { border-color: #e2e8f0 !important; }
+        [data-theme="light"] .border-slate-700 { border-color: #e2e8f0 !important; }
+        [data-theme="light"] .border-slate-600 { border-color: #d1d5db !important; }
+        [data-theme="light"] .hover\:bg-slate-700:hover { background-color: #e2e8f0 !important; }
+        [data-theme="light"] .hover\:bg-slate-800:hover { background-color: #f1f5f9 !important; }
+        [data-theme="light"] .hover\:border-slate-500:hover { border-color: #94a3b8 !important; }
+        [data-theme="light"] .hover\:border-slate-600:hover { border-color: #94a3b8 !important; }
+        [data-theme="light"] .hover\:text-white:hover { color: #0f172a !important; }
+        [data-theme="light"] .divide-slate-700 > * + * { border-color: #e2e8f0 !important; }
+        [data-theme="light"] .divide-slate-800 > * + * { border-color: #f1f5f9 !important; }
+        /* Sidebar */
+        [data-theme="light"] .sidebar-link { color: #475569 !important; }
+        [data-theme="light"] .sidebar-link:hover { background:#e2e8f0 !important; color:#0f172a !important; }
+        [data-theme="light"] .sidebar-link.active { background:#e2e8f0 !important; color:#0f172a !important; }
+        /* Inputs */
+        [data-theme="light"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+        [data-theme="light"] select,
+        [data-theme="light"] textarea {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        [data-theme="light"] input::placeholder,
+        [data-theme="light"] textarea::placeholder { color: #94a3b8 !important; }
+        /* Alerts */
+        [data-theme="light"] .bg-green-900\/40 { background-color: #dcfce7 !important; }
+        [data-theme="light"] .border-green-700 { border-color: #86efac !important; }
+        [data-theme="light"] .text-green-300 { color: #16a34a !important; }
+        [data-theme="light"] .bg-red-900\/40 { background-color: #fee2e2 !important; }
+        [data-theme="light"] .border-red-700 { border-color: #fca5a5 !important; }
+        [data-theme="light"] .text-red-300 { color: #dc2626 !important; }
+        [data-theme="light"] .text-red-400 { color: #ef4444 !important; }
+        /* Theme toggle button */
+        .theme-toggle { display:flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:transparent; border:none; cursor:pointer; color:#94a3b8; transition:background .15s,color .15s; }
+        .theme-toggle:hover { background:rgba(148,163,184,.15); color:#fff; }
+        [data-theme="light"] .theme-toggle:hover { background:#e2e8f0; color:#0f172a; }
+        [data-theme="light"] .theme-toggle { color: #64748b; }
     </style>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex">
@@ -152,6 +206,11 @@
             <h1 class="text-base font-semibold text-white">@yield('page-title', 'Dashboard')</h1>
         </div>
         <div class="flex items-center gap-3 lg:gap-4 text-sm text-slate-400">
+            {{-- Theme toggle --}}
+            <button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark / light mode">
+                <svg id="icon-sun" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                <svg id="icon-moon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            </button>
             @php $headerUnread = \App\Models\Notification::where('user_id', auth()->id())->where('is_read', false)->count(); @endphp
             <a href="{{ route('dashboard.notifications') }}" class="relative text-slate-400 hover:text-white transition-colors" title="Notifications">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
@@ -195,6 +254,29 @@ function closeMobileSidebar() {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeMobileSidebar();
 });
+
+// ── Theme toggle ──
+function applyThemeIcons(theme) {
+    var sun  = document.getElementById('icon-sun');
+    var moon = document.getElementById('icon-moon');
+    if (!sun || !moon) return;
+    if (theme === 'light') {
+        sun.classList.add('hidden');
+        moon.classList.remove('hidden');
+    } else {
+        sun.classList.remove('hidden');
+        moon.classList.add('hidden');
+    }
+}
+function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    applyThemeIcons(next);
+}
+// Sync icon on load
+applyThemeIcons(document.documentElement.getAttribute('data-theme') || 'dark');
 </script>
 
 </body>

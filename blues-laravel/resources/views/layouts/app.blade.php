@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="format-detection" content="telephone=no">
+    <script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);if(t==='light')document.documentElement.classList.add('light-mode');}());</script>
     <title>@yield('title', 'Blues Marketplace') — Buy Digital Accounts</title>
     <meta name="description" content="@yield('meta_description', 'Blues Marketplace — Buy verified Facebook, Instagram, TikTok accounts and second phone numbers.')">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -47,6 +48,59 @@
         .btn-primary { @apply inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm; }
         .btn-outline { @apply inline-flex items-center gap-2 border border-slate-600 hover:border-brand text-slate-300 hover:text-white font-medium px-5 py-2.5 rounded-lg transition-colors text-sm; }
         .card { @apply bg-slate-800 border border-slate-700 rounded-xl; }
+
+        /* ── Light Mode Overrides ── */
+        [data-theme="light"] body { background-color: #f1f5f9; color: #0f172a; }
+        [data-theme="light"] .bg-slate-950 { background-color: #e2e8f0 !important; }
+        [data-theme="light"] .bg-slate-900 { background-color: #f1f5f9 !important; }
+        [data-theme="light"] .bg-slate-800 { background-color: #ffffff !important; }
+        [data-theme="light"] .bg-slate-700 { background-color: #e2e8f0 !important; }
+        [data-theme="light"] .bg-slate-600 { background-color: #cbd5e1 !important; }
+        [data-theme="light"] .text-white   { color: #0f172a !important; }
+        [data-theme="light"] .text-slate-100 { color: #1e293b !important; }
+        [data-theme="light"] .text-slate-200 { color: #334155 !important; }
+        [data-theme="light"] .text-slate-300 { color: #475569 !important; }
+        [data-theme="light"] .text-slate-400 { color: #64748b !important; }
+        [data-theme="light"] .text-slate-500 { color: #94a3b8 !important; }
+        [data-theme="light"] .border-slate-900 { border-color: #e2e8f0 !important; }
+        [data-theme="light"] .border-slate-800 { border-color: #e2e8f0 !important; }
+        [data-theme="light"] .border-slate-700 { border-color: #e2e8f0 !important; }
+        [data-theme="light"] .border-slate-600 { border-color: #d1d5db !important; }
+        [data-theme="light"] .hover\:bg-slate-700:hover { background-color: #e2e8f0 !important; }
+        [data-theme="light"] .hover\:bg-slate-800:hover { background-color: #f1f5f9 !important; }
+        [data-theme="light"] .hover\:text-white:hover { color: #0f172a !important; }
+        [data-theme="light"] .hover\:border-brand:hover { border-color: #0ea5e9 !important; }
+        /* Navbar */
+        [data-theme="light"] header.sticky { background-color: rgba(255,255,255,0.97) !important; border-bottom-color: #e2e8f0 !important; }
+        /* Footer */
+        [data-theme="light"] footer { background-color: #f1f5f9 !important; border-top-color: #e2e8f0 !important; }
+        /* Nav links */
+        [data-theme="light"] .nav-link { color: #475569 !important; }
+        [data-theme="light"] .nav-link:hover { color: #0f172a !important; }
+        [data-theme="light"] .btn-outline { border-color: #cbd5e1 !important; color: #475569 !important; }
+        [data-theme="light"] .btn-outline:hover { border-color: #0ea5e9 !important; color: #0f172a !important; }
+        /* Inputs */
+        [data-theme="light"] input:not([type="checkbox"]):not([type="radio"]),
+        [data-theme="light"] select,
+        [data-theme="light"] textarea {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        [data-theme="light"] input::placeholder,
+        [data-theme="light"] textarea::placeholder { color: #94a3b8 !important; }
+        /* Alerts */
+        [data-theme="light"] .bg-green-900\/40 { background-color: #dcfce7 !important; }
+        [data-theme="light"] .border-green-700 { border-color: #86efac !important; }
+        [data-theme="light"] .text-green-300 { color: #16a34a !important; }
+        [data-theme="light"] .bg-red-900\/40 { background-color: #fee2e2 !important; }
+        [data-theme="light"] .border-red-700 { border-color: #fca5a5 !important; }
+        [data-theme="light"] .text-red-300 { color: #dc2626 !important; }
+        /* Theme toggle */
+        .theme-toggle { display:flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:transparent; border:none; cursor:pointer; color:#94a3b8; transition:background .15s,color .15s; }
+        .theme-toggle:hover { background:rgba(148,163,184,.15); color:#fff; }
+        [data-theme="light"] .theme-toggle:hover { background:#e2e8f0; color:#0f172a; }
+        [data-theme="light"] .theme-toggle { color: #64748b; }
     </style>
     @stack('head')
 </head>
@@ -75,6 +129,11 @@
 
             {{-- Auth buttons --}}
             <div class="flex items-center gap-3">
+                {{-- Theme toggle --}}
+                <button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark / light mode">
+                    <svg id="icon-sun" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                    <svg id="icon-moon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                </button>
                 @auth
                     <a href="{{ route('dashboard.index') }}" class="nav-link hidden sm:inline-flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -222,5 +281,29 @@
 @endif
 
 @stack('scripts')
+<script>
+// ── Theme toggle ──
+function applyThemeIcons(theme) {
+    var sun  = document.getElementById('icon-sun');
+    var moon = document.getElementById('icon-moon');
+    if (!sun || !moon) return;
+    if (theme === 'light') {
+        sun.classList.add('hidden');
+        moon.classList.remove('hidden');
+    } else {
+        sun.classList.remove('hidden');
+        moon.classList.add('hidden');
+    }
+}
+function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    applyThemeIcons(next);
+}
+// Sync icon on load
+applyThemeIcons(document.documentElement.getAttribute('data-theme') || 'dark');
+</script>
 </body>
 </html>
