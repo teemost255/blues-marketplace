@@ -19,16 +19,11 @@
 @endif
 
 {{-- Summary stats --}}
-<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-2 gap-4 mb-6">
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
         <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Total Funded</p>
         <p class="text-xl font-bold text-green-400">₦{{ number_format($summary['total_deposited'], 2) }}</p>
         <p class="text-xs text-slate-500 mt-0.5">All-time deposits</p>
-    </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
-        <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Total Spent</p>
-        <p class="text-xl font-bold text-red-400">₦{{ number_format($summary['total_spent'], 2) }}</p>
-        <p class="text-xs text-slate-500 mt-0.5">Purchases & VNs</p>
     </div>
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
         <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Referral Earned</p>

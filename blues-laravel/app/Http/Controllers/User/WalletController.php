@@ -25,7 +25,6 @@ class WalletController extends Controller
 
         $summary = [
             'total_deposited' => WalletTransaction::where('user_id', $user->id)->where('type', 'deposit')->sum('amount'),
-            'total_spent'     => WalletTransaction::where('user_id', $user->id)->whereIn('type', ['purchase', 'withdrawal'])->sum('amount'),
             'referral_earned' => WalletTransaction::where('user_id', $user->id)->where('type', 'referral_bonus')->sum('amount'),
         ];
 
