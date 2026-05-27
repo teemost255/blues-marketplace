@@ -260,18 +260,20 @@
         </a>
     </div>
 
+    @php $categoryMap = $categories->keyBy('slug'); @endphp
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="listings-grid">
         @foreach($featuredListings as $i => $listing)
+        @php $displayImage = ($categoryMap[$listing->category]->image ?? null) ?? $listing->image; @endphp
         <a href="{{ route('dashboard.marketplace.show', $listing->id) }}"
            class="listing-card bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden group flex flex-col reveal"
            style="transition-delay:{{ $i * 70 }}ms">
             {{-- Thumbnail --}}
             <div class="h-36 bg-gradient-to-br from-slate-700 to-slate-600 relative overflow-hidden flex items-center justify-center">
-                @if($listing->image)
-                    <img src="{{ $listing->image }}" alt="{{ $listing->title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                @if($displayImage)
+                    <img src="{{ $displayImage }}" alt="{{ $listing->title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                 @else
                     @php
-                    $catGrads = ['Facebook'=>'from-blue-600/40 to-blue-900/40','Instagram'=>'from-pink-600/40 to-purple-900/40','TikTok'=>'from-purple-600/40 to-black/60','2nd Numbers'=>'from-emerald-600/40 to-teal-900/40'];
+                    $catGrads = ['facebook'=>'from-blue-600/40 to-blue-900/40','instagram'=>'from-pink-600/40 to-purple-900/40','tiktok'=>'from-purple-600/40 to-black/60','2nd-numbers'=>'from-emerald-600/40 to-teal-900/40'];
                     $grad = $catGrads[$listing->category] ?? 'from-brand/30 to-slate-700';
                     @endphp
                     <div class="absolute inset-0 bg-gradient-to-br {{ $grad }}"></div>
@@ -346,17 +348,18 @@
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         @foreach($latestListings as $i => $listing)
+        @php $latDisplayImage = ($categoryMap[$listing->category]->image ?? null) ?? $listing->image; @endphp
         <a href="{{ route('dashboard.marketplace.show', $listing->id) }}"
            class="bg-slate-800 border border-slate-700 hover:border-green-500/40 rounded-2xl p-4 flex items-center gap-4 group transition-all hover:-translate-y-0.5 reveal"
            style="transition-delay:{{ $i * 60 }}ms">
             {{-- Icon / thumb --}}
-            <div class="w-14 h-14 rounded-xl flex-shrink-0 overflow-hidden
-                @php
-                    $latCatGrads = ['Facebook'=>'from-blue-600/40 to-blue-900/40','Instagram'=>'from-pink-600/40 to-purple-900/40','TikTok'=>'from-purple-600/40 to-black/60','2nd Numbers'=>'from-emerald-600/40 to-teal-900/40'];
-                    echo 'bg-gradient-to-br '.($latCatGrads[$listing->category] ?? 'from-brand/30 to-slate-700');
-                @endphp flex items-center justify-center relative">
-                @if($listing->image)
-                    <img src="{{ $listing->image }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
+            <div class="w-14 h-14 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center relative
+                @if(!$latDisplayImage)
+                    @php $latGrad = ['facebook'=>'from-blue-600/40 to-blue-900/40','instagram'=>'from-pink-600/40 to-purple-900/40','tiktok'=>'from-purple-600/40 to-black/60','2nd-numbers'=>'from-emerald-600/40 to-teal-900/40']; @endphp
+                    bg-gradient-to-br {{ $latGrad[$listing->category] ?? 'from-brand/30 to-slate-700' }}
+                @endif">
+                @if($latDisplayImage)
+                    <img src="{{ $latDisplayImage }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
                 @else
                     <svg class="w-7 h-7 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                 @endif
