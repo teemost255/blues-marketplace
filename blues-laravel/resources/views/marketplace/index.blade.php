@@ -61,8 +61,8 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             @foreach($listings as $listing)
             @php
-                $displayImage = $listing->image
-                    ?? ($categoryMap[$listing->category]->image ?? null);
+                $displayImage = ($categoryMap[$listing->category]->image ?? null)
+                    ?? $listing->image;
             @endphp
             <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:border-brand/50 transition-all group flex flex-col">
                 {{-- Logo-style image area --}}
