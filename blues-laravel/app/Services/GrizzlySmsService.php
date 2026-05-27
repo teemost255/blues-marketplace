@@ -158,7 +158,7 @@ class GrizzlySmsService
             return ['success' => false, 'message' => $resp];
         } catch (\Exception $e) {
             Log::error('GrizzlySMS getBalance: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Could not reach GrizzlySMS API.'];
+            return ['success' => false, 'message' => 'Service temporarily unavailable. Please try again.'];
         }
     }
 
@@ -188,7 +188,7 @@ class GrizzlySmsService
             $data = json_decode($resp, true);
 
             if (!is_array($data) || empty($data)) {
-                return ['success' => false, 'message' => 'Unexpected response from GrizzlySMS: ' . substr($resp, 0, 100)];
+                return ['success' => false, 'message' => 'No services available. Please try again.'];
             }
 
             // The outer key is the country code (as integer after json_decode).
@@ -232,7 +232,7 @@ class GrizzlySmsService
             return ['success' => true, 'data' => $services];
         } catch (\Exception $e) {
             Log::error('GrizzlySMS getServices: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Could not reach GrizzlySMS API.'];
+            return ['success' => false, 'message' => 'Service temporarily unavailable. Please try again.'];
         }
     }
 
@@ -262,17 +262,17 @@ class GrizzlySmsService
             }
 
             $msg = match($resp) {
-                'NO_NUMBERS'    => 'No numbers available for this service/country. Try another.',
-                'NO_BALANCE'    => 'Insufficient GrizzlySMS API balance.',
-                'BAD_KEY'       => 'Invalid GrizzlySMS API key.',
-                'BAD_SERVICE'   => 'Invalid service code.',
-                'BAD_COUNTRY'   => 'Invalid country code.',
-                default         => 'Could not get a number: ' . $resp,
+                'NO_NUMBERS' => 'Out of stock. Please try again later.',
+                'NO_BALANCE' => 'Out of stock. Please try again later.',
+                'BAD_KEY'    => 'Service configuration error. Please contact support.',
+                'BAD_SERVICE'=> 'Out of stock. Please try again later.',
+                'BAD_COUNTRY'=> 'This country is not supported.',
+                default      => 'Could not get a number. Please try again.',
             };
-            return ['success' => false, 'message' => $msg];
+            return ['success' => false, 'message' => $msg, 'raw' => $resp];
         } catch (\Exception $e) {
             Log::error('GrizzlySMS orderNumber: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Could not reach GrizzlySMS API.'];
+            return ['success' => false, 'message' => 'Out of stock. Please try again later.'];
         }
     }
 

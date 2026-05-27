@@ -42,7 +42,7 @@ class VirtualNumberController extends Controller
     {
         $svc = new GrizzlySmsService();
         if (!$svc->isConfigured()) {
-            return response()->json(['success' => false, 'message' => 'GrizzlySMS API not configured. Add your key in Settings.']);
+            return response()->json(['success' => false, 'message' => 'Virtual number service is not available. Please contact support.']);
         }
         $result = $svc->getCountries();
         return response()->json(['success' => true, 'data' => $result['data'], 'flow' => 'TWO_STEP']);
@@ -56,7 +56,7 @@ class VirtualNumberController extends Controller
 
         $svc = new GrizzlySmsService();
         if (!$svc->isConfigured()) {
-            return response()->json(['success' => false, 'message' => 'GrizzlySMS API not configured. Add your key in Settings.']);
+            return response()->json(['success' => false, 'message' => 'Virtual number service is not available. Please contact support.']);
         }
         if (!$country) {
             return response()->json(['success' => false, 'message' => 'Please select a country first.']);
@@ -106,7 +106,7 @@ class VirtualNumberController extends Controller
     {
         $svc = new GrizzlySmsService();
         if (!$svc->isConfigured()) {
-            return back()->with('error', 'GrizzlySMS is not configured yet.');
+            return back()->with('error', 'Virtual number service is currently unavailable. Please try again later.');
         }
 
         $result = $svc->orderNumber($request->country ?? '', $request->service_id);
@@ -136,7 +136,7 @@ class VirtualNumberController extends Controller
                     'user_id'     => auth()->id(),
                     'type'        => 'withdrawal',
                     'amount'      => $cost,
-                    'description' => 'Virtual number (GrizzlySMS): ' . $serviceName,
+                    'description' => 'Virtual number: ' . $serviceName,
                     'reference'   => 'VN-' . $order->id . '-' . time(),
                 ]);
             }
@@ -221,7 +221,6 @@ class VirtualNumberController extends Controller
             return back()->with('success', 'Order cancelled and wallet refunded.');
         }
 
-        return back()->with('error', 'Could not cancel: ' . $result['message']);
     }
 
     private function processRefund(VirtualNumberOrder $order): void
