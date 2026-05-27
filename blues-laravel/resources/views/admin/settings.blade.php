@@ -221,18 +221,6 @@
                 </div>
                 <p class="text-xs text-slate-500 mt-1">Get your API key from <a href="https://grizzlysms.com/profile-settings" target="_blank" class="text-green-400 hover:underline">GrizzlySMS → Profile Settings</a>. Numbers from $0.04.</p>
             </div>
-            {{-- Top-up shortcut --}}
-            <div class="flex items-center justify-between bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3">
-                <div>
-                    <p class="text-sm font-medium text-white">GrizzlySMS Wallet</p>
-                    <p class="text-xs text-slate-400 mt-0.5">Opens the GrizzlySMS deposit page in a new tab.</p>
-                </div>
-                <a href="https://grizzlysms.com/balance/add" target="_blank" rel="noopener noreferrer"
-                   class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Top Up Wallet
-                </a>
-            </div>
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">USD → NGN Exchange Rate</label>
                 <input type="number" name="usd_to_ngn_rate" value="{{ $settings['usd_to_ngn_rate'] }}"
