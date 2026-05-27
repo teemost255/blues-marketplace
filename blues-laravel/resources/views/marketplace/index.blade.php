@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
-@section('title', 'Social Media Logs')
+@section('title', 'Marketplace')
 
 @section('content')
 <div class="max-w-7xl mx-auto">
 
     {{-- Header --}}
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-white mb-1">Social Media Logs</h1>
+        <h1 class="text-3xl font-bold text-white mb-1">Marketplace</h1>
         <p class="text-slate-400">Browse verified digital accounts and phone numbers</p>
     </div>
 

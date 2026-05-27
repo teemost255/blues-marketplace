@@ -6,7 +6,7 @@
 
     {{-- Breadcrumb --}}
     <nav class="flex items-center gap-2 text-sm text-slate-400 mb-8">
-        <a href="{{ route('dashboard.marketplace') }}" class="hover:text-white">Social Media Logs</a>
+        <a href="{{ route('dashboard.marketplace') }}" class="hover:text-white">Marketplace</a>
         <span>/</span>
         @if($listing->category)
             <a href="{{ route('dashboard.marketplace') }}?category={{ urlencode($listing->category) }}" class="hover:text-white">{{ $listing->category }}</a>

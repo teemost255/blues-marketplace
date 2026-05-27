@@ -22,7 +22,7 @@
         <div class="w-9 h-9 bg-brand/10 rounded-lg flex items-center justify-center group-hover:bg-brand/20 transition-colors">
             <svg class="w-4 h-4 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         </div>
-        <span class="text-sm font-medium text-white">Social Media Logs</span>
+        <span class="text-sm font-medium text-white">Marketplace</span>
     </a>
     <a href="{{ route('dashboard.virtual-numbers') }}" class="bg-slate-800 border border-slate-700 hover:border-brand/50 rounded-xl p-4 flex items-center gap-3 transition-all group">
         <div class="w-9 h-9 bg-green-500/10 rounded-lg flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
