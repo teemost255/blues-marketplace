@@ -486,8 +486,7 @@ async function loadCountries() {
                 opt.textContent = flagEmoji(c.iso) + ' ' + c.name;
                 sel.appendChild(opt);
             });
-            // Auto-load all services immediately
-            loadServices();
+            showState('empty', 'Select a country above or leave blank to browse all services.');
         } else {
             showState('empty', data.message || 'No countries returned.');
         }
