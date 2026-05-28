@@ -345,8 +345,6 @@ class GrizzlySmsService
                 $count    = (int)($priceInfo['count'] ?? 0);
                 $priceUsd = (float)($priceInfo['cost'] ?? 0);
 
-                if ($count <= 0) continue;
-
                 $name = self::SERVICE_NAMES[$serviceCode] ?? ucwords(str_replace('_', ' ', (string)$serviceCode));
 
                 $services[] = [
