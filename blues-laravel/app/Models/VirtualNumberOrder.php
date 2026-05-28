@@ -8,7 +8,11 @@ class VirtualNumberOrder extends Model
 {
     protected $fillable = [
         'user_id', 'provider', 'external_order_id', 'service', 'country',
-        'phone_number', 'sms_code', 'cost', 'status', 'raw_response',
+        'phone_number', 'sms_code', 'cost', 'status', 'raw_response', 'sms_received_at',
+    ];
+
+    protected $casts = [
+        'sms_received_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

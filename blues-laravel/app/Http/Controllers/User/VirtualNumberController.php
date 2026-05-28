@@ -26,8 +26,17 @@ class VirtualNumberController extends Controller
         $commissionValue = (float) Setting::get('vn_commission_value', '0');
         $usdToNgn        = (float) Setting::get('usd_to_ngn_rate', '1600');
 
-        $activeOrders  = $orders->getCollection()->filter(fn($o) => $o->status === 'active');
-        $historyOrders = $orders->getCollection()->filter(fn($o) => $o->status !== 'active');
+        // Auto-graduate any 'received' orders older than 3 minutes to 'completed'
+        VirtualNumberOrder::where('user_id', auth()->id())
+            ->where('status', 'received')
+            ->where('sms_received_at', '<', now()->subMinutes(3))
+            ->update(['status' => 'completed']);
+
+        // Re-fetch so the above change is reflected
+        $orders = VirtualNumberOrder::where('user_id', auth()->id())->latest()->paginate(10);
+
+        $activeOrders  = $orders->getCollection()->filter(fn($o) => in_array($o->status, ['active', 'received']));
+        $historyOrders = $orders->getCollection()->filter(fn($o) => in_array($o->status, ['completed', 'cancelled']));
 
         return view('dashboard.virtual-numbers', compact(
             'enabled', 'configured', 'grizzlySmsConfigured',
@@ -171,20 +180,34 @@ class VirtualNumberController extends Controller
             $data      = $result['data'];
             $sms       = $data['sms'] ?? null;
             $newStatus = match($data['status'] ?? 'pending') {
-                'received'  => 'completed',
+                'received'  => 'received',
                 'cancelled' => 'cancelled',
                 default     => $order->status,
             };
 
-            $order->update([
+            $updates = [
                 'sms_code' => $sms ?: $order->sms_code,
                 'status'   => $newStatus,
-            ]);
+            ];
+
+            // Stamp the moment the code first arrived
+            if ($newStatus === 'received' && !$order->sms_received_at) {
+                $updates['sms_received_at'] = now();
+            }
+
+            // Auto-graduate to completed if 3 minutes have passed
+            if ($newStatus === 'received' && $order->sms_received_at && $order->sms_received_at->lt(now()->subMinutes(3))) {
+                $updates['status'] = 'completed';
+            }
+
+            $order->update($updates);
+            $order->refresh();
 
             return response()->json([
-                'success'  => true,
-                'sms_code' => $order->fresh()->sms_code,
-                'status'   => $order->fresh()->status,
+                'success'       => true,
+                'sms_code'      => $order->sms_code,
+                'status'        => $order->status,
+                'sms_received_at' => $order->sms_received_at?->toIso8601String(),
             ]);
         }
 

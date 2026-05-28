@@ -151,7 +151,8 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="active-orders-list">
         @foreach($activeOrders as $order)
         <div id="active-card-{{ $order->id }}"
-            class="bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col gap-3.5 relative overflow-hidden">
+            class="bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col gap-3.5 relative overflow-hidden"
+            data-received-at="{{ $order->sms_received_at ? $order->sms_received_at->toIso8601String() : '' }}">
 
             {{-- Pulse indicator --}}
             <div class="absolute top-4 right-4 flex items-center gap-1.5">
@@ -190,8 +191,16 @@
 
             {{-- Status + cost --}}
             <div class="flex items-center justify-between text-xs">
-                <p id="poll-status-{{ $order->id }}" class="text-slate-500">Waiting for SMS…</p>
+                <p id="poll-status-{{ $order->id }}" class="@if($order->status === 'received') text-green-400 @else text-slate-500 @endif">
+                    {{ $order->status === 'received' ? '✓ Code received!' : 'Waiting for SMS…' }}
+                </p>
                 <span class="text-slate-600">₦{{ number_format($order->cost, 2) }} · {{ $order->created_at->diffForHumans() }}</span>
+            </div>
+
+            {{-- 3-minute countdown (shown only after code is received) --}}
+            <div id="countdown-wrap-{{ $order->id }}" class="{{ $order->status === 'received' ? '' : 'hidden' }} bg-green-900/20 border border-green-700/30 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-xs text-green-300 flex-1">Moving to history in <span id="countdown-{{ $order->id }}" class="font-bold font-mono">3:00</span></p>
             </div>
 
             {{-- Actions --}}
@@ -787,6 +796,43 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
 // ── SMS polling ────────────────────────────────────────────────────────────────
 const activeOrderIds = [{{ $activeOrders->pluck('id')->join(', ') }}];
+const countdownTimers = {}; // orderId → setInterval handle
+
+function startCountdown(orderId, receivedAt) {
+    if (countdownTimers[orderId]) return; // already running
+
+    const wrap      = document.getElementById('countdown-wrap-' + orderId);
+    const countEl   = document.getElementById('countdown-' + orderId);
+    const statusEl  = document.getElementById('poll-status-' + orderId);
+    const card      = document.getElementById('active-card-' + orderId);
+
+    if (wrap) wrap.classList.remove('hidden');
+    if (statusEl) {
+        statusEl.textContent  = '✓ Code received!';
+        statusEl.className    = 'text-green-400';
+    }
+
+    const endsAt = new Date(receivedAt).getTime() + 3 * 60 * 1000;
+
+    countdownTimers[orderId] = setInterval(() => {
+        const remaining = Math.max(0, endsAt - Date.now());
+        const mins      = Math.floor(remaining / 60000);
+        const secs      = Math.floor((remaining % 60000) / 1000);
+        if (countEl) countEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+        if (remaining <= 0) {
+            clearInterval(countdownTimers[orderId]);
+            delete countdownTimers[orderId];
+            if (card) { card.classList.add('opacity-40'); setTimeout(() => { card.remove(); updateActiveBadge(); }, 1500); }
+        }
+    }, 1000);
+}
+
+function dismissCard(orderId) {
+    const card = document.getElementById('active-card-' + orderId);
+    if (card) { card.classList.add('opacity-40'); setTimeout(() => { card.remove(); updateActiveBadge(); }, 1500); }
+    if (countdownTimers[orderId]) { clearInterval(countdownTimers[orderId]); delete countdownTimers[orderId]; }
+}
 
 async function checkSmsOnce(orderId, btn) {
     const orig = btn?.innerHTML;
@@ -795,17 +841,17 @@ async function checkSmsOnce(orderId, btn) {
         const res  = await fetch(`/dashboard/virtual-numbers/${orderId}/sms`, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
         const data = await res.json();
         if (data.success) {
-            const codeEl   = document.getElementById('sms-code-' + orderId);
-            const statusEl = document.getElementById('poll-status-' + orderId);
+            const codeEl = document.getElementById('sms-code-' + orderId);
             if (data.sms_code && codeEl) {
                 codeEl.textContent = data.sms_code;
                 codeEl.classList.add('animate-pulse');
                 setTimeout(() => codeEl.classList.remove('animate-pulse'), 3000);
             }
-            if (statusEl) statusEl.textContent = data.sms_code ? '✓ Code received!' : 'Waiting for SMS…';
+            if (data.status === 'received' && data.sms_received_at) {
+                startCountdown(orderId, data.sms_received_at);
+            }
             if (data.status === 'completed' || data.status === 'cancelled') {
-                const card = document.getElementById('active-card-' + orderId);
-                if (card) { card.classList.add('opacity-40'); setTimeout(() => { card.remove(); updateActiveBadge(); }, 2000); }
+                dismissCard(orderId);
             }
         }
     } catch(e) {}
@@ -851,6 +897,20 @@ document.addEventListener('DOMContentLoaded', () => {
     @if(session('success') && $activeOrders->count())
     setTimeout(() => switchTab('active'), 300);
     @endif
+
+    // Resume countdowns for any cards already in 'received' state on page load
+    document.querySelectorAll('[data-received-at]').forEach(card => {
+        const receivedAt = card.dataset.receivedAt;
+        if (!receivedAt) return;
+        const orderId = card.id.replace('active-card-', '');
+        const endsAt  = new Date(receivedAt).getTime() + 3 * 60 * 1000;
+        if (Date.now() >= endsAt) {
+            // Already past 3 mins — server will clean it up on next load, just hide it
+            card.classList.add('hidden');
+        } else {
+            startCountdown(orderId, receivedAt);
+        }
+    });
 });
 </script>
 @endsection
