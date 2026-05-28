@@ -118,7 +118,6 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
 
     // Marketplace (dashboard-only)
     Route::get('/marketplace',           [MarketplaceController::class, 'index'])->name('marketplace');
-    Route::get('/marketplace/{id}',      [MarketplaceController::class, 'show'])->name('marketplace.show');
     Route::post('/marketplace/{id}/buy', [MarketplaceController::class, 'buy'])->name('marketplace.buy');
 
     Route::get('/virtual-numbers',                  [VirtualNumberController::class, 'index'])->name('virtual-numbers');

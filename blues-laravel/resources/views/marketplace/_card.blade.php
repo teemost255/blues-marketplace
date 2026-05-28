@@ -21,7 +21,6 @@
         'price'       => number_format($listing->price, 0),
         'image'       => $displayImg,
         'buyUrl'      => route('dashboard.marketplace.buy', $listing->id),
-        'showUrl'     => route('dashboard.marketplace.show', $listing->id),
         'iconBg'      => $iconBg,
         'letter'      => $letter,
     ]);

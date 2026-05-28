@@ -152,11 +152,8 @@
         </div>
 
         {{-- Actions --}}
-        <div class="px-5 pb-5 flex gap-3">
-            <a id="pm-details-link" href="#" class="flex-1 py-3 flex items-center justify-center border border-slate-600 hover:border-brand/50 text-slate-300 hover:text-white rounded-xl text-sm font-semibold transition-all">
-                Full Details
-            </a>
-            <div class="flex-1" id="pm-buy-container">
+        <div class="px-5 pb-5">
+            <div id="pm-buy-container">
                 {{-- Buy button injected by JS --}}
             </div>
         </div>
@@ -173,7 +170,6 @@ function openPreviewModal(data) {
     document.getElementById('pm-title').textContent          = data.title || 'Product Preview';
     document.getElementById('pm-stock').textContent          = data.stock;
     document.getElementById('pm-price').textContent          = 'NGN ' + data.price;
-    document.getElementById('pm-details-link').href          = data.showUrl || '#';
 
     // Image
     const imgWrap = document.getElementById('pm-image-wrap');

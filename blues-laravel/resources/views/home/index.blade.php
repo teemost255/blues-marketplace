@@ -264,8 +264,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="listings-grid">
         @foreach($featuredListings as $i => $listing)
         @php $displayImage = ($categoryMap[$listing->category]->image ?? null) ?? $listing->image; @endphp
-        <a href="{{ route('dashboard.marketplace.show', $listing->id) }}"
-           class="listing-card bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden group flex flex-col reveal"
+        <div class="listing-card bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden group flex flex-col reveal"
            style="transition-delay:{{ $i * 70 }}ms">
             {{-- Thumbnail --}}
             <div class="h-36 bg-gradient-to-br from-slate-700 to-slate-600 relative overflow-hidden flex items-center justify-center">
@@ -294,7 +293,7 @@
                     <span class="bg-brand/10 hover:bg-brand text-brand hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-brand/30 hover:border-brand transition-all">Buy Now</span>
                 </div>
             </div>
-        </a>
+        </div>
         @endforeach
     </div>
 </section>
@@ -349,8 +348,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         @foreach($latestListings as $i => $listing)
         @php $latDisplayImage = ($categoryMap[$listing->category]->image ?? null) ?? $listing->image; @endphp
-        <a href="{{ route('dashboard.marketplace.show', $listing->id) }}"
-           class="bg-slate-800 border border-slate-700 hover:border-green-500/40 rounded-2xl p-4 flex items-center gap-4 group transition-all hover:-translate-y-0.5 reveal"
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex items-center gap-4 group reveal"
            style="transition-delay:{{ $i * 60 }}ms">
             {{-- Icon / thumb --}}
             <div class="w-14 h-14 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center relative
@@ -380,7 +378,7 @@
                     Buy
                 </span>
             </div>
-        </a>
+        </div>
         @endforeach
     </div>
 </section>
