@@ -91,7 +91,7 @@
             <a href="{{ route('login') }}" class="flex-1 flex items-center justify-center py-2.5 bg-slate-900 hover:bg-slate-950 text-white transition-all">Buy</a>
             @endauth
         @else
-            <div class="flex-1 flex items-center justify-center py-2.5 bg-slate-900 text-slate-600 cursor-not-allowed">Sold Out</div>
+            <div class="flex-1 flex items-center justify-center py-2.5 bg-slate-900 text-red-400/60 cursor-not-allowed font-semibold">Out of Stock</div>
         @endif
     </div>
 </div>
