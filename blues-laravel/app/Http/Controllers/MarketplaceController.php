@@ -11,7 +11,7 @@ class MarketplaceController extends Controller
     public function index(Request $request)
     {
         $categories = ListingCategory::all();
-        $query = Listing::where('is_active', true)->where('stock', '>', 0);
+        $query = Listing::where('is_active', true);
 
         if ($request->filled('category')) {
             $query->where('category', $request->category);
