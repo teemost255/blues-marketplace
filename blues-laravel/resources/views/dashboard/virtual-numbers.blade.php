@@ -477,7 +477,7 @@ async function loadCountries() {
 
         if (data.success && data.data?.length) {
             const sel = document.getElementById('country-select');
-            sel.innerHTML = '<option value="">— Select a country —</option>';
+            sel.innerHTML = '<option value="">— All Countries —</option>';
             data.data.forEach(c => {
                 const code = String(c.code);
                 countriesCache[code] = { name: c.name, iso: c.iso || '' };
@@ -486,7 +486,8 @@ async function loadCountries() {
                 opt.textContent = flagEmoji(c.iso) + ' ' + c.name;
                 sel.appendChild(opt);
             });
-            showState('empty', 'Select a country above to see available services.');
+            // Auto-load all services immediately
+            loadServices();
         } else {
             showState('empty', data.message || 'No countries returned.');
         }
@@ -550,12 +551,13 @@ async function loadServices() {
 
     function mapServices(data, label, code) {
         return (data?.success && Array.isArray(data.data)) ? data.data.map(s => ({
-            serviceId: String(s.serviceId ?? ''),
-            name: s.name ?? '',
-            apiPrice: parseFloat(s.cost_ngn ?? 0),
-            count: parseInt(s.count ?? 0),
-            country: label, countryCode: code,
-            _provider: 'grizzlysms',
+            serviceId:   String(s.serviceId ?? ''),
+            name:        s.name ?? '',
+            apiPrice:    parseFloat(s.cost_ngn ?? 0),
+            count:       parseInt(s.count ?? 0),
+            country:     s.country_name || label,
+            countryCode: s.country_code || code,
+            _provider:   'grizzlysms',
         })) : [];
     }
 
@@ -602,7 +604,6 @@ function applyFilter() {
     const country = document.getElementById('country-select').value;
 
     let list = allServices.filter(s => {
-        if (country && !isSocialMedia(s.name)) return false;
         if (!q) return true;
         return (s.name ?? '').toLowerCase().includes(q) || (s.country ?? '').toLowerCase().includes(q);
     });

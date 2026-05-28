@@ -309,59 +309,80 @@ class GrizzlySmsService
     // ── Services ──────────────────────────────────────────────────────────────
 
     /**
-     * Fetches available services + prices for a given numeric country code.
-     * Uses getPrices action; response is JSON.
-     * [{serviceId, name, count, cost_usd, cost_ngn}]
+     * Fetches ALL services + prices from the API.
+     * If $countryCode is provided, returns only that country's services.
+     * If empty, fetches every country and returns everything.
+     * [{serviceId, name, count, cost_usd, cost_ngn, country_code, country_name}]
      */
-    public function getServices(string $countryCode): array
+    public function getServices(string $countryCode = ''): array
     {
         try {
-            // API returns: {countryCode: {serviceCode: {count, cost, retry}}}
-            // Fetch with country param so the response is smaller/faster.
-            $resp = $this->request(['action' => 'getPrices', 'country' => $countryCode]);
+            $params = ['action' => 'getPrices'];
+            if ($countryCode !== '') {
+                $params['country'] = $countryCode;
+            }
+
+            $resp = $this->request($params);
             $data = json_decode($resp, true);
 
             if (!is_array($data) || empty($data)) {
                 return ['success' => false, 'message' => 'No services available. Please try again.'];
             }
 
-            // The outer key is the country code (as integer after json_decode).
-            $countryInt      = (int) $countryCode;
-            $countryServices = $data[$countryInt] ?? $data[$countryCode] ?? null;
-
-            // If still not found, try any single key (some responses wrap in one country key)
-            if (!$countryServices && count($data) === 1) {
-                $countryServices = reset($data);
+            // Build a lookup: numeric code (string) → country name
+            $countryLookup = [];
+            foreach (self::COUNTRIES as $c) {
+                $countryLookup[(string)$c['code']] = $c['name'];
             }
 
-            if (!$countryServices || !is_array($countryServices)) {
-                return ['success' => false, 'message' => 'No services available for the selected country.'];
+            // If a specific country was requested, narrow data to that key
+            if ($countryCode !== '') {
+                $countryInt  = (int) $countryCode;
+                $narrowed    = $data[$countryInt] ?? $data[$countryCode] ?? null;
+                if (!$narrowed && count($data) === 1) {
+                    $narrowed = reset($data);
+                }
+                if (!$narrowed || !is_array($narrowed)) {
+                    return ['success' => false, 'message' => 'No services available for the selected country.'];
+                }
+                // Re-wrap to use the unified loop below
+                $data = [$countryCode => $narrowed];
             }
 
             $services = [];
-            foreach ($countryServices as $serviceCode => $priceInfo) {
-                if (!is_array($priceInfo)) continue;
+            foreach ($data as $codeKey => $countryServices) {
+                if (!is_array($countryServices)) continue;
 
-                $count    = (int)($priceInfo['count'] ?? 0);
-                $priceUsd = (float)($priceInfo['cost'] ?? 0);
+                $codeStr     = (string)$codeKey;
+                $countryName = $countryLookup[$codeStr] ?? ('Country ' . $codeStr);
 
-                $name = self::SERVICE_NAMES[$serviceCode] ?? ucwords(str_replace('_', ' ', (string)$serviceCode));
+                foreach ($countryServices as $serviceCode => $priceInfo) {
+                    if (!is_array($priceInfo)) continue;
 
-                $services[] = [
-                    'serviceId' => (string)$serviceCode,
-                    'name'      => $name,
-                    'count'     => $count,
-                    'cost_usd'  => $priceUsd,
-                    'cost_ngn'  => $this->usdToNgn($priceUsd),
-                ];
+                    $count    = (int)($priceInfo['count'] ?? 0);
+                    $priceUsd = (float)($priceInfo['cost'] ?? 0);
+                    $name     = self::SERVICE_NAMES[$serviceCode]
+                                ?? ucwords(str_replace(['_', '-'], ' ', (string)$serviceCode));
+
+                    $services[] = [
+                        'serviceId'    => (string)$serviceCode,
+                        'name'         => $name,
+                        'count'        => $count,
+                        'cost_usd'     => $priceUsd,
+                        'cost_ngn'     => $this->usdToNgn($priceUsd),
+                        'country_code' => $codeStr,
+                        'country_name' => $countryName,
+                    ];
+                }
             }
 
             if (empty($services)) {
-                return ['success' => false, 'message' => 'No services available for the selected country.'];
+                return ['success' => false, 'message' => 'No services found.'];
             }
 
             usort($services, fn($a, $b) => strcmp($a['name'], $b['name']));
             return ['success' => true, 'data' => $services];
+
         } catch (\Exception $e) {
             Log::error('GrizzlySMS getServices: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Service temporarily unavailable. Please try again.'];

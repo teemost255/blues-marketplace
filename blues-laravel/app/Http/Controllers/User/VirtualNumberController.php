@@ -61,15 +61,13 @@ class VirtualNumberController extends Controller
 
     public function getServices(Request $request)
     {
-        $country = $request->get('country');
+        $country = (string) $request->get('country', '');
 
         $svc = new GrizzlySmsService();
         if (!$svc->isConfigured()) {
             return response()->json(['success' => false, 'message' => 'Virtual number service is not available. Please contact support.']);
         }
-        if (!$country) {
-            return response()->json(['success' => false, 'message' => 'Please select a country first.']);
-        }
+
         $result = $svc->getServices($country);
         if ($result['success']) {
             return response()->json(['success' => true, 'data' => $result['data']]);
