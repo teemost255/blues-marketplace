@@ -35,7 +35,7 @@
                 <th class="px-5 py-3 text-left">Listing</th>
                 <th class="px-5 py-3 text-left">Category</th>
                 <th class="px-5 py-3 text-left">Price</th>
-                <th class="px-5 py-3 text-left">Stock</th>
+                <th class="px-5 py-3 text-left">Stock / Credentials</th>
                 <th class="px-5 py-3 text-left">Status</th>
                 <th class="px-5 py-3 text-left">Actions</th>
             </tr></thead>
@@ -44,6 +44,13 @@
                 <tr class="border-b border-slate-700/50 hover:bg-slate-700/20">
                     <td class="px-5 py-3">
                         <div class="flex items-center gap-3">
+                            @if($l->image)
+                            <img src="{{ $l->image }}" alt="" class="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-600">
+                            @else
+                            <div class="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"/></svg>
+                            </div>
+                            @endif
                             <div>
                                 <p class="text-white font-medium">{{ $l->title }}</p>
                                 @if($l->featured)<span class="text-xs bg-yellow-900/50 text-yellow-400 px-1.5 py-0.5 rounded">Featured</span>@endif
@@ -52,7 +59,20 @@
                     </td>
                     <td class="px-5 py-3 text-slate-400">{{ $l->category ?? '—' }}</td>
                     <td class="px-5 py-3 text-white font-medium">₦{{ number_format($l->price, 2) }}</td>
-                    <td class="px-5 py-3 text-slate-300">{{ $l->stock }}</td>
+                    <td class="px-5 py-3">
+                        @php
+                            $avail = $l->available_credentials ?? null;
+                            $total = $l->total_credentials ?? null;
+                        @endphp
+                        @if($total > 0)
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold {{ $avail > 0 ? 'text-green-400' : 'text-red-400' }}">{{ $avail }}</span>
+                                <span class="text-slate-500 text-xs">/ {{ $total }} credentials</span>
+                            </div>
+                        @else
+                            <span class="text-slate-500 text-xs italic">No credentials yet</span>
+                        @endif
+                    </td>
                     <td class="px-5 py-3">
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $l->is_active ? 'bg-green-900/50 text-green-400' : 'bg-slate-700 text-slate-400' }}">
                             {{ $l->is_active ? 'Active' : 'Inactive' }}
@@ -61,7 +81,7 @@
                     <td class="px-5 py-3">
                         <div class="flex items-center gap-1">
                             <a href="{{ route('admin.listings.edit', $l) }}"
-                               class="p-1.5 rounded text-slate-400 hover:text-sky-400 hover:bg-slate-700 transition-colors" title="Edit">
+                               class="p-1.5 rounded text-slate-400 hover:text-sky-400 hover:bg-slate-700 transition-colors" title="Edit / Add Credentials">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                             </a>
                             <button onclick="openModal('modal-delete-listing-{{ $l->id }}')"
@@ -71,11 +91,11 @@
                         </div>
                     </td>
                 </tr>
-                {{-- Delete Listing Modal --}}
+                {{-- Delete Modal --}}
                 <div id="modal-delete-listing-{{ $l->id }}" class="modal-overlay" style="display:none;">
                     <div class="modal-box">
                         <h3 class="font-semibold text-white mb-3">Delete Listing</h3>
-                        <p class="text-sm text-slate-300 mb-5">Delete "<strong>{{ $l->title }}</strong>"? This cannot be undone.</p>
+                        <p class="text-sm text-slate-300 mb-5">Delete "<strong>{{ $l->title }}</strong>"? All credentials will also be deleted. This cannot be undone.</p>
                         <div class="flex gap-3">
                             <form method="POST" action="{{ route('admin.listings.destroy', $l) }}">
                                 @csrf @method('DELETE')
@@ -96,17 +116,20 @@
 
 {{-- Add Listing Modal --}}
 <div id="modal-add-listing" class="modal-overlay" style="display:none;">
-    <div class="modal-box" style="max-width:600px;">
+    <div class="modal-box" style="max-width:560px;">
         <div class="flex items-center justify-between mb-5">
             <h3 class="font-semibold text-white text-lg">Add New Listing</h3>
             <button onclick="closeModal('modal-add-listing')" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
         </div>
+        <p class="text-xs text-slate-400 bg-slate-700/50 rounded-lg px-3 py-2 mb-5">
+            After creating, you'll be taken to the edit page where you can add credential sets and upload an image. Stock is set automatically from credentials.
+        </p>
         <form method="POST" action="{{ route('admin.listings.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-xs text-slate-400 mb-1.5">Title *</label>
-                    <input type="text" name="title" required placeholder="e.g. Facebook PVA Account">
+                    <input type="text" name="title" required placeholder="e.g. Facebook PVA Account — Page + 2FA">
                 </div>
                 <div>
                     <label class="block text-xs text-slate-400 mb-1.5">Category</label>
@@ -119,23 +142,16 @@
                 </div>
                 <div>
                     <label class="block text-xs text-slate-400 mb-1.5">Price (₦) *</label>
-                    <input type="number" step="0.01" min="0" name="price" required placeholder="0.00">
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1.5">Stock *</label>
-                    <input type="number" min="0" name="stock" required placeholder="0">
+                    <input type="number" step="0.01" min="0" name="price" required placeholder="500.00">
                 </div>
                 <div class="col-span-2">
-                    <label class="block text-xs text-slate-400 mb-1.5">Description</label>
-                    <textarea name="description" rows="3" placeholder="Describe this listing…"></textarea>
+                    <label class="block text-xs text-slate-400 mb-1.5">Credential Format <span class="text-slate-500">(shown on card — not the actual credentials)</span></label>
+                    <input type="text" name="login_details" placeholder="e.g.  UID | Password | 2FA | Email | Cookie">
+                    <p class="text-xs text-slate-500 mt-1">Actual credentials are added per-item in the edit page.</p>
                 </div>
                 <div class="col-span-2">
-                    <label class="block text-xs text-slate-400 mb-1.5">
-                        Login Details
-                        <span class="text-yellow-400 ml-1">🔐 Shown to buyer after purchase</span>
-                    </label>
-                    <textarea name="login_details" rows="4" placeholder="Email: example@mail.com&#10;Password: MyP@ss123&#10;Recovery: backup@mail.com&#10;2FA: disabled&#10;&#10;Add any relevant account credentials here…" style="font-family:monospace;font-size:0.75rem;"></textarea>
-                    <p class="text-xs text-slate-500 mt-1">Only the buyer can see this. Keep it secure and accurate.</p>
+                    <label class="block text-xs text-slate-400 mb-1.5">Public Description</label>
+                    <textarea name="description" rows="2" placeholder="Brief public description for buyers…"></textarea>
                 </div>
                 <div class="col-span-2 flex items-center gap-5">
                     <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
@@ -147,7 +163,7 @@
                 </div>
             </div>
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="btn-primary">Create Listing</button>
+                <button type="submit" class="btn-primary">Create & Add Credentials →</button>
                 <button type="button" onclick="closeModal('modal-add-listing')" class="btn-primary" style="background:#475569;">Cancel</button>
             </div>
         </form>

@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\{Listing, ListingCategory, Purchase, Wallet, WalletTransaction, Wishlist, Notification};
+use App\Models\{Listing, ListingCategory, ListingCredential, Purchase, Wallet, WalletTransaction, Wishlist, Notification};
 use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -91,15 +91,38 @@ class MarketplaceController extends Controller
         }
 
         $wallet->decrement('balance', $listing->price);
-        $listing->decrement('stock');
+        // Pick one credential from the pool (credential system), or fall back to login_details
+        $credential    = null;
+        $deliveryData  = null;
+
+        if ($listing->usesCredentialSystem()) {
+            $credential = $listing->availableCredentials()->lockForUpdate()->first();
+            if (!$credential) {
+                return back()->with('error', 'This listing just sold out. Please check back later.');
+            }
+            $deliveryData = $credential->details;
+        } else {
+            $deliveryData = $listing->login_details ?: null;
+            $listing->decrement('stock');
+        }
 
         $purchase = Purchase::create([
             'user_id'       => $user->id,
             'listing_id'    => $listing->id,
             'amount'        => $listing->price,
             'status'        => 'completed',
-            'delivery_data' => $listing->login_details ?: null,
+            'delivery_data' => $deliveryData,
         ]);
+
+        // Mark credential as used and sync stock
+        if ($credential) {
+            $credential->update([
+                'is_used'     => true,
+                'used_at'     => now(),
+                'purchase_id' => $purchase->id,
+            ]);
+            $listing->syncStock();
+        }
 
         WalletTransaction::create([
             'user_id'     => $user->id,

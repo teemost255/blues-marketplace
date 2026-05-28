@@ -149,10 +149,12 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
 
     // Listings
     Route::get('/listings',                     [ListingsController::class, 'index'])->name('listings');
-    Route::post('/listings',                    [ListingsController::class, 'store'])->name('listings.store');
-    Route::get('/listings/{listing}/edit',      [ListingsController::class, 'edit'])->name('listings.edit');
-    Route::post('/listings/{listing}',          [ListingsController::class, 'update'])->name('listings.update');
-    Route::delete('/listings/{listing}',        [ListingsController::class, 'destroy'])->name('listings.destroy');
+    Route::post('/listings',                                      [ListingsController::class, 'store'])->name('listings.store');
+    Route::get('/listings/{listing}/edit',                        [ListingsController::class, 'edit'])->name('listings.edit');
+    Route::post('/listings/{listing}',                            [ListingsController::class, 'update'])->name('listings.update');
+    Route::delete('/listings/{listing}',                          [ListingsController::class, 'destroy'])->name('listings.destroy');
+    Route::post('/listings/{listing}/credentials',                [ListingsController::class, 'addCredential'])->name('listings.credentials.store');
+    Route::delete('/listings/{listing}/credentials/{credential}', [ListingsController::class, 'removeCredential'])->name('listings.credentials.destroy');
 
     // Categories
     Route::get('/categories',                   [CategoriesController::class, 'index'])->name('categories');
