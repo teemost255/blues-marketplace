@@ -566,27 +566,21 @@ async function loadServices() {
         let services = mapServices(primaryData, displayLabel, country || '');
 
         if (usaSelected) {
-            services = services.filter(s => !isWhatsApp(s.name));
+            // Keep ALL USA WhatsApp from the API as-is
+            // Also pull ALL Canada WhatsApp and add them labelled as USA
             try {
                 const canadaCode = findCountryCodeByPredicate(isCanada);
                 if (canadaCode && canadaCode !== country) {
                     const canadaData = await fetchForCode(canadaCode);
                     const canadaAll  = mapServices(canadaData, displayLabel, country || '');
-                    const canadaWA   = canadaAll.filter(s => isWhatsApp(s.name));
-                    const existing   = new Set(services.map(s => s.name.toLowerCase()));
-                    canadaWA.forEach(s => { if (!existing.has(s.name.toLowerCase())) { services.push(s); existing.add(s.name.toLowerCase()); } });
+                    // Add every Canada WhatsApp entry under USA label (no dedup — they may have different stock/price)
+                    canadaAll.filter(s => isWhatsApp(s.name)).forEach(s => {
+                        services.push({ ...s, country: displayLabel, countryCode: country || '' });
+                    });
                 }
             } catch(e) {}
         } else if (country && isCanada(selectedName)) {
-            try {
-                const usaCode = findCountryCodeByPredicate(isUSA);
-                if (usaCode && usaCode !== country) {
-                    const usaData = await fetchForCode(usaCode);
-                    const usaAll  = mapServices(usaData, displayLabel, country || '');
-                    const existing = new Set(services.map(s => s.name.toLowerCase()));
-                    usaAll.forEach(s => { if (!existing.has(s.name.toLowerCase())) { services.push(s); existing.add(s.name.toLowerCase()); } });
-                }
-            } catch(e) {}
+            // Canada shows its own services normally — no changes needed
         }
 
         if (services.length) { allServices = services; applyFilter(); }
