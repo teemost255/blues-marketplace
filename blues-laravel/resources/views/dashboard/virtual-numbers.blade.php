@@ -594,7 +594,10 @@ async function loadServices() {
         let url = SERVICES_URL + '?server=' + currentServer + '&provider=' + currentProvider;
         if (code) url += '&country=' + encodeURIComponent(code);
         const res = await fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
-        if (!res.ok) return null;
+        if (!res.ok) {
+            if (res.status === 429) throw new Error('rate_limited');
+            return null;
+        }
         return await res.json();
     }
 
@@ -636,7 +639,11 @@ async function loadServices() {
         if (services.length) { allServices = services; applyFilter(); }
         else { allServices = []; showState('empty', primaryData.message || 'No services available.'); }
     } catch(e) {
-        showState('error', 'Could not load services. Please try again.');
+        if (e?.message === 'rate_limited') {
+            showState('error', 'Too many requests. Please wait a moment and try again.');
+        } else {
+            showState('error', 'Could not load services. Please try again.');
+        }
     }
 }
 
@@ -839,7 +846,7 @@ document.getElementById('rent-form')?.addEventListener('submit', function() {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 // ── SMS polling ────────────────────────────────────────────────────────────────
-const activeOrderIds = [{{ $activeOrders->pluck('id')->join(', ') }}];
+let activeOrderIds = [{{ $activeOrders->pluck('id')->join(', ') }}];
 const countdownTimers = {}; // orderId → setInterval handle
 
 function startCountdown(orderId, receivedAt) {
@@ -895,6 +902,8 @@ async function checkSmsOnce(orderId, btn) {
                 startCountdown(orderId, data.sms_received_at);
             }
             if (data.status === 'completed' || data.status === 'cancelled') {
+                // Remove from polling list so we stop hitting the API for this order
+                activeOrderIds = activeOrderIds.filter(id => id !== orderId);
                 dismissCard(orderId);
             }
         }

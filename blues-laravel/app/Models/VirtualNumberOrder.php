@@ -25,13 +25,13 @@ class VirtualNumberOrder extends Model
         return '₦' . number_format($this->cost, 2);
     }
 
-    public function isLogsplug(): bool
-    {
-        return $this->provider === 'logsplug';
-    }
-
     public function isHeroSms(): bool
     {
-        return in_array($this->provider, ['herosms', 'smspool']);
+        return $this->provider === 'herosms';
+    }
+
+    public function isGrizzly(): bool
+    {
+        return $this->provider === 'grizzlysms';
     }
 }

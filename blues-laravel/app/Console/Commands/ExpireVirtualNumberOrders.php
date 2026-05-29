@@ -13,10 +13,21 @@ use Illuminate\Support\Facades\Log;
 class ExpireVirtualNumberOrders extends Command
 {
     protected $signature   = 'vn:expire';
-    protected $description = 'Cancel active virtual number orders that have exceeded the expiry timeout and refund users.';
+    protected $description = 'Graduate received orders, cancel timed-out active orders, and refund users.';
 
     public function handle(): int
     {
+        // ── Step 1: Graduate 'received' orders older than 3 minutes → 'completed' ──
+        $graduated = VirtualNumberOrder::where('status', 'received')
+            ->where('sms_received_at', '<', now()->subMinutes(3))
+            ->update(['status' => 'completed']);
+
+        if ($graduated > 0) {
+            $this->info("Graduated {$graduated} received order(s) to completed.");
+            Log::info("vn:expire — graduated {$graduated} received orders to completed.");
+        }
+
+        // ── Step 2: Cancel active orders past their expiry timeout ────────────────
         $minutes = (int) Setting::get('vn_auto_expire_minutes', '20');
         if ($minutes <= 0) {
             $this->info('Auto-expiry disabled (timeout = 0).');
@@ -93,7 +104,7 @@ class ExpireVirtualNumberOrders extends Command
             'type'        => 'refund',
             'amount'      => $order->cost,
             'description' => 'Auto-refund: virtual number #' . $order->id . ' expired after ' . Setting::get('vn_auto_expire_minutes', '20') . ' min',
-            'reference'   => 'AUTOREFUND-VN-' . $order->id . '-' . time(),
+            'reference'   => 'AUTOREFUND-VN-' . $order->id . '-' . uniqid('', true),
         ]);
     }
 }

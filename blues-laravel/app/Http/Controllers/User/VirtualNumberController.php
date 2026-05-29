@@ -10,6 +10,7 @@ use App\Services\GrizzlySmsService;
 use App\Services\HeroSmsService;
 use App\Services\ReferralService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class VirtualNumberController extends Controller
@@ -51,18 +52,23 @@ class VirtualNumberController extends Controller
 
     public function getCountries(Request $request)
     {
-        $server = $request->get('server', '2');
+        $server   = $request->get('server', '2');
+        $cacheKey = 'vn.countries.' . $server;
 
         if ($server === '1') {
             $svc = new HeroSmsService();
             if (!$svc->isConfigured()) {
                 return response()->json(['success' => false, 'message' => 'Server 1 (HeroSMS) is not available. Please contact support.']);
             }
-            $result = $svc->getCountries();
-            if (!$result['success']) {
-                return response()->json(['success' => false, 'message' => $result['message']]);
+            $data = Cache::remember($cacheKey, 600, function () use ($svc) {
+                $result = $svc->getCountries();
+                return $result['success'] ? $result['data'] : null;
+            });
+            if ($data === null) {
+                Cache::forget($cacheKey);
+                return response()->json(['success' => false, 'message' => 'Could not fetch countries from Server 1.']);
             }
-            return response()->json(['success' => true, 'data' => $result['data'], 'flow' => 'TWO_STEP']);
+            return response()->json(['success' => true, 'data' => $data, 'flow' => 'TWO_STEP']);
         }
 
         // Default: GrizzlySMS (server 2)
@@ -70,8 +76,11 @@ class VirtualNumberController extends Controller
         if (!$svc->isConfigured()) {
             return response()->json(['success' => false, 'message' => 'Virtual number service is not available. Please contact support.']);
         }
-        $result = $svc->getCountries();
-        return response()->json(['success' => true, 'data' => $result['data'], 'flow' => 'TWO_STEP']);
+        $data = Cache::remember($cacheKey, 600, function () use ($svc) {
+            $result = $svc->getCountries();
+            return $result['success'] ? ($result['data'] ?? []) : [];
+        });
+        return response()->json(['success' => true, 'data' => $data, 'flow' => 'TWO_STEP']);
     }
 
     // ── Services ──────────────────────────────────────────────────────────────
@@ -81,21 +90,27 @@ class VirtualNumberController extends Controller
         $country = (string) $request->get('country', '');
         $server  = $request->get('server', '2');
 
+        $cacheKey = 'vn.services.' . $server . '.' . md5($country);
+
         if ($server === '1') {
             $svc = new HeroSmsService();
             if (!$svc->isConfigured()) {
                 return response()->json(['success' => false, 'message' => 'Server 1 (HeroSMS) is not available. Please contact support.']);
             }
-            $result = $svc->getServices($country);
-            if ($result['success']) {
-                $usdToNgn = (float) Setting::get('usd_to_ngn_rate', '1500');
-                $data = array_map(function ($svc) use ($usdToNgn) {
-                    $svc['cost_ngn'] = round(($svc['cost'] ?? 0) * $usdToNgn, 2);
-                    return $svc;
+            $usdToNgn = (float) Setting::get('usd_to_ngn_rate', '1500');
+            $data = Cache::remember($cacheKey, 300, function () use ($svc, $country, $usdToNgn) {
+                $result = $svc->getServices($country);
+                if (!$result['success']) return null;
+                return array_map(function ($s) use ($usdToNgn) {
+                    $s['cost_ngn'] = round(($s['cost'] ?? 0) * $usdToNgn, 2);
+                    return $s;
                 }, $result['data']);
-                return response()->json(['success' => true, 'data' => $data]);
+            });
+            if ($data === null) {
+                Cache::forget($cacheKey);
+                return response()->json(['success' => false, 'message' => 'Could not fetch services from Server 1.']);
             }
-            return response()->json(['success' => false, 'message' => $result['message']]);
+            return response()->json(['success' => true, 'data' => $data]);
         }
 
         // Default: GrizzlySMS (server 2)
@@ -103,11 +118,15 @@ class VirtualNumberController extends Controller
         if (!$svc->isConfigured()) {
             return response()->json(['success' => false, 'message' => 'Virtual number service is not available. Please contact support.']);
         }
-        $result = $svc->getServices($country);
-        if ($result['success']) {
-            return response()->json(['success' => true, 'data' => $result['data']]);
+        $data = Cache::remember($cacheKey, 300, function () use ($svc, $country) {
+            $result = $svc->getServices($country);
+            return $result['success'] ? $result['data'] : null;
+        });
+        if ($data === null) {
+            Cache::forget($cacheKey);
+            return response()->json(['success' => false, 'message' => 'Could not fetch services. Please try again.']);
         }
-        return response()->json(['success' => false, 'message' => $result['message']]);
+        return response()->json(['success' => true, 'data' => $data]);
     }
 
     // ── Order ─────────────────────────────────────────────────────────────────
@@ -163,15 +182,16 @@ class VirtualNumberController extends Controller
         $data        = $result['data'];
         $serviceName = $request->service_name ?? $request->service_id;
         $externalId  = (string)($data['order_id'] ?? '');
+        $phoneNumber = ltrim(trim((string)($data['number'] ?? '')), '+');
 
-        DB::transaction(function () use ($data, $request, $cost, $wallet, $serviceName, $externalId) {
+        DB::transaction(function () use ($data, $request, $cost, $wallet, $serviceName, $externalId, $phoneNumber) {
             $order = VirtualNumberOrder::create([
                 'user_id'           => auth()->id(),
                 'provider'          => 'herosms',
                 'external_order_id' => $externalId,
                 'service'           => $serviceName,
                 'country'           => $request->country ?? '',
-                'phone_number'      => $data['number'] ?? null,
+                'phone_number'      => $phoneNumber ?: null,
                 'cost'              => $cost,
                 'status'            => 'active',
                 'raw_response'      => json_encode($data),
@@ -184,7 +204,7 @@ class VirtualNumberController extends Controller
                     'type'        => 'withdrawal',
                     'amount'      => $cost,
                     'description' => 'Virtual number (S1): ' . $serviceName,
-                    'reference'   => 'VN-' . $order->id . '-' . time(),
+                    'reference'   => 'VN-' . $order->id . '-' . uniqid('-', true),
                 ]);
             }
         });
@@ -213,15 +233,16 @@ class VirtualNumberController extends Controller
 
         $data        = $result['data'];
         $serviceName = $request->service_name ?? $request->service_id;
+        $phoneNumber = ltrim(trim((string)($data['number'] ?? '')), '+');
 
-        DB::transaction(function () use ($data, $request, $cost, $wallet, $serviceName) {
+        DB::transaction(function () use ($data, $request, $cost, $wallet, $serviceName, $phoneNumber) {
             $order = VirtualNumberOrder::create([
                 'user_id'           => auth()->id(),
                 'provider'          => 'grizzlysms',
                 'external_order_id' => (string)($data['order_id'] ?? ''),
                 'service'           => $serviceName,
                 'country'           => $request->country ?? '',
-                'phone_number'      => $data['number'] ?? null,
+                'phone_number'      => $phoneNumber ?: null,
                 'cost'              => $cost,
                 'status'            => 'active',
                 'raw_response'      => json_encode($data),
@@ -234,7 +255,7 @@ class VirtualNumberController extends Controller
                     'type'        => 'withdrawal',
                     'amount'      => $cost,
                     'description' => 'Virtual number: ' . $serviceName,
-                    'reference'   => 'VN-' . $order->id . '-' . time(),
+                    'reference'   => 'VN-' . $order->id . '-' . uniqid('-', true),
                 ]);
             }
         });
@@ -433,7 +454,7 @@ class VirtualNumberController extends Controller
                 'type'        => 'refund',
                 'amount'      => $order->cost,
                 'description' => 'Refund: cancelled virtual number #' . $order->id,
-                'reference'   => 'REFUND-VN-' . $order->id . '-' . time(),
+                'reference'   => 'REFUND-VN-' . $order->id . '-' . uniqid('', true),
             ]);
         }
     }
