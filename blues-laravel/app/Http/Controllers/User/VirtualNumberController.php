@@ -162,12 +162,13 @@ class VirtualNumberController extends Controller
 
         $data        = $result['data'];
         $serviceName = $request->service_name ?? $request->service_id;
+        $externalId  = (string)($data['order_id'] ?? '');
 
-        DB::transaction(function () use ($data, $request, $cost, $wallet, $serviceName) {
+        DB::transaction(function () use ($data, $request, $cost, $wallet, $serviceName, $externalId) {
             $order = VirtualNumberOrder::create([
                 'user_id'           => auth()->id(),
                 'provider'          => 'herosms',
-                'external_order_id' => (string)($data['order_id'] ?? ''),
+                'external_order_id' => $externalId,
                 'service'           => $serviceName,
                 'country'           => $request->country ?? '',
                 'phone_number'      => $data['number'] ?? null,
@@ -187,6 +188,12 @@ class VirtualNumberController extends Controller
                 ]);
             }
         });
+
+        // Signal to Hero-SMS that we received the number and are ready for SMS.
+        // This is required by the SMS-Activate protocol — without it the OTP is never sent.
+        if ($externalId) {
+            $svc->readyForSms($externalId);
+        }
 
         ReferralService::markPurchased(auth()->user()->fresh());
         return back()->with('success', 'Virtual number ordered successfully! Check your active orders below.');

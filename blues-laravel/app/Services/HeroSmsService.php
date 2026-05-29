@@ -377,8 +377,27 @@ class HeroSmsService
     }
 
     /**
+     * Signal to Hero-SMS that the number has been received and is ready for SMS.
+     * Must be called immediately after getNumber — without this, Hero-SMS never
+     * triggers the activation and the OTP is never sent.
+     */
+    public function readyForSms(string $orderId): void
+    {
+        try {
+            $r = $this->call(['action' => 'setStatus', 'id' => $orderId, 'status' => 1]);
+            Log::info('HeroSms readyForSms [' . $orderId . '] response: ' . ($r['body'] ?? 'error'));
+        } catch (\Exception $e) {
+            Log::warning('HeroSms readyForSms failed for order ' . $orderId . ': ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Check SMS status for an order.
      * Returns ['success'=>true,'data'=>['status_raw'=>'...','sms'=>'...','status'=>1|3|6]]
+     *
+     * Hero-SMS may respond with plain text (SMS-Activate style) OR JSON.
+     * Plain text:  STATUS_WAIT_CODE | STATUS_OK:123456 | STATUS_CANCEL
+     * JSON:        {"status":3,"code":"123456"} or {"ok":true,"sms":"123456"}
      */
     public function checkSms(string $orderId): array
     {
@@ -387,22 +406,43 @@ class HeroSmsService
 
         $body = $r['body'];
 
-        // STATUS_WAIT_CODE         → pending (1)
-        // STATUS_WAIT_RESEND       → pending (1)
-        // STATUS_WAIT_CODE:X       → pending (1)
-        // STATUS_OK:CODE123        → completed (3)
-        // STATUS_CANCEL            → cancelled (6)
+        // ── JSON response ────────────────────────────────────────────────────
+        if (str_starts_with($body, '{') || str_starts_with($body, '[')) {
+            $json = json_decode($body, true);
+            if (is_array($json)) {
+                // Error JSON: {"title":"BAD_KEY","details":"..."}
+                if (isset($json['title']) && $json['title'] !== 'OK') {
+                    return ['success' => false, 'message' => $json['details'] ?? $json['title']];
+                }
+                // Code present in JSON
+                $smsCode = $json['sms'] ?? $json['code'] ?? $json['text'] ?? null;
+                $rawStatus = $json['status'] ?? $json['statusCode'] ?? null;
 
+                if ($smsCode) {
+                    return ['success' => true, 'data' => ['status' => 3, 'sms' => (string)$smsCode, 'status_raw' => $body]];
+                }
+                if ($rawStatus === 6 || $rawStatus === 'STATUS_CANCEL') {
+                    return ['success' => true, 'data' => ['status' => 6, 'sms' => null, 'status_raw' => $body]];
+                }
+                // Any other JSON = still waiting
+                return ['success' => true, 'data' => ['status' => 1, 'sms' => null, 'status_raw' => $body]];
+            }
+        }
+
+        // ── Plain-text response (standard SMS-Activate format) ────────────────
+        // STATUS_OK:CODE123        → received (3)
         if (str_starts_with($body, 'STATUS_OK:')) {
             $code = substr($body, 10);
             return ['success' => true, 'data' => ['status' => 3, 'sms' => $code, 'status_raw' => $body]];
         }
 
+        // STATUS_CANCEL            → cancelled (6)
         if (str_starts_with($body, 'STATUS_CANCEL')) {
             return ['success' => true, 'data' => ['status' => 6, 'sms' => null, 'status_raw' => $body]];
         }
 
-        if (str_starts_with($body, 'STATUS_WAIT')) {
+        // STATUS_WAIT_CODE / STATUS_WAIT_RESEND / STATUS_WAIT_RETRY → pending (1)
+        if (str_starts_with($body, 'STATUS_WAIT') || str_starts_with($body, 'STATUS_WAIT_RETRY')) {
             return ['success' => true, 'data' => ['status' => 1, 'sms' => null, 'status_raw' => $body]];
         }
 
