@@ -171,11 +171,11 @@ class HeroSmsService
 
         // Convert to array of service objects
         $services = [];
-        foreach ($json as $name => $info) {
+        foreach ($json as $code => $info) {
             if (is_array($info) && isset($info['count']) && (int)($info['count']) > 0) {
                 $services[] = [
-                    'serviceId' => $name,
-                    'name'      => $name,
+                    'serviceId' => $code,
+                    'name'      => self::resolveServiceName($code),
                     'count'     => (int) $info['count'],
                     'cost'      => (float) ($info['cost'] ?? 0),
                 ];
@@ -185,6 +185,155 @@ class HeroSmsService
         usort($services, fn($a, $b) => strcmp($a['name'], $b['name']));
 
         return ['success' => true, 'data' => $services];
+    }
+
+    /**
+     * Maps Hero-SMS / sms-activate short service codes to human-readable names.
+     * Falls back to uppercase of the code if not found.
+     */
+    public static function resolveServiceName(string $code): string
+    {
+        static $map = [
+            // ── Messaging & Social ──────────────────────────────────
+            'wa'        => 'WhatsApp',
+            'tg'        => 'Telegram',
+            'vi'        => 'Viber',
+            'fb'        => 'Facebook',
+            'ig'        => 'Instagram',
+            'tw'        => 'Twitter / X',
+            'tk'        => 'TikTok',
+            'sc'        => 'Snapchat',
+            'dc'        => 'Discord',
+            'li'        => 'LinkedIn',
+            'yt'        => 'YouTube',
+            'rd'        => 'Reddit',
+            'pi'        => 'Pinterest',
+            'tt'        => 'Twitch',
+            'sk'        => 'Skype',
+            'im'        => 'IMO',
+            'ln'        => 'Line',
+            'za'        => 'Zalo',
+            'wc'        => 'WeChat',
+            'sg'        => 'Signal',
+            'kk'        => 'KakaoTalk',
+            'tb'        => 'Tumblr',
+            'ki'        => 'Kik',
+            'vk'        => 'VKontakte',
+            'ok'        => 'Odnoklassniki',
+            'mm'        => 'MoMo',
+            'tm'        => 'Teams',
+            'ws'        => 'WeChat (alt)',
+            'fc'        => 'Facebook Creator',
+            'me'        => 'Messenger',
+            'bl'        => 'Bigo Live',
+            'lk'        => 'Likee',
+
+            // ── Google / Microsoft / Apple ───────────────────────────
+            'go'        => 'Google',
+            'gv'        => 'Gmail / Google Voice',
+            'ms'        => 'Microsoft',
+            'ot'        => 'Outlook',
+            'ap'        => 'Apple / iCloud',
+
+            // ── Ride / Delivery ──────────────────────────────────────
+            'ub'        => 'Uber',
+            'lt'        => 'Lyft',
+            'bk'        => 'Bolt',
+            'gf'        => 'Glovo',
+            'rf'        => 'Rappi',
+            'ip'        => 'inDriver',
+
+            // ── Shopping / eCommerce ─────────────────────────────────
+            'am'        => 'Amazon',
+            'eb'        => 'eBay',
+            'al'        => 'AliExpress',
+            'sh'        => 'Shopee',
+            'oz'        => 'OLX',
+            'av'        => 'Avito',
+            'wb'        => 'Wildberries',
+            'oz2'       => 'Ozon',
+            'lm'        => 'Lazada',
+            'fl'        => 'Flipkart',
+
+            // ── Food / Grocery ───────────────────────────────────────
+            'dd'        => 'DoorDash',
+            'ue'        => 'Uber Eats',
+            'gr'        => 'Grubhub',
+
+            // ── Finance / Crypto ─────────────────────────────────────
+            'pp'        => 'PayPal',
+            'bn'        => 'Binance',
+            'cb'        => 'Coinbase',
+            'bb'        => 'Bybit',
+            'ku'        => 'KuCoin',
+            'kp'        => 'Kraken',
+            'ht'        => 'HTX (Huobi)',
+            'mx'        => 'MEXC',
+            'ok2'       => 'OKX',
+            'gate'      => 'Gate.io',
+            'bt'        => 'Bitget',
+            'wbt'       => 'WhiteBIT',
+            'pm'        => 'PerfectMoney',
+            'qw'        => 'Qiwi',
+            'ym'        => 'Yoomoney',
+            'wb2'       => 'WebMoney',
+            'mn'        => 'MoneyGram',
+            'wu'        => 'Western Union',
+            'cas'       => 'Cash App',
+            'vmo'       => 'Venmo',
+            'zl'        => 'Zelle',
+            'rvt'       => 'Revolut',
+            'nf'        => 'Neteller',
+            'sk2'       => 'Skrill',
+
+            // ── Streaming / Entertainment ────────────────────────────
+            'nf2'       => 'Netflix',
+            'sp'        => 'Spotify',
+            'di'        => 'Disney+',
+            'hp'        => 'HBO / Max',
+            'hu'        => 'Hulu',
+            'pr'        => 'Paramount+',
+            'pv'        => 'Prime Video',
+            'an'        => 'Apple TV+',
+            'dt'        => 'DAZN',
+
+            // ── Gaming ───────────────────────────────────────────────
+            'st'        => 'Steam',
+            'ep'        => 'Epic Games',
+            'ac'        => 'Activision',
+            'ea'        => 'EA / Origin',
+            'ub2'       => 'Ubisoft',
+            'rg'        => 'Riot Games',
+            'nv'        => 'NVIDIA',
+            'gog'       => 'GOG',
+
+            // ── Dating ───────────────────────────────────────────────
+            'ti'        => 'Tinder',
+            'bm'        => 'Bumble',
+            'hg'        => 'Hinge',
+            'ba'        => 'Badoo',
+            'ml'        => 'MeetMe',
+
+            // ── Travel / Accommodation ───────────────────────────────
+            'ab'        => 'Airbnb',
+            'bkc'       => 'Booking.com',
+            'ex'        => 'Expedia',
+            'tz'        => 'Trivago',
+
+            // ── Other Tech / AI ──────────────────────────────────────
+            'ch'        => 'ChatGPT / OpenAI',
+            'cl'        => 'Claude / Anthropic',
+            'gi'        => 'GitHub',
+            'zo'        => 'Zoom',
+            'sl'        => 'Slack',
+            'dr'        => 'Dropbox',
+            'nk'        => 'Nike',
+            'ad'        => 'Adobe',
+            'yax'       => 'Yandex',
+        ];
+
+        $lower = strtolower(trim($code));
+        return $map[$lower] ?? ucfirst($code);
     }
 
     /**
