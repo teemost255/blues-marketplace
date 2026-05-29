@@ -116,13 +116,15 @@ class HeroSmsService
             return ['success' => false, 'message' => 'Unexpected countries response.'];
         }
 
-        // Convert {"1":{"id":1,"eng":"Ukraine",...},...} → flat array
+        // Convert {"1":{"id":1,"eng":"Ukraine","iso":"ua",...},...} → flat array
+        // Must return 'code' key (string) so the frontend country selector works correctly.
         $countries = [];
         foreach ($json as $item) {
             if (!isset($item['id']) || !($item['visible'] ?? 1)) continue;
             $countries[] = [
-                'id'   => $item['id'],
+                'code' => (string) $item['id'],
                 'name' => $item['eng'] ?? $item['rus'] ?? 'Country ' . $item['id'],
+                'iso'  => strtolower($item['iso'] ?? ''),
             ];
         }
 

@@ -88,7 +88,12 @@ class VirtualNumberController extends Controller
             }
             $result = $svc->getServices($country);
             if ($result['success']) {
-                return response()->json(['success' => true, 'data' => $result['data']]);
+                $usdToNgn = (float) Setting::get('usd_to_ngn_rate', '1500');
+                $data = array_map(function ($svc) use ($usdToNgn) {
+                    $svc['cost_ngn'] = round(($svc['cost'] ?? 0) * $usdToNgn, 2);
+                    return $svc;
+                }, $result['data']);
+                return response()->json(['success' => true, 'data' => $data]);
             }
             return response()->json(['success' => false, 'message' => $result['message']]);
         }
