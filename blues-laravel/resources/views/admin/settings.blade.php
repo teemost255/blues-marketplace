@@ -316,6 +316,17 @@
             </div>
 
             <div class="pt-4 border-t border-slate-700">
+                <label class="block text-xs text-slate-400 mb-1.5">Auto-Expiry Timeout (minutes)</label>
+                <div class="flex items-center gap-3">
+                    <input type="number" name="vn_auto_expire_minutes"
+                        value="{{ $settings['vn_auto_expire_minutes'] }}"
+                        min="0" max="1440" step="1" class="w-36"
+                        placeholder="20">
+                    <p class="text-xs text-slate-500">Active orders older than this are automatically cancelled and refunded. Set to <span class="text-white font-mono">0</span> to disable.</p>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-700">
                 <label class="flex items-center gap-3 cursor-pointer">
                     <div class="relative">
                         <input type="checkbox" name="virtual_number_enabled" value="1" id="vn-toggle"

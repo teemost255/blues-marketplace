@@ -53,5 +53,8 @@ php artisan route:clear
 php artisan view:clear
 php artisan cache:clear
 
+# Start the Laravel task scheduler in the background
+php artisan schedule:work &
+
 # Start the server
 php artisan serve --host=0.0.0.0 --port=5000

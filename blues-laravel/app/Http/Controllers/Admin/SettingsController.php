@@ -43,6 +43,7 @@ class SettingsController extends Controller
             'low_balance_threshold'    => Setting::get('low_balance_threshold', '5'),
             'vn_commission_type'       => Setting::get('vn_commission_type', 'flat'),
             'vn_commission_value'      => Setting::get('vn_commission_value', '0'),
+            'vn_auto_expire_minutes'   => Setting::get('vn_auto_expire_minutes', '20'),
             'bank_transfer_enabled'    => Setting::get('bank_transfer_enabled', '0'),
             'bank_name'                => Setting::get('bank_name', ''),
             'bank_account_number'      => Setting::get('bank_account_number', ''),
@@ -84,6 +85,7 @@ class SettingsController extends Controller
             'low_balance_threshold'   => 'nullable|numeric|min:0',
             'vn_commission_type'      => 'nullable|in:flat,percent',
             'vn_commission_value'     => 'nullable|numeric|min:0',
+            'vn_auto_expire_minutes'  => 'nullable|integer|min:0|max:1440',
             'bank_name'               => 'nullable|string|max:100',
             'bank_account_number'     => 'nullable|string|max:50',
             'bank_account_name'       => 'nullable|string|max:100',
@@ -98,7 +100,7 @@ class SettingsController extends Controller
             'referral_bonus', 'referral_bonus_tier2', 'referral_bonus_tier3',
             'referral_bonus_tier2_threshold', 'referral_bonus_tier3_threshold',
             'promo_banner_text', 'promo_banner_color', 'low_balance_threshold',
-            'vn_commission_type', 'vn_commission_value',
+            'vn_commission_type', 'vn_commission_value', 'vn_auto_expire_minutes',
             'bank_name', 'bank_account_number', 'bank_account_name',
         ];
         Setting::set('bank_transfer_enabled', $request->boolean('bank_transfer_enabled') ? '1' : '0');
