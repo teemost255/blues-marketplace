@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\{User, Listing, Purchase, SupportTicket, WalletTransaction, VirtualNumberOrder};
 use App\Services\GrizzlySmsService;
+use App\Services\HeroSmsService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -73,9 +74,29 @@ class DashboardController extends Controller
             $grizzlyError = 'API not configured. Add your GrizzlySMS key in Settings.';
         }
 
+        // Fetch HeroSMS balance server-side
+        $heroBalance = null;
+        $heroError   = null;
+        $heroSvc = new HeroSmsService();
+        if ($heroSvc->isConfigured()) {
+            try {
+                $result = $heroSvc->getBalance();
+                if ($result['success']) {
+                    $heroBalance = $result['data']['balance'] ?? null;
+                } else {
+                    $heroError = $result['message'] ?? 'Could not fetch balance.';
+                }
+            } catch (\Throwable $e) {
+                $heroError = 'Balance fetch failed. Check API connectivity.';
+            }
+        } else {
+            $heroError = 'API not configured. Add your HeroSMS key in Settings.';
+        }
+
         return view('admin.dashboard', compact(
             'stats', 'chartLabels', 'chartRevenue', 'chartOrders',
-            'grizzlyBalance', 'grizzlyError'
+            'grizzlyBalance', 'grizzlyError',
+            'heroBalance', 'heroError'
         ));
     }
 }

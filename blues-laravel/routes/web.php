@@ -178,6 +178,7 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
 
     Route::get('/virtual-numbers',                              [VirtualNumberOrdersController::class, 'index'])->name('virtual-numbers');
     Route::get('/virtual-numbers/grizzlysms-balance',          [VirtualNumberOrdersController::class, 'grizzlySmsBalance'])->name('virtual-numbers.grizzlysms-balance');
+    Route::get('/virtual-numbers/herosms-balance',             [VirtualNumberOrdersController::class, 'heroSmsBalance'])->name('virtual-numbers.herosms-balance');
     Route::get('/virtual-numbers/export',                      [VirtualNumberOrdersController::class, 'exportCsv'])->name('virtual-numbers.export');
     Route::post('/virtual-numbers/{order}/status',             [VirtualNumberOrdersController::class, 'updateStatus'])->name('virtual-numbers.status');
     Route::delete('/virtual-numbers/{order}',                  [VirtualNumberOrdersController::class, 'destroy'])->name('virtual-numbers.destroy');
