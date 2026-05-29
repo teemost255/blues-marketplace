@@ -35,6 +35,12 @@ if ! grep -q "APP_KEY=base64:" .env 2>/dev/null; then
   php artisan key:generate --ansi
 fi
 
+# Ensure file-based session, cache and sync queue (no Redis needed on Replit)
+grep -q "^SESSION_DRIVER=" .env && sed -i "s|^SESSION_DRIVER=.*|SESSION_DRIVER=file|" .env || echo "SESSION_DRIVER=file" >> .env
+grep -q "^CACHE_STORE=" .env && sed -i "s|^CACHE_STORE=.*|CACHE_STORE=file|" .env || echo "CACHE_STORE=file" >> .env
+grep -q "^QUEUE_CONNECTION=" .env && sed -i "s|^QUEUE_CONNECTION=.*|QUEUE_CONNECTION=sync|" .env || echo "QUEUE_CONNECTION=sync" >> .env
+grep -q "^APP_ENV=" .env && sed -i "s|^APP_ENV=.*|APP_ENV=production|" .env || echo "APP_ENV=production" >> .env
+
 # Set up storage directories
 mkdir -p storage/framework/sessions
 mkdir -p storage/framework/views
