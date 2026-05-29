@@ -150,6 +150,18 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
             Virtual Numbers
         </a>
+        <div class="pl-6 space-y-0.5">
+            <a href="{{ route('dashboard.virtual-numbers') }}?server=1"
+               class="sidebar-link py-1.5 text-xs {{ request()->routeIs('dashboard.virtual-numbers*') && request()->get('server') === '1' ? 'active' : '' }}">
+                <span class="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
+                Server 1 · HeroSMS
+            </a>
+            <a href="{{ route('dashboard.virtual-numbers') }}?server=2"
+               class="sidebar-link py-1.5 text-xs {{ request()->routeIs('dashboard.virtual-numbers*') && request()->get('server') === '2' ? 'active' : '' }}">
+                <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
+                Server 2 · GrizzlySMS
+            </a>
+        </div>
         <a href="{{ route('dashboard.wishlist') }}" class="sidebar-link {{ request()->routeIs('dashboard.wishlist') ? 'active' : '' }}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
             Wishlist

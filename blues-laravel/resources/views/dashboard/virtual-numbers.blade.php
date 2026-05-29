@@ -44,6 +44,27 @@
     </div>
 </div>
 
+{{-- ── Server Selector ──────────────────────────────────────────────────────── --}}
+@if($heroSmsConfigured || $grizzlySmsConfigured)
+<div class="flex items-center gap-2 mb-5 flex-wrap">
+    <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Server:</span>
+    @if($heroSmsConfigured)
+    <button id="srv-btn-1" onclick="switchServer('1')"
+        class="srv-btn flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all">
+        <span class="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
+        Server 1 · HeroSMS
+    </button>
+    @endif
+    @if($grizzlySmsConfigured)
+    <button id="srv-btn-2" onclick="switchServer('2')"
+        class="srv-btn flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all">
+        <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
+        Server 2 · GrizzlySMS
+    </button>
+    @endif
+</div>
+@endif
+
 {{-- ── Tabs ──────────────────────────────────────────────────────────────────── --}}
 <div class="flex items-center gap-1 mb-6 bg-slate-800/60 border border-slate-700/60 rounded-xl p-1 w-fit">
     <button onclick="switchTab('browse')" id="tab-browse"
@@ -375,13 +396,18 @@
 .rent-btn:active { transform: scale(0.97); }
 .popular-chip { transition: all 0.15s; }
 .popular-chip.active { background: rgba(14,165,233,0.15); border-color: rgba(14,165,233,0.5); color: #38bdf8; }
+.srv-btn { background: rgba(51,65,85,0.4); border-color: rgba(100,116,139,0.4); color: #94a3b8; }
+.srv-btn.active-s1 { background: rgba(126,34,206,0.2); border-color: rgba(167,139,250,0.5); color: #c4b5fd; }
+.srv-btn.active-s2 { background: rgba(22,163,74,0.15); border-color: rgba(74,222,128,0.4); color: #86efac; }
 </style>
 
 <script>
-const COUNTRIES_URL  = '/dashboard/virtual-numbers/api/countries';
-const SERVICES_URL   = '/dashboard/virtual-numbers/api/services';
-let currentServer    = 'grizzlysms';
-let currentProvider  = 'grizzlysms';
+const COUNTRIES_URL     = '/dashboard/virtual-numbers/api/countries';
+const SERVICES_URL      = '/dashboard/virtual-numbers/api/services';
+const HERO_CONFIGURED   = {{ $heroSmsConfigured ? 'true' : 'false' }};
+const GRIZZLY_CONFIGURED= {{ $grizzlySmsConfigured ? 'true' : 'false' }};
+let currentServer    = HERO_CONFIGURED ? '1' : '2';
+let currentProvider  = HERO_CONFIGURED ? 'herosms' : 'grizzlysms';
 const USD_TO_NGN     = {{ $usdToNgn }};
 let allServices      = [];
 let walletBalance    = {{ $wallet->balance }};
@@ -425,6 +451,30 @@ function isSocialMedia(name) {
 }
 function isWhatsApp(name) {
     return (name || '').toLowerCase().includes('whatsapp');
+}
+
+// ── Server switching ───────────────────────────────────────────────────────────
+function switchServer(srv) {
+    currentServer   = srv;
+    currentProvider = srv === '1' ? 'herosms' : 'grizzlysms';
+
+    // Update button styles
+    const btn1 = document.getElementById('srv-btn-1');
+    const btn2 = document.getElementById('srv-btn-2');
+    if (btn1) { btn1.classList.toggle('active-s1', srv === '1'); }
+    if (btn2) { btn2.classList.toggle('active-s2', srv === '2'); }
+
+    // Reset and reload
+    allServices = [];
+    countriesCache = {};
+    const sel = document.getElementById('country-select');
+    if (sel) { sel.innerHTML = '<option value="">— All Countries —</option>'; }
+    loadCountries();
+
+    // Update URL param without reloading the page
+    const url = new URL(window.location);
+    url.searchParams.set('server', srv);
+    history.replaceState(null, '', url);
 }
 
 // ── Tab switching ──────────────────────────────────────────────────────────────
@@ -552,11 +602,11 @@ async function loadServices() {
         return (data?.success && Array.isArray(data.data)) ? data.data.map(s => ({
             serviceId:   String(s.serviceId ?? ''),
             name:        s.name ?? '',
-            apiPrice:    parseFloat(s.cost_ngn ?? 0),
+            apiPrice:    parseFloat(s.cost_ngn ?? s.cost ?? 0),
             count:       parseInt(s.count ?? 0),
             country:     s.country_name || label,
             countryCode: s.country_code || code,
-            _provider:   'grizzlysms',
+            _provider:   currentProvider,
         })) : [];
     }
 
@@ -762,7 +812,7 @@ function openModal(serviceId, serviceName, price, country, countryCode) {
     }
 
     document.getElementById('f-provider').value   = currentProvider;
-    document.getElementById('f-server').value     = 'server2';
+    document.getElementById('f-server').value     = currentServer;
     document.getElementById('f-service-id').value = serviceId;
     document.getElementById('f-country').value    = countryCode;
     document.getElementById('f-price').value      = price;
@@ -887,7 +937,18 @@ function updateActiveBadge() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    loadCountries();
+    // Auto-select server from URL param (?server=1 or ?server=2)
+    const urlParam = new URLSearchParams(window.location.search).get('server');
+    if (urlParam === '1' && HERO_CONFIGURED) {
+        switchServer('1');
+    } else if (urlParam === '2' && GRIZZLY_CONFIGURED) {
+        switchServer('2');
+    } else {
+        // Apply default active style
+        const defaultBtn = document.getElementById(currentServer === '1' ? 'srv-btn-1' : 'srv-btn-2');
+        if (defaultBtn) defaultBtn.classList.add(currentServer === '1' ? 'active-s1' : 'active-s2');
+        loadCountries();
+    }
     @if(session('success') && $activeOrders->count())
     setTimeout(() => switchTab('active'), 300);
     @endif
