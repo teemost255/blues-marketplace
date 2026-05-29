@@ -154,12 +154,12 @@
             <a href="{{ route('dashboard.virtual-numbers') }}?server=1"
                class="sidebar-link py-1.5 text-xs {{ request()->routeIs('dashboard.virtual-numbers*') && request()->get('server') === '1' ? 'active' : '' }}">
                 <span class="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
-                Server 1 · HeroSMS
+                Server 1
             </a>
             <a href="{{ route('dashboard.virtual-numbers') }}?server=2"
                class="sidebar-link py-1.5 text-xs {{ request()->routeIs('dashboard.virtual-numbers*') && request()->get('server') === '2' ? 'active' : '' }}">
                 <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
-                Server 2 · GrizzlySMS
+                Server 2
             </a>
         </div>
         <a href="{{ route('dashboard.wishlist') }}" class="sidebar-link {{ request()->routeIs('dashboard.wishlist') ? 'active' : '' }}">

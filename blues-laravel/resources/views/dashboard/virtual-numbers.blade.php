@@ -52,14 +52,14 @@
     <button id="srv-btn-1" onclick="switchServer('1')"
         class="srv-btn flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all">
         <span class="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
-        Server 1 · HeroSMS
+        Server 1
     </button>
     @endif
     @if($grizzlySmsConfigured)
     <button id="srv-btn-2" onclick="switchServer('2')"
         class="srv-btn flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all">
         <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
-        Server 2 · GrizzlySMS
+        Server 2
     </button>
     @endif
 </div>
