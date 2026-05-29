@@ -58,7 +58,7 @@ class VirtualNumberController extends Controller
         if ($server === '1') {
             $svc = new HeroSmsService();
             if (!$svc->isConfigured()) {
-                return response()->json(['success' => false, 'message' => 'Server 1 (HeroSMS) is not available. Please contact support.']);
+                return response()->json(['success' => false, 'message' => 'Server 1 is not available. Please contact support.']);
             }
             $data = Cache::remember($cacheKey, 600, function () use ($svc) {
                 $result = $svc->getCountries();
@@ -66,7 +66,7 @@ class VirtualNumberController extends Controller
             });
             if ($data === null) {
                 Cache::forget($cacheKey);
-                return response()->json(['success' => false, 'message' => 'Could not fetch countries from Server 1.']);
+                return response()->json(['success' => false, 'message' => 'Could not fetch countries from Server 1. Please try Server 2.']);
             }
             return response()->json(['success' => true, 'data' => $data, 'flow' => 'TWO_STEP']);
         }
@@ -95,7 +95,7 @@ class VirtualNumberController extends Controller
         if ($server === '1') {
             $svc = new HeroSmsService();
             if (!$svc->isConfigured()) {
-                return response()->json(['success' => false, 'message' => 'Server 1 (HeroSMS) is not available. Please contact support.']);
+                return response()->json(['success' => false, 'message' => 'Server 1 is not available. Please contact support.']);
             }
             $usdToNgn = (float) Setting::get('usd_to_ngn_rate', '1500');
             $data = Cache::remember($cacheKey, 300, function () use ($svc, $country, $usdToNgn) {
@@ -171,7 +171,7 @@ class VirtualNumberController extends Controller
     {
         $svc = new HeroSmsService();
         if (!$svc->isConfigured()) {
-            return back()->with('error', 'Server 1 (HeroSMS) is currently unavailable. Please try again later.');
+            return back()->with('error', 'Server 1 is currently unavailable. Please try again later.');
         }
 
         $result = $svc->orderNumber($request->country ?? '', $request->service_id);

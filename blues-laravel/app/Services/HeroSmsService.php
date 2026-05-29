@@ -48,13 +48,13 @@ class HeroSmsService
             Log::info('HeroSms [' . ($params['action'] ?? '?') . '] HTTP ' . $status . ' | ' . substr($body, 0, 300));
 
             if (!$response->successful()) {
-                return ['success' => false, 'message' => 'Hero-SMS request failed (HTTP ' . $status . ').'];
+                return ['success' => false, 'http_status' => $status, 'body' => $body, 'message' => 'Service request failed (HTTP ' . $status . ').'];
             }
 
-            return ['success' => true, 'body' => $body];
+            return ['success' => true, 'http_status' => $status, 'body' => $body];
         } catch (\Exception $e) {
             Log::error('HeroSmsService error [' . ($params['action'] ?? '?') . ']: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Could not reach Hero-SMS. Check your connection.'];
+            return ['success' => false, 'http_status' => 0, 'body' => '', 'message' => 'Service temporarily unavailable. Please try again.'];
         }
     }
 
@@ -108,7 +108,7 @@ class HeroSmsService
             $response = $this->client()->get($this->baseUrl, ['action' => 'getCountries']);
             $body = trim($response->body());
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Could not reach Hero-SMS.'];
+            return ['success' => false, 'message' => 'Service temporarily unavailable. Please try again.'];
         }
 
         $json = json_decode($body, true);
@@ -366,7 +366,7 @@ class HeroSmsService
             'NO_BALANCE'  => 'This service is temporarily unavailable. Please try Server 2 or contact support.',
             'BAD_SERVICE' => 'Invalid service selected.',
             'BAD_COUNTRY' => 'Invalid country selected.',
-            'BAD_KEY'     => 'Hero-SMS API key is invalid.',
+            'BAD_KEY'     => 'Service configuration error. Please contact support.',
         ];
 
         $p = $this->parsePlain($body);
@@ -454,21 +454,41 @@ class HeroSmsService
 
     /**
      * Cancel an order (setStatus with status=8).
+     * HTTP 409 means the order is already in a final state — treat as success.
      */
     public function cancelOrder(string $orderId): array
     {
         $r = $this->call(['action' => 'setStatus', 'id' => $orderId, 'status' => 8]);
-        if (!$r['success']) return $r;
+
+        // 409 Conflict = order already used/cancelled on the provider side — safe to mark cancelled locally
+        if (!$r['success']) {
+            if (($r['http_status'] ?? 0) === 409) {
+                Log::info('HeroSms cancelOrder: HTTP 409 for order ' . $orderId . ' (already in final state, treating as success)');
+                return ['success' => true, 'data' => []];
+            }
+            return $r;
+        }
 
         $body = $r['body'];
 
-        if (str_starts_with($body, 'ACCESS_CANCEL')) {
+        // Standard success responses
+        if (str_starts_with($body, 'ACCESS_CANCEL') || str_starts_with($body, 'STATUS_CANCEL')) {
             return ['success' => true, 'data' => []];
         }
 
         $p = $this->parsePlain($body);
-        if (!$p['ok']) return ['success' => false, 'message' => $p['detail'] ?: $p['code']];
 
-        return ['success' => false, 'message' => 'Cancel failed: ' . $body];
+        // "Already cancelled / completed" codes → treat as success
+        if ($p['ok'] && in_array($p['code'], ['STATUS_CANCEL', 'ACCESS_CANCEL', 'STATUS_OK', 'ALREADY_CANCELLED'])) {
+            return ['success' => true, 'data' => []];
+        }
+
+        if (!$p['ok']) {
+            return ['success' => false, 'message' => $p['detail'] ?: 'Could not cancel the order. Please try again.'];
+        }
+
+        // Unrecognised response — log it but don't leak internals to the user
+        Log::warning('HeroSms cancelOrder unexpected response for order ' . $orderId . ': ' . $body);
+        return ['success' => false, 'message' => 'Could not cancel the order. Please try again.'];
     }
 }

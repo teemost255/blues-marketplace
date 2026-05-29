@@ -460,7 +460,7 @@ class GrizzlySmsService
             return ['success' => true, 'data' => ['status' => 'pending', 'sms' => null]];
         } catch (\Exception $e) {
             Log::error('GrizzlySMS checkSms: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Could not reach GrizzlySMS API.'];
+            return ['success' => false, 'message' => 'Service temporarily unavailable. Please try again.'];
         }
     }
 
@@ -487,24 +487,29 @@ class GrizzlySmsService
         try {
             // Status 8 = cancel and return money (SMS-Activate compatible standard)
             $resp = $this->request(['action' => 'setStatus', 'id' => $orderId, 'status' => 8]);
-            if ($resp === 'ACCESS_CANCEL') {
+
+            // Successful cancel responses
+            if (in_array($resp, ['ACCESS_CANCEL', 'STATUS_CANCEL'])) {
                 return ['success' => true, 'message' => 'Order cancelled successfully.'];
             }
-            $msg = match($resp) {
-                'BAD_KEY'        => 'Invalid GrizzlySMS API key.',
-                'BAD_ACTION'     => 'Invalid action.',
-                'NO_ACTIVATION'  => 'Activation not found.',
-                'BAD_STATUS'     => 'Cannot cancel at this stage.',
-                default          => 'Cancel response: ' . $resp,
-            };
-            // If already cancelled or completed, treat as success
-            if (in_array($resp, ['ACCESS_CANCEL', 'STATUS_CANCEL', 'STATUS_OK'])) {
-                return ['success' => true, 'message' => $resp];
+
+            // BAD_ACTION = order already in a final state (completed/cancelled) — treat as success
+            // NO_ACTIVATION / WRONG_ACTIVATION_ID = order no longer exists — also treat as success
+            if (in_array($resp, ['BAD_ACTION', 'NO_ACTIVATION', 'WRONG_ACTIVATION_ID', 'STATUS_OK'])) {
+                Log::info('GrizzlySMS cancelOrder: ' . $resp . ' for order ' . $orderId . ' (treating as success)');
+                return ['success' => true, 'message' => 'Order cancelled.'];
             }
+
+            $msg = match($resp) {
+                'BAD_KEY'    => 'Service configuration error. Please contact support.',
+                'BAD_STATUS' => 'This order cannot be cancelled at its current stage.',
+                default      => 'Could not cancel the order. Please try again.',
+            };
+            Log::warning('GrizzlySMS cancelOrder unexpected response: ' . $resp . ' for order ' . $orderId);
             return ['success' => false, 'message' => $msg];
         } catch (\Exception $e) {
             Log::error('GrizzlySMS cancelOrder: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Could not reach GrizzlySMS API.'];
+            return ['success' => false, 'message' => 'Service temporarily unavailable. Please try again.'];
         }
     }
 }
