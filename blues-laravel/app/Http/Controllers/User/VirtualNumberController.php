@@ -388,6 +388,8 @@ class VirtualNumberController extends Controller
             }
             return back()->with('success', 'Order cancelled and wallet refunded.');
         }
+
+        return back()->with('error', $result['message'] ?? 'Could not cancel order.');
     }
 
     private function processRefund(VirtualNumberOrder $order): void

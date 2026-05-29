@@ -146,11 +146,19 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Marketplace
         </a>
-        <a href="{{ route('dashboard.virtual-numbers') }}" class="sidebar-link {{ request()->routeIs('dashboard.virtual-numbers*') ? 'active' : '' }}">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-            Virtual Numbers
-        </a>
-        <div class="pl-6 space-y-0.5">
+        <div class="flex items-center gap-1">
+            <a href="{{ route('dashboard.virtual-numbers') }}" class="sidebar-link flex-1 {{ request()->routeIs('dashboard.virtual-numbers*') ? 'active' : '' }}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                Virtual Numbers
+            </a>
+            <button onclick="toggleVnMenu()" id="vn-chevron-btn"
+                class="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-700/50 transition-colors shrink-0" title="Toggle servers">
+                <svg id="vn-chevron" class="w-3.5 h-3.5 transition-transform duration-200 {{ request()->routeIs('dashboard.virtual-numbers*') ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+        </div>
+        <div id="vn-submenu" class="{{ request()->routeIs('dashboard.virtual-numbers*') ? '' : 'hidden' }} pl-6 space-y-0.5 mt-0.5">
             <a href="{{ route('dashboard.virtual-numbers') }}?server=1"
                class="sidebar-link py-1.5 text-xs {{ request()->routeIs('dashboard.virtual-numbers*') && request()->get('server') === '1' ? 'active' : '' }}">
                 <span class="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
@@ -289,6 +297,16 @@ function toggleTheme() {
 }
 // Sync icon on load
 applyThemeIcons(document.documentElement.getAttribute('data-theme') || 'dark');
+
+// ── Virtual Numbers submenu toggle ──
+function toggleVnMenu() {
+    var menu    = document.getElementById('vn-submenu');
+    var chevron = document.getElementById('vn-chevron');
+    if (!menu) return;
+    var isHidden = menu.classList.contains('hidden');
+    menu.classList.toggle('hidden', !isHidden);
+    chevron.classList.toggle('rotate-180', isHidden);
+}
 </script>
 
 </body>
