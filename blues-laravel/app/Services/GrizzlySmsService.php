@@ -464,6 +464,22 @@ class GrizzlySmsService
         }
     }
 
+    // ── Confirm SMS received (setStatus=6) ────────────────────────────────────
+
+    /**
+     * Confirm that the SMS code was received and used.
+     * GrizzlySMS requires this after STATUS_OK to properly close the activation.
+     */
+    public function confirmSms(string $orderId): void
+    {
+        try {
+            $resp = $this->request(['action' => 'setStatus', 'id' => $orderId, 'status' => 6]);
+            Log::info('GrizzlySMS confirmSms [' . $orderId . '] response: ' . $resp);
+        } catch (\Exception $e) {
+            Log::warning('GrizzlySMS confirmSms failed for order ' . $orderId . ': ' . $e->getMessage());
+        }
+    }
+
     // ── Cancel ────────────────────────────────────────────────────────────────
 
     public function cancelOrder(string $orderId): array

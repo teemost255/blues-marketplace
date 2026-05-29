@@ -318,8 +318,10 @@ class VirtualNumberController extends Controller
                 'status'   => $newStatus,
             ];
 
+            $justReceived = false;
             if ($newStatus === 'received' && !$order->sms_received_at) {
                 $updates['sms_received_at'] = now();
+                $justReceived = true;
             }
 
             if ($newStatus === 'received' && $order->sms_received_at && $order->sms_received_at->lt(now()->subMinutes(3))) {
@@ -329,10 +331,15 @@ class VirtualNumberController extends Controller
             $order->update($updates);
             $order->refresh();
 
+            // Confirm receipt back to GrizzlySMS (setStatus=6) when code first arrives
+            if ($justReceived && $order->external_order_id) {
+                $svc->confirmSms($order->external_order_id);
+            }
+
             return response()->json([
-                'success'       => true,
-                'sms_code'      => $order->sms_code,
-                'status'        => $order->status,
+                'success'         => true,
+                'sms_code'        => $order->sms_code,
+                'status'          => $order->status,
                 'sms_received_at' => $order->sms_received_at?->toIso8601String(),
             ]);
         }
@@ -347,7 +354,7 @@ class VirtualNumberController extends Controller
     {
         $order = VirtualNumberOrder::where('id', $orderId)
             ->where('user_id', auth()->id())
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'received'])
             ->firstOrFail();
 
         if ($order->provider === 'herosms') {
@@ -359,6 +366,12 @@ class VirtualNumberController extends Controller
 
     private function cancelHero(VirtualNumberOrder $order)
     {
+        // If SMS was already received, just dismiss the order — no API cancel, no refund
+        if ($order->status === 'received') {
+            $order->update(['status' => 'cancelled']);
+            return back()->with('success', 'Order dismissed.');
+        }
+
         $svc    = new HeroSmsService();
         $result = ['success' => true, 'data' => []];
 
@@ -379,6 +392,12 @@ class VirtualNumberController extends Controller
 
     private function cancelGrizzly(VirtualNumberOrder $order)
     {
+        // If SMS was already received, just dismiss the order — no API cancel, no refund
+        if ($order->status === 'received') {
+            $order->update(['status' => 'cancelled']);
+            return back()->with('success', 'Order dismissed.');
+        }
+
         $svc    = new GrizzlySmsService();
         $result = ['success' => true, 'data' => []];
 

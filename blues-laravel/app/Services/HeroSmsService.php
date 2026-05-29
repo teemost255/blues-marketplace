@@ -363,7 +363,7 @@ class HeroSmsService
         // Known error strings
         $errors = [
             'NO_NUMBERS'  => 'No numbers available for this service/country.',
-            'NO_BALANCE'  => 'Insufficient Hero-SMS account balance.',
+            'NO_BALANCE'  => 'This service is temporarily unavailable. Please try Server 2 or contact support.',
             'BAD_SERVICE' => 'Invalid service selected.',
             'BAD_COUNTRY' => 'Invalid country selected.',
             'BAD_KEY'     => 'Hero-SMS API key is invalid.',
