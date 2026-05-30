@@ -655,9 +655,11 @@ async function loadServices() {
                         });
                     }
 
-                    // Add Canada WhatsApp entries relabelled under USA
+                    // Add Canada WhatsApp entries relabelled under USA.
+                    // IMPORTANT: keep Canada's original countryCode so the backend orders from Canada.
+                    // Only the display label (country) changes — the user sees "USA" but we order a Canadian number.
                     canadaWa.forEach(s => {
-                        services.push({ ...s, country: displayLabel, countryCode: country || '' });
+                        services.push({ ...s, country: displayLabel });
                     });
                 }
             } catch(e) {}
