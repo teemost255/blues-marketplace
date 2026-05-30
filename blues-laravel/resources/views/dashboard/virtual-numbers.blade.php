@@ -633,15 +633,30 @@ async function loadServices() {
         let services = mapServices(primaryData, displayLabel, country || '');
 
         if (usaSelected) {
-            // Keep ALL USA WhatsApp from the API as-is
-            // Also pull ALL Canada WhatsApp and add them labelled as USA
+            // Remove the cheapest USA WhatsApp entry, then add Canada WhatsApp under USA label
             try {
                 const canadaCode = findCountryCodeByPredicate(isCanada);
                 if (canadaCode && canadaCode !== country) {
                     const canadaData = await fetchForCode(canadaCode);
-                    const canadaAll  = mapServices(canadaData, displayLabel, country || '');
-                    // Add every Canada WhatsApp entry under USA label (no dedup — they may have different stock/price)
-                    canadaAll.filter(s => isWhatsApp(s.name)).forEach(s => {
+                    const canadaWa   = mapServices(canadaData, displayLabel, country || '')
+                                          .filter(s => isWhatsApp(s.name));
+
+                    // Drop the single cheapest USA WhatsApp to make room for the Canada replacement
+                    const usaWaList = services.filter(s => isWhatsApp(s.name));
+                    if (usaWaList.length > 0) {
+                        const lowestPrice = Math.min(...usaWaList.map(s => s.apiPrice));
+                        let dropped = false;
+                        services = services.filter(s => {
+                            if (!dropped && isWhatsApp(s.name) && s.apiPrice === lowestPrice) {
+                                dropped = true;
+                                return false;
+                            }
+                            return true;
+                        });
+                    }
+
+                    // Add Canada WhatsApp entries relabelled under USA
+                    canadaWa.forEach(s => {
                         services.push({ ...s, country: displayLabel, countryCode: country || '' });
                     });
                 }
@@ -859,7 +874,28 @@ document.getElementById('rent-form')?.addEventListener('submit', function() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-// ── SMS polling ────────────────────────────────────────────────────────────────
+// ── SMS ping sound ─────────────────────────────────────────────────────────────
+function playPing() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        // Two-tone chime: a high note then a slightly lower follow note
+        [[880, 0, 0.15], [1108, 0.18, 0.15]].forEach(([freq, start, dur]) => {
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0, ctx.currentTime + start);
+            gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + start + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+            osc.start(ctx.currentTime + start);
+            osc.stop(ctx.currentTime + start + dur + 0.05);
+        });
+    } catch(e) {}
+}
+
+// ── SMS polling ─────────────────────────────────────────────────────────────────
 let activeOrderIds = [{{ $activeOrders->pluck('id')->join(', ') }}];
 const countdownTimers = {}; // orderId → setInterval handle
 
@@ -912,6 +948,9 @@ async function checkSmsOnce(orderId, btn) {
             const statusEl   = document.getElementById('poll-status-' + orderId);
 
             if (data.sms_code && codeEl) {
+                // Only play sound + animate when the code is newly arriving (element was empty before)
+                const isNew = !codeEl.textContent.trim();
+
                 // Populate the code text
                 codeEl.textContent = data.sms_code;
 
@@ -919,10 +958,13 @@ async function checkSmsOnce(orderId, btn) {
                 if (waitEl)     waitEl.classList.add('hidden');
                 if (codeWrapEl) {
                     codeWrapEl.classList.remove('hidden');
-                    // Flash the box to draw attention
-                    codeWrapEl.style.transition = 'background-color 0.3s';
-                    codeWrapEl.style.backgroundColor = 'rgba(34,197,94,0.25)';
-                    setTimeout(() => { codeWrapEl.style.backgroundColor = ''; }, 1200);
+                    if (isNew) {
+                        // Flash the box green to draw attention
+                        codeWrapEl.style.transition = 'background-color 0.3s';
+                        codeWrapEl.style.backgroundColor = 'rgba(34,197,94,0.25)';
+                        setTimeout(() => { codeWrapEl.style.backgroundColor = ''; }, 1200);
+                        playPing();
+                    }
                 }
 
                 // Update status label
