@@ -198,22 +198,36 @@
                 </button>
             </div>
 
-            {{-- SMS Code --}}
-            <div class="bg-slate-900/80 border border-green-700/30 rounded-xl px-4 py-3 flex items-center gap-2">
-                <svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-                <div class="flex-1 min-w-0">
-                    <p class="text-[10px] text-slate-500 uppercase tracking-wider leading-none mb-1">SMS Code</p>
-                    <p id="sms-code-{{ $order->id }}" class="font-mono font-bold text-xl text-green-400 tracking-[0.2em] leading-tight">{{ $order->sms_code ?? '—' }}</p>
+            {{-- SMS Code — Waiting state (hidden once code arrives) --}}
+            <div id="sms-wait-{{ $order->id }}" class="{{ $order->sms_code ? 'hidden' : '' }} bg-slate-900/60 border border-slate-700/50 rounded-xl px-4 py-3.5 flex items-center gap-3">
+                <div class="flex gap-1 shrink-0">
+                    <span class="w-2 h-2 rounded-full bg-slate-600 animate-bounce" style="animation-delay:0s"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-600 animate-bounce" style="animation-delay:0.15s"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-600 animate-bounce" style="animation-delay:0.3s"></span>
                 </div>
-                <button onclick="copyText('sms-code-{{ $order->id }}', this)" class="p-1 rounded-lg text-slate-400 hover:text-green-400 transition-colors shrink-0">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <div>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-wider leading-none mb-0.5">SMS Code</p>
+                    <p class="text-sm text-slate-500">Waiting for SMS…</p>
+                </div>
+            </div>
+
+            {{-- SMS Code — Received state (hidden until code arrives) --}}
+            <div id="sms-code-wrap-{{ $order->id }}" class="{{ $order->sms_code ? '' : 'hidden' }} bg-green-950/60 border-2 border-green-500/50 rounded-xl px-4 py-3.5 flex items-center gap-3">
+                <svg class="w-5 h-5 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] text-green-400 uppercase tracking-wider leading-none mb-1 font-semibold">Code Received</p>
+                    <p id="sms-code-{{ $order->id }}" class="font-mono font-extrabold text-2xl text-green-300 tracking-[0.3em] leading-tight select-all">{{ $order->sms_code ?? '' }}</p>
+                </div>
+                <button onclick="copyText('sms-code-{{ $order->id }}', this)"
+                    class="p-2 rounded-xl bg-green-500/10 hover:bg-green-500/25 text-green-400 transition-colors shrink-0" title="Copy code">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 </button>
             </div>
 
             {{-- Status + cost --}}
             <div class="flex items-center justify-between text-xs">
-                <p id="poll-status-{{ $order->id }}" class="@if($order->status === 'received') text-green-400 @else text-slate-500 @endif">
-                    {{ $order->status === 'received' ? '✓ Code received!' : 'Waiting for SMS…' }}
+                <p id="poll-status-{{ $order->id }}" class="{{ $order->status === 'received' ? 'text-green-400' : 'text-slate-500' }}">
+                    {{ $order->status === 'received' ? '✓ Code received!' : 'Checking every 5 s…' }}
                 </p>
                 <span class="text-slate-600">₦{{ number_format($order->cost, 2) }} · {{ $order->created_at->diffForHumans() }}</span>
             </div>
@@ -892,17 +906,36 @@ async function checkSmsOnce(orderId, btn) {
         const res  = await fetch(`/dashboard/virtual-numbers/${orderId}/sms`, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
         const data = await res.json();
         if (data.success) {
-            const codeEl = document.getElementById('sms-code-' + orderId);
+            const codeEl     = document.getElementById('sms-code-' + orderId);
+            const waitEl     = document.getElementById('sms-wait-' + orderId);
+            const codeWrapEl = document.getElementById('sms-code-wrap-' + orderId);
+            const statusEl   = document.getElementById('poll-status-' + orderId);
+
             if (data.sms_code && codeEl) {
+                // Populate the code text
                 codeEl.textContent = data.sms_code;
-                codeEl.classList.add('animate-pulse');
-                setTimeout(() => codeEl.classList.remove('animate-pulse'), 3000);
+
+                // Swap visible states
+                if (waitEl)     waitEl.classList.add('hidden');
+                if (codeWrapEl) {
+                    codeWrapEl.classList.remove('hidden');
+                    // Flash the box to draw attention
+                    codeWrapEl.style.transition = 'background-color 0.3s';
+                    codeWrapEl.style.backgroundColor = 'rgba(34,197,94,0.25)';
+                    setTimeout(() => { codeWrapEl.style.backgroundColor = ''; }, 1200);
+                }
+
+                // Update status label
+                if (statusEl) {
+                    statusEl.textContent  = '✓ Code received!';
+                    statusEl.className    = 'text-green-400';
+                }
             }
+
             if (data.status === 'received' && data.sms_received_at) {
                 startCountdown(orderId, data.sms_received_at);
             }
             if (data.status === 'completed' || data.status === 'cancelled') {
-                // Remove from polling list so we stop hitting the API for this order
                 activeOrderIds = activeOrderIds.filter(id => id !== orderId);
                 dismissCard(orderId);
             }
