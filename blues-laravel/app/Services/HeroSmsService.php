@@ -362,17 +362,18 @@ class HeroSmsService
 
         // Known error strings
         $errors = [
-            'NO_NUMBERS'  => 'No numbers available for this service/country.',
-            'NO_BALANCE'  => 'This service is temporarily unavailable. Please try Server 2 or contact support.',
-            'BAD_SERVICE' => 'Invalid service selected.',
-            'BAD_COUNTRY' => 'Invalid country selected.',
-            'BAD_KEY'     => 'Service configuration error. Please contact support.',
+            'NO_NUMBERS'  => 'No numbers available for this service/country combination. Please try a different country.',
+            'NO_BALANCE'  => 'Server 1 account has insufficient balance. Please top up the Server 1 provider account.',
+            'BAD_SERVICE' => 'Invalid service selected. Please reload the page and try again.',
+            'BAD_COUNTRY' => 'Invalid country selected. Please reload the page and try again.',
+            'BAD_KEY'     => 'Server 1 API key is invalid. Please update it in Admin → Settings.',
         ];
 
         $p = $this->parsePlain($body);
         if (!$p['ok']) return ['success' => false, 'message' => $p['detail'] ?: ($errors[$p['code']] ?? $p['code'])];
 
         $code = $p['code'];
+        Log::warning('HeroSms orderNumber unexpected response: ' . $body);
         return ['success' => false, 'message' => $errors[$code] ?? ('Order failed: ' . $body)];
     }
 

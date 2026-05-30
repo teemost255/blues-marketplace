@@ -98,9 +98,13 @@ class VirtualNumberController extends Controller
                 return response()->json(['success' => false, 'message' => 'Server 1 is not available. Please contact support.']);
             }
             $usdToNgn = (float) Setting::get('usd_to_ngn_rate', '1500');
-            $data = Cache::remember($cacheKey, 300, function () use ($svc, $country, $usdToNgn) {
+            $errorMsg = null;
+            $data = Cache::remember($cacheKey, 300, function () use ($svc, $country, $usdToNgn, &$errorMsg) {
                 $result = $svc->getServices($country);
-                if (!$result['success']) return null;
+                if (!$result['success']) {
+                    $errorMsg = $result['message'] ?? 'Could not fetch services from Server 1.';
+                    return null;
+                }
                 return array_map(function ($s) use ($usdToNgn) {
                     $s['cost_ngn'] = round(($s['cost'] ?? 0) * $usdToNgn, 2);
                     return $s;
@@ -108,7 +112,7 @@ class VirtualNumberController extends Controller
             });
             if ($data === null) {
                 Cache::forget($cacheKey);
-                return response()->json(['success' => false, 'message' => 'Could not fetch services from Server 1.']);
+                return response()->json(['success' => false, 'message' => $errorMsg ?? 'Could not fetch services from Server 1.']);
             }
             return response()->json(['success' => true, 'data' => $data]);
         }
@@ -176,6 +180,7 @@ class VirtualNumberController extends Controller
 
         $result = $svc->orderNumber($request->country ?? '', $request->service_id);
         if (!$result['success']) {
+            \Illuminate\Support\Facades\Log::warning('HeroSMS order failed | user#' . auth()->id() . ' service=' . $request->service_id . ' country=' . ($request->country ?? '') . ' | ' . ($result['message'] ?? 'unknown'));
             return back()->with('error', $result['message']);
         }
 
