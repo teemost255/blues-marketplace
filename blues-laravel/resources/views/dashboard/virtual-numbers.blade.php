@@ -907,7 +907,7 @@ async function checkSmsOnce(orderId, btn) {
                 dismissCard(orderId);
             }
         }
-    } catch(e) {}
+    } catch(e) { console.warn('checkSmsOnce error for order', orderId, e); }
     finally { if (btn) { setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 3000); } }
 }
 
@@ -958,7 +958,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (defaultBtn) defaultBtn.classList.add(currentServer === '1' ? 'active-s1' : 'active-s2');
         loadCountries();
     }
-    @if(session('success') && $activeOrders->count())
+    @if($activeOrders->count())
     setTimeout(() => switchTab('active'), 300);
     @endif
 

@@ -432,7 +432,7 @@ class HeroSmsService
         // ── Plain-text response (standard SMS-Activate format) ────────────────
         // STATUS_OK:CODE123        → received (3)
         if (str_starts_with($body, 'STATUS_OK:')) {
-            $code = substr($body, 10);
+            $code = trim(substr($body, 10));
             return ['success' => true, 'data' => ['status' => 3, 'sms' => $code, 'status_raw' => $body]];
         }
 

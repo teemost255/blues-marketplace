@@ -1,0 +1,1 @@
+- [SMS-Activate setStatus=1 danger](sms-activate-status1.md) — calling setStatus=1 after getNumber resets HeroSMS activation; never call it in the order flow.

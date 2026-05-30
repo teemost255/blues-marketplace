@@ -209,12 +209,6 @@ class VirtualNumberController extends Controller
             }
         });
 
-        // Signal to Hero-SMS that we received the number and are ready for SMS.
-        // This is required by the SMS-Activate protocol — without it the OTP is never sent.
-        if ($externalId) {
-            $svc->readyForSms($externalId);
-        }
-
         ReferralService::markPurchased(auth()->user()->fresh());
         return back()->with('success', 'Virtual number ordered successfully! Check your active orders below.');
     }
@@ -273,6 +267,16 @@ class VirtualNumberController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
+        // Already in a final state — return current DB values without hitting the API
+        if (in_array($order->status, ['completed', 'cancelled'])) {
+            return response()->json([
+                'success'         => true,
+                'sms_code'        => $order->sms_code,
+                'status'          => $order->status,
+                'sms_received_at' => $order->sms_received_at?->toIso8601String(),
+            ]);
+        }
+
         if (!$order->external_order_id) {
             return response()->json(['success' => false, 'message' => 'No external order ID.']);
         }
@@ -289,10 +293,15 @@ class VirtualNumberController extends Controller
         $svc    = new HeroSmsService();
         $result = $svc->checkSms($order->external_order_id);
 
+        \Illuminate\Support\Facades\Log::info('checkSmsHero order#' . $order->id . ' result: ' . json_encode($result));
+
         if ($result['success']) {
             $data   = $result['data'];
-            $sms    = $data['sms'] ?? null;
+            $sms    = isset($data['sms']) ? trim((string) $data['sms']) : null;
             $status = $data['status'] ?? 1;
+
+            // Treat empty string as null
+            if ($sms === '') $sms = null;
 
             $newStatus = match($status) {
                 3 => 'received',
@@ -324,6 +333,7 @@ class VirtualNumberController extends Controller
             ]);
         }
 
+        \Illuminate\Support\Facades\Log::warning('checkSmsHero order#' . $order->id . ' failed: ' . ($result['message'] ?? 'unknown'));
         return response()->json(['success' => false, 'message' => $result['message']]);
     }
 
@@ -332,9 +342,13 @@ class VirtualNumberController extends Controller
         $svc    = new GrizzlySmsService();
         $result = $svc->checkSms($order->external_order_id);
 
+        \Illuminate\Support\Facades\Log::info('checkSmsGrizzly order#' . $order->id . ' result: ' . json_encode($result));
+
         if ($result['success']) {
             $data      = $result['data'];
-            $sms       = $data['sms'] ?? null;
+            $sms       = isset($data['sms']) ? trim((string) $data['sms']) : null;
+            if ($sms === '') $sms = null;
+
             $newStatus = match($data['status'] ?? 'pending') {
                 'received'  => 'received',
                 'cancelled' => 'cancelled',
@@ -372,6 +386,7 @@ class VirtualNumberController extends Controller
             ]);
         }
 
+        \Illuminate\Support\Facades\Log::warning('checkSmsGrizzly order#' . $order->id . ' failed: ' . ($result['message'] ?? 'unknown'));
         return response()->json(['success' => false, 'message' => $result['message']]);
     }
 
