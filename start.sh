@@ -3,31 +3,20 @@ set -e
 
 cd blues-laravel
 
-# Inject PostgreSQL connection from Replit environment into .env
-if [ -n "$DATABASE_URL" ]; then
-  # Parse DATABASE_URL: postgresql://user:password@host/dbname?params
-  DB_URL_STRIPPED="${DATABASE_URL#postgresql://}"
-  DB_URL_STRIPPED="${DB_URL_STRIPPED#postgres://}"
-  DB_USER=$(echo "$DB_URL_STRIPPED" | cut -d: -f1)
-  DB_PASS=$(echo "$DB_URL_STRIPPED" | cut -d: -f2 | cut -d@ -f1)
-  DB_HOST=$(echo "$DB_URL_STRIPPED" | cut -d@ -f2 | cut -d/ -f1 | cut -d: -f1)
-  DB_PORT_RAW=$(echo "$DB_URL_STRIPPED" | cut -d@ -f2 | cut -d/ -f1 | cut -s -d: -f2)
-  DB_PORT=${DB_PORT_RAW:-5432}
-  DB_NAME=$(echo "$DB_URL_STRIPPED" | cut -d/ -f2 | cut -d? -f1)
-
-  sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=pgsql|" .env
-  grep -q "^DB_HOST=" .env && sed -i "s|^DB_HOST=.*|DB_HOST=${DB_HOST}|" .env || echo "DB_HOST=${DB_HOST}" >> .env
-  grep -q "^DB_PORT=" .env && sed -i "s|^DB_PORT=.*|DB_PORT=${DB_PORT}|" .env || echo "DB_PORT=${DB_PORT}" >> .env
-  grep -q "^DB_DATABASE=" .env && sed -i "s|^DB_DATABASE=.*|DB_DATABASE=${DB_NAME}|" .env || echo "DB_DATABASE=${DB_NAME}" >> .env
-  grep -q "^DB_USERNAME=" .env && sed -i "s|^DB_USERNAME=.*|DB_USERNAME=${DB_USER}|" .env || echo "DB_USERNAME=${DB_USER}" >> .env
-  grep -q "^DB_PASSWORD=" .env && sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=${DB_PASS}|" .env || echo "DB_PASSWORD=${DB_PASS}" >> .env
-  # Remove DB_URL line if present to avoid conflict
-  sed -i "/^DB_URL=/d" .env
-fi
-
 # Inject the correct APP_URL from Replit domain
 if [ -n "$REPLIT_DEV_DOMAIN" ]; then
   grep -q "^APP_URL=" .env && sed -i "s|^APP_URL=.*|APP_URL=https://${REPLIT_DEV_DOMAIN}|" .env || echo "APP_URL=https://${REPLIT_DEV_DOMAIN}" >> .env
+fi
+
+# Inject PostgreSQL connection from Replit environment into .env
+if [ -n "$PGHOST" ]; then
+  sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=pgsql|" .env
+  grep -q "^DB_HOST=" .env && sed -i "s|^DB_HOST=.*|DB_HOST=${PGHOST}|" .env || echo "DB_HOST=${PGHOST}" >> .env
+  grep -q "^DB_PORT=" .env && sed -i "s|^DB_PORT=.*|DB_PORT=${PGPORT:-5432}|" .env || echo "DB_PORT=${PGPORT:-5432}" >> .env
+  grep -q "^DB_DATABASE=" .env && sed -i "s|^DB_DATABASE=.*|DB_DATABASE=${PGDATABASE}|" .env || echo "DB_DATABASE=${PGDATABASE}" >> .env
+  grep -q "^DB_USERNAME=" .env && sed -i "s|^DB_USERNAME=.*|DB_USERNAME=${PGUSER}|" .env || echo "DB_USERNAME=${PGUSER}" >> .env
+  grep -q "^DB_PASSWORD=" .env && sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=${PGPASSWORD}|" .env || echo "DB_PASSWORD=${PGPASSWORD}" >> .env
+  sed -i "/^DB_URL=/d" .env
 fi
 
 # Generate app key if not set
