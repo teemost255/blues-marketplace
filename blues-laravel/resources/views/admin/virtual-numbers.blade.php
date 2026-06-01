@@ -3,6 +3,113 @@
 @section('page-title', 'Virtual Number Orders')
 @section('content')
 
+{{-- Hero-SMS Diagnostic Tool --}}
+<div class="bg-slate-800 border border-slate-700 rounded-xl p-5 mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h2 class="text-sm font-semibold text-white">Hero-SMS Diagnostic</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Check what numbers are actually available for a country + service. Bypasses the UI cache.</p>
+        </div>
+        <span id="diag-balance" class="text-xs text-slate-400 cursor-pointer hover:text-sky-400" onclick="fetchBalance()">Check balance ↗</span>
+    </div>
+    <div class="flex flex-wrap gap-3 mb-4">
+        <div class="flex-1 min-w-40">
+            <label class="block text-xs text-slate-400 mb-1">Country ID <span class="text-slate-500">(numeric, from Hero-SMS)</span></label>
+            <input type="text" id="diag-country" placeholder="e.g. 2 for Canada, 187 for USA" class="w-full text-sm">
+        </div>
+        <div class="w-48">
+            <label class="block text-xs text-slate-400 mb-1">Service code</label>
+            <input type="text" id="diag-service" placeholder="e.g. wa, tg, fb" class="w-full text-sm">
+        </div>
+        <div class="flex items-end">
+            <button onclick="runDiag()" class="btn-primary text-sm px-5">Run Test</button>
+        </div>
+    </div>
+    <div id="diag-result" class="hidden">
+        <div class="border border-slate-600 rounded-lg overflow-hidden">
+            <div id="diag-summary" class="px-4 py-3 bg-slate-700/50 text-sm"></div>
+            <div id="diag-table-wrap" class="overflow-x-auto max-h-64"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function fetchBalance() {
+    const el = document.getElementById('diag-balance');
+    el.textContent = 'Loading…';
+    const r = await fetch('{{ route('admin.virtual-numbers.herosms-balance') }}');
+    const d = await r.json();
+    el.textContent = d.success ? 'Balance: $' + parseFloat(d.balance).toFixed(4) : (d.message || 'Error');
+}
+
+async function runDiag() {
+    const country = document.getElementById('diag-country').value.trim();
+    const service = document.getElementById('diag-service').value.trim();
+    const resultEl = document.getElementById('diag-result');
+    const summaryEl = document.getElementById('diag-summary');
+    const tableEl = document.getElementById('diag-table-wrap');
+
+    summaryEl.innerHTML = '<span class="text-slate-400">Querying Hero-SMS…</span>';
+    tableEl.innerHTML = '';
+    resultEl.classList.remove('hidden');
+
+    const params = new URLSearchParams();
+    if (country) params.set('country', country);
+    if (service) params.set('service', service);
+
+    const r = await fetch('{{ route('admin.virtual-numbers.herosms-diagnose') }}?' + params.toString());
+    const d = await r.json();
+
+    if (!d.success) {
+        summaryEl.innerHTML = '<span class="text-red-400">' + (d.message || 'Error') + '</span>';
+        return;
+    }
+
+    const target = d.target_service;
+    let summaryHtml = '<div class="flex flex-wrap gap-4">';
+    summaryHtml += '<span class="text-slate-300">Country: <strong class="text-white">' + escHtml(d.country_queried) + '</strong></span>';
+    summaryHtml += '<span class="text-slate-300">Service filter: <strong class="text-white">' + escHtml(d.service_queried) + '</strong></span>';
+    summaryHtml += '<span class="text-slate-300">Services found: <strong class="text-white">' + d.services_count + '</strong></span>';
+    if (d.service_queried !== '(all)') {
+        if (target) {
+            summaryHtml += '<span class="text-green-400 font-semibold">✓ &ldquo;' + escHtml(service) + '&rdquo; found — count: ' + target.count + ', cost: $' + target.cost + '</span>';
+        } else {
+            summaryHtml += '<span class="text-red-400 font-semibold">✗ &ldquo;' + escHtml(service) + '&rdquo; NOT in services list for this country</span>';
+        }
+    }
+    if (!d.services_success) {
+        summaryHtml += '<span class="text-red-400">API error: ' + escHtml(d.services_message || '') + '</span>';
+    }
+    summaryHtml += '</div>';
+    summaryEl.innerHTML = summaryHtml;
+
+    if (d.services_list && d.services_list.length > 0) {
+        let rows = d.services_list.map(s => {
+            const hi = (service && s.serviceId === service) ? ' bg-green-900/30' : '';
+            return `<tr class="border-b border-slate-700/40 hover:bg-slate-700/20${hi}">
+                <td class="px-4 py-2 font-mono text-sky-300 text-xs">${escHtml(s.serviceId)}</td>
+                <td class="px-4 py-2 text-white text-xs">${escHtml(s.name)}</td>
+                <td class="px-4 py-2 text-slate-300 text-xs">${s.count}</td>
+                <td class="px-4 py-2 text-slate-300 text-xs">$${s.cost}</td>
+            </tr>`;
+        }).join('');
+        tableEl.innerHTML = `<table class="w-full text-sm">
+            <thead><tr class="bg-slate-800 text-xs text-slate-400 uppercase">
+                <th class="px-4 py-2 text-left">Code</th>
+                <th class="px-4 py-2 text-left">Name</th>
+                <th class="px-4 py-2 text-left">Count</th>
+                <th class="px-4 py-2 text-left">Cost (USD)</th>
+            </tr></thead><tbody>${rows}</tbody></table>`;
+    } else if (d.services_success) {
+        tableEl.innerHTML = '<p class="px-4 py-3 text-slate-500 text-sm">No services with count &gt; 0 returned for this country.</p>';
+    }
+}
+
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+
 {{-- Stats --}}
 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
     @foreach([

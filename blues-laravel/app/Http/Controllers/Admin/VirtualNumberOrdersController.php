@@ -70,6 +70,46 @@ class VirtualNumberOrdersController extends Controller
         return response()->json(['success' => false, 'message' => $result['message'] ?? 'Could not fetch balance.']);
     }
 
+    /**
+     * Diagnostic: test what Hero-SMS returns for a given country+service combination.
+     * Shows raw API response so admin can debug "No numbers available" issues.
+     */
+    public function heroSmsDiagnose(\Illuminate\Http\Request $request)
+    {
+        $svc = new HeroSmsService();
+        if (!$svc->isConfigured()) {
+            return response()->json(['success' => false, 'message' => 'HeroSMS API not configured.']);
+        }
+
+        $country = trim($request->input('country', ''));
+        $service = trim($request->input('service', ''));
+
+        // Step 1: fetch services list for this country
+        $servicesResult = $svc->getServices($country ?: null);
+
+        // Step 2: if service given, check if it appears in the list
+        $serviceInList = null;
+        if ($service && $servicesResult['success']) {
+            foreach ($servicesResult['data'] as $s) {
+                if ($s['serviceId'] === $service) {
+                    $serviceInList = $s;
+                    break;
+                }
+            }
+        }
+
+        return response()->json([
+            'success'          => true,
+            'country_queried'  => $country ?: '(all)',
+            'service_queried'  => $service ?: '(all)',
+            'services_success' => $servicesResult['success'],
+            'services_message' => $servicesResult['message'] ?? null,
+            'services_count'   => $servicesResult['success'] ? count($servicesResult['data']) : 0,
+            'services_list'    => $servicesResult['success'] ? $servicesResult['data'] : [],
+            'target_service'   => $serviceInList,
+        ]);
+    }
+
     public function exportCsv(Request $request)
     {
         $query = VirtualNumberOrder::with('user');

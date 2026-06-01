@@ -136,9 +136,13 @@ class VirtualNumberController extends Controller
             return back()->with('error', 'Virtual number service is currently unavailable. Please try again later.');
         }
 
-        $result = $svc->orderNumber($request->country ?? '', $request->service_id);
+        $orderCountry = $request->country ?? '';
+        $orderService = $request->service_id;
+        \Illuminate\Support\Facades\Log::info('HeroSMS order attempt | user#' . auth()->id() . ' service=' . $orderService . ' country=' . $orderCountry);
+
+        $result = $svc->orderNumber($orderCountry, $orderService);
         if (!$result['success']) {
-            \Illuminate\Support\Facades\Log::warning('HeroSMS order failed | user#' . auth()->id() . ' service=' . $request->service_id . ' country=' . ($request->country ?? '') . ' | ' . ($result['message'] ?? 'unknown'));
+            \Illuminate\Support\Facades\Log::warning('HeroSMS order failed | user#' . auth()->id() . ' service=' . $orderService . ' country=' . $orderCountry . ' | ' . ($result['message'] ?? 'unknown'));
             return back()->with('error', $result['message']);
         }
 

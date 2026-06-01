@@ -165,12 +165,18 @@ class HeroSmsService
         $flat = [];
 
         if ($hasCountry) {
-            // Format: {"country_id": {"service": {"count":N, "cost":X.XX}}}
-            // Unwrap the country wrapper (first/only key is the country ID)
-            $serviceMap = reset($json);
-            if (!is_array($serviceMap)) {
+            // Hero-SMS may return one of two formats for country-specific requests:
+            //   Format A (direct):  {"service": {"count":N, "cost":X.XX}, ...}
+            //   Format B (wrapped): {"country_id": {"service": {"count":N, "cost":X.XX}, ...}}
+            //
+            // Detect by inspecting the first value:
+            //   - If first value has a 'count' key → Format A (direct service map)
+            //   - Otherwise → Format B (country wrapper, unwrap first)
+            $firstValue = reset($json);
+            if (!is_array($firstValue)) {
                 return ['success' => false, 'message' => 'Unexpected services format.'];
             }
+            $serviceMap = isset($firstValue['count']) ? $json : $firstValue;
             foreach ($serviceMap as $code => $info) {
                 if (is_array($info) && isset($info['count'])) {
                     $flat[$code] = [
