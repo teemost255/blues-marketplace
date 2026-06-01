@@ -595,7 +595,7 @@ async function loadServices() {
                 const canadaCode = findCountryCodeByPredicate(isCanada);
                 if (canadaCode && canadaCode !== country) {
                     const canadaData = await fetchForCode(canadaCode);
-                    const canadaWa   = mapServices(canadaData, displayLabel, country || '')
+                    const canadaWa   = mapServices(canadaData, displayLabel, canadaCode)
                                           .filter(s => isWhatsApp(s.name));
 
                     // Drop the single cheapest USA WhatsApp to make room for the Canada replacement
