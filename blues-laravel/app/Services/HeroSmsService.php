@@ -451,6 +451,44 @@ class HeroSmsService
     }
 
     /**
+     * Request a new / re-send SMS code for an existing active order (setStatus=3).
+     * Use when the user applied the number to the wrong service or the first
+     * OTP expired without being used.
+     * Returns ['success'=>true] or ['success'=>false, 'message'=>'...'].
+     */
+    public function requestResend(string $orderId): array
+    {
+        $r = $this->call(['action' => 'setStatus', 'id' => $orderId, 'status' => 3]);
+        if (!$r['success']) return $r;
+
+        $body = $r['body'];
+
+        // Expected success responses
+        if (str_starts_with($body, 'ACCESS_RETRY_GET') || str_starts_with($body, 'ACCESS_ACTIVATION')) {
+            return ['success' => true];
+        }
+
+        // Some providers just echo OK or the same activation token
+        if (in_array($body, ['OK', 'ACCESS_OK'])) {
+            return ['success' => true];
+        }
+
+        $p = $this->parsePlain($body);
+
+        if ($p['ok'] && in_array($p['code'], ['ACCESS_RETRY_GET', 'ACCESS_ACTIVATION', 'OK', 'ACCESS_OK'])) {
+            return ['success' => true];
+        }
+
+        if (!$p['ok']) {
+            return ['success' => false, 'message' => $p['detail'] ?: $p['code']];
+        }
+
+        // Unexpected but non-fatal — treat as success so the UI can still poll
+        Log::warning('HeroSms requestResend unexpected response for ' . $orderId . ': ' . $body);
+        return ['success' => true];
+    }
+
+    /**
      * Signal readiness to receive SMS (setStatus=1).
      * MUST be called immediately after orderNumber() — Hero-SMS will not send the
      * OTP until this activation signal is received.

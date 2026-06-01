@@ -125,6 +125,7 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::get('/virtual-numbers/api/services',     [VirtualNumberController::class, 'getServices'])->name('virtual-numbers.services');
     Route::post('/virtual-numbers/order',           [VirtualNumberController::class, 'order'])->name('virtual-numbers.order');
     Route::get('/virtual-numbers/{id}/sms',         [VirtualNumberController::class, 'checkSms'])->name('virtual-numbers.sms');
+    Route::post('/virtual-numbers/{id}/resend',     [VirtualNumberController::class, 'resend'])->name('virtual-numbers.resend');
     Route::delete('/virtual-numbers/{id}/cancel',   [VirtualNumberController::class, 'cancel'])->name('virtual-numbers.cancel');
 });
 

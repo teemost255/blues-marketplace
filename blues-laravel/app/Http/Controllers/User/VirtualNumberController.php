@@ -182,6 +182,35 @@ class VirtualNumberController extends Controller
         return back()->with('success', 'Virtual number ordered! Check your active orders below.');
     }
 
+    // ── Resend / Request new code ─────────────────────────────────────────────
+
+    public function resend(string $orderId)
+    {
+        $order = VirtualNumberOrder::where('id', $orderId)
+            ->where('user_id', auth()->id())
+            ->whereIn('status', ['active', 'received'])
+            ->firstOrFail();
+
+        if (!$order->external_order_id) {
+            return response()->json(['success' => false, 'message' => 'No external order ID found.']);
+        }
+
+        $svc    = new HeroSmsService();
+        $result = $svc->requestResend($order->external_order_id);
+
+        if ($result['success']) {
+            // Reset the SMS code and status back to active so the UI starts waiting again
+            $order->update([
+                'sms_code'        => null,
+                'status'          => 'active',
+                'sms_received_at' => null,
+            ]);
+            return response()->json(['success' => true, 'message' => 'New code requested. Waiting for SMS…']);
+        }
+
+        return response()->json(['success' => false, 'message' => $result['message'] ?? 'Could not request a new code. Please try again.']);
+    }
+
     // ── Check SMS ─────────────────────────────────────────────────────────────
 
     public function checkSms(string $orderId)
