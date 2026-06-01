@@ -390,17 +390,13 @@
 .rent-btn:active { transform: scale(0.97); }
 .popular-chip { transition: all 0.15s; }
 .popular-chip.active { background: rgba(14,165,233,0.15); border-color: rgba(14,165,233,0.5); color: #38bdf8; }
-.srv-btn { background: rgba(51,65,85,0.4); border-color: rgba(100,116,139,0.4); color: #94a3b8; }
-.srv-btn.active-s1 { background: rgba(126,34,206,0.2); border-color: rgba(167,139,250,0.5); color: #c4b5fd; }
-.srv-btn.active-s2 { background: rgba(22,163,74,0.15); border-color: rgba(74,222,128,0.4); color: #86efac; }
 </style>
 
 <script>
 const COUNTRIES_URL     = '/dashboard/virtual-numbers/api/countries';
 const SERVICES_URL      = '/dashboard/virtual-numbers/api/services';
-const HERO_CONFIGURED   = {{ $heroSmsConfigured ? 'true' : 'false' }};
-let currentServer    = '1';
-let currentProvider  = 'herosms';
+const currentServer   = '1';
+const currentProvider = 'herosms';
 const USD_TO_NGN     = {{ $usdToNgn }};
 let allServices      = [];
 let walletBalance    = {{ $wallet->balance }};

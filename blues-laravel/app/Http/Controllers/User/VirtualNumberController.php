@@ -72,13 +72,13 @@ class VirtualNumberController extends Controller
     public function getServices(Request $request)
     {
         $country  = (string) $request->get('country', '');
-        $cacheKey = 'vn.services.1.' . md5($country);
 
         $svc = new HeroSmsService();
         if (!$svc->isConfigured()) {
             return response()->json(['success' => false, 'message' => 'Virtual number service is not available. Please contact support.']);
         }
         $usdToNgn = (float) Setting::get('usd_to_ngn_rate', '1600');
+        $cacheKey = 'vn.services.1.' . md5($country . '_' . $usdToNgn);
         $errorMsg = null;
         $data = Cache::remember($cacheKey, 300, function () use ($svc, $country, $usdToNgn, &$errorMsg) {
             $result = $svc->getServices($country);
@@ -172,8 +172,14 @@ class VirtualNumberController extends Controller
             }
         });
 
+        // Signal Hero-SMS that we are ready to receive SMS.
+        // This MUST happen after getNumber or Hero-SMS will never deliver the OTP.
+        if ($externalId) {
+            $svc->readyForSms($externalId);
+        }
+
         ReferralService::markPurchased(auth()->user()->fresh());
-        return back()->with('success', 'Virtual number ordered successfully! Check your active orders below.');
+        return back()->with('success', 'Virtual number ordered! Check your active orders below.');
     }
 
     // ── Check SMS ─────────────────────────────────────────────────────────────

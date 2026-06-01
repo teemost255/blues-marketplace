@@ -6,8 +6,14 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Hero-SMS API (sms-activate compatible style)
+ * Hero-SMS API (sms-activate compatible)
  * Endpoint: https://hero-sms.com/stubs/handler_api.php
+ *
+ * Flow for receiving an SMS code:
+ *  1. getNumber(country, service)  → order_id + phone_number
+ *  2. readyForSms(order_id)        → setStatus=1, activates SMS delivery
+ *  3. checkSms(order_id)           → polls getStatus until STATUS_OK:code
+ *  4. cancelOrder(order_id)        → setStatus=8 (if no code needed)
  */
 class HeroSmsService
 {
@@ -34,7 +40,7 @@ class HeroSmsService
             'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
             'Accept'          => 'application/json, text/plain, */*',
             'Accept-Language' => 'en-US,en;q=0.9',
-        ])->timeout(20);
+        ])->timeout(25);
     }
 
     private function call(array $params): array
@@ -61,16 +67,12 @@ class HeroSmsService
     /** Parse a plain-text sms-activate style response, e.g. ACCESS_NUMBER:id:phone */
     private function parsePlain(string $body): array
     {
-        // JSON error response: {"title":"BAD_KEY","details":"..."}
         if (str_starts_with($body, '{') || str_starts_with($body, '[')) {
             $json = json_decode($body, true);
-            if (is_array($json)) {
-                if (isset($json['title']) && $json['title'] !== 'OK') {
-                    return ['ok' => false, 'code' => $json['title'], 'detail' => $json['details'] ?? ''];
-                }
+            if (is_array($json) && isset($json['title']) && $json['title'] !== 'OK') {
+                return ['ok' => false, 'code' => $json['title'], 'detail' => $json['details'] ?? ''];
             }
         }
-
         $parts = explode(':', $body, 3);
         return ['ok' => true, 'code' => $parts[0], 'parts' => $parts];
     }
@@ -84,7 +86,6 @@ class HeroSmsService
         if (!$r['success']) return $r;
 
         $body = $r['body'];
-        // Successful: "ACCESS_BALANCE:12.34"
         if (str_starts_with($body, 'ACCESS_BALANCE:')) {
             return ['success' => true, 'data' => ['balance' => (float) substr($body, 15)]];
         }
@@ -98,12 +99,11 @@ class HeroSmsService
     }
 
     /**
-     * Returns list of countries as array of ['id'=>N, 'name'=>'Country'].
-     * This endpoint is public — no auth required.
+     * Returns list of countries as array of ['code'=>'N', 'name'=>'Country', 'iso'=>'xx'].
+     * This endpoint is public — no api_key needed.
      */
     public function getCountries(): array
     {
-        // Public endpoint — omit api_key to avoid bad-key errors on unconfigured keys
         try {
             $response = $this->client()->get($this->baseUrl, ['action' => 'getCountries']);
             $body = trim($response->body());
@@ -116,11 +116,10 @@ class HeroSmsService
             return ['success' => false, 'message' => 'Unexpected countries response.'];
         }
 
-        // Convert {"1":{"id":1,"eng":"Ukraine","iso":"ua",...},...} → flat array
-        // Must return 'code' key (string) so the frontend country selector works correctly.
         $countries = [];
         foreach ($json as $item) {
-            if (!isset($item['id']) || !($item['visible'] ?? 1)) continue;
+            if (!isset($item['id'])) continue;
+            if (isset($item['visible']) && !$item['visible']) continue;
             $countries[] = [
                 'code' => (string) $item['id'],
                 'name' => $item['eng'] ?? $item['rus'] ?? 'Country ' . $item['id'],
@@ -134,13 +133,17 @@ class HeroSmsService
     }
 
     /**
-     * Returns services available for a given country with pricing.
-     * Response: {"service_name":{"count":N,"cost":X.XX},...}
+     * Returns services available for a given country (or all countries) with pricing.
+     *
+     * Hero-SMS getPrices response formats:
+     *   With country:    {"country_id": {"service": {"count":N, "cost":X.XX}, ...}}
+     *   Without country: {"service": {"country_id": {"count":N, "cost":X.XX}, ...}, ...}
      */
     public function getServices(?string $country = null): array
     {
+        $hasCountry = ($country !== null && $country !== '');
         $params = ['action' => 'getPrices'];
-        if ($country !== null && $country !== '') {
+        if ($hasCountry) {
             $params['country'] = $country;
         }
 
@@ -154,32 +157,65 @@ class HeroSmsService
             return ['success' => false, 'message' => 'Unexpected services response.'];
         }
 
-        // If error JSON
         if (isset($json['title'])) {
             return ['success' => false, 'message' => $json['details'] ?? $json['title']];
         }
 
-        // When a country is specified, Hero-SMS wraps response as:
-        // {"countryId": {"service": {"count":N,"cost":X.XX,"physicalCount":N}, ...}}
-        // When no country, it's: {"service": {"countryId": {"count":N,...}, ...}}
-        // Detect the wrapped format by checking if the first value is itself a map of maps.
-        $firstValue = reset($json);
-        if (is_array($firstValue) && !isset($firstValue['count']) && !isset($firstValue['cost'])) {
-            // Unwrap one level — use the first (and usually only) country block
-            $json = $firstValue;
+        // Build a flat map: service_code => ['count' => N, 'cost' => X.XX]
+        $flat = [];
+
+        if ($hasCountry) {
+            // Format: {"country_id": {"service": {"count":N, "cost":X.XX}}}
+            // Unwrap the country wrapper (first/only key is the country ID)
+            $serviceMap = reset($json);
+            if (!is_array($serviceMap)) {
+                return ['success' => false, 'message' => 'Unexpected services format.'];
+            }
+            foreach ($serviceMap as $code => $info) {
+                if (is_array($info) && isset($info['count'])) {
+                    $flat[$code] = [
+                        'count' => (int)($info['count'] ?? 0),
+                        'cost'  => (float)($info['cost'] ?? 0),
+                    ];
+                }
+            }
+        } else {
+            // Format: {"service": {"country_id": {"count":N, "cost":X.XX}, ...}, ...}
+            // Flatten: sum counts across countries, take minimum cost
+            foreach ($json as $code => $countryMap) {
+                if (!is_array($countryMap)) continue;
+                // If the value directly has count/cost it's a single-level response — handle it
+                if (isset($countryMap['count'])) {
+                    $flat[$code] = [
+                        'count' => (int)($countryMap['count'] ?? 0),
+                        'cost'  => (float)($countryMap['cost'] ?? 0),
+                    ];
+                    continue;
+                }
+                $totalCount = 0;
+                $minCost    = null;
+                foreach ($countryMap as $countryData) {
+                    if (!is_array($countryData) || !isset($countryData['count'])) continue;
+                    $totalCount += (int)($countryData['count'] ?? 0);
+                    $cost = (float)($countryData['cost'] ?? 0);
+                    if ($minCost === null || $cost < $minCost) $minCost = $cost;
+                }
+                if ($totalCount > 0) {
+                    $flat[$code] = ['count' => $totalCount, 'cost' => $minCost ?? 0];
+                }
+            }
         }
 
-        // Convert to array of service objects
+        // Build output array with resolved names
         $services = [];
-        foreach ($json as $code => $info) {
-            if (is_array($info) && isset($info['count']) && (int)($info['count']) > 0) {
-                $services[] = [
-                    'serviceId' => $code,
-                    'name'      => self::resolveServiceName($code),
-                    'count'     => (int) $info['count'],
-                    'cost'      => (float) ($info['cost'] ?? 0),
-                ];
-            }
+        foreach ($flat as $code => $info) {
+            if ((int)($info['count'] ?? 0) <= 0) continue;
+            $services[] = [
+                'serviceId' => (string) $code,
+                'name'      => self::resolveServiceName((string) $code),
+                'count'     => (int) $info['count'],
+                'cost'      => (float) $info['cost'],
+            ];
         }
 
         usort($services, fn($a, $b) => strcmp($a['name'], $b['name']));
@@ -196,6 +232,7 @@ class HeroSmsService
         static $map = [
             // ── Messaging & Social ──────────────────────────────────
             'wa'        => 'WhatsApp',
+            'wb'        => 'WhatsApp Business',
             'tg'        => 'Telegram',
             'vi'        => 'Viber',
             'fb'        => 'Facebook',
@@ -222,11 +259,16 @@ class HeroSmsService
             'ok'        => 'Odnoklassniki',
             'mm'        => 'MoMo',
             'tm'        => 'Teams',
-            'ws'        => 'WeChat (alt)',
             'fc'        => 'Facebook Creator',
             'me'        => 'Messenger',
             'bl'        => 'Bigo Live',
             'lk'        => 'Likee',
+            'ts'        => 'Threads',
+            'cl2'       => 'Clubhouse',
+            'imo'       => 'IMO',
+            'hk'        => 'Hike',
+            'kw'        => 'Kwai',
+            'we'        => 'WeChat (alt)',
 
             // ── Google / Microsoft / Apple ───────────────────────────
             'go'        => 'Google',
@@ -250,17 +292,22 @@ class HeroSmsService
             'sh'        => 'Shopee',
             'oz'        => 'OLX',
             'av'        => 'Avito',
-            'wb'        => 'Wildberries',
             'oz2'       => 'Ozon',
             'lm'        => 'Lazada',
             'fl'        => 'Flipkart',
+            'wbx'       => 'Wildberries',
+            'jd'        => 'JD.com',
+            'tm2'       => 'Taobao',
+            'ml'        => 'Mercadolibre',
 
             // ── Food / Grocery ───────────────────────────────────────
             'dd'        => 'DoorDash',
             'ue'        => 'Uber Eats',
             'gr'        => 'Grubhub',
+            'if'        => 'ifood',
+            'yk'        => 'Yandex Food',
 
-            // ── Finance / Crypto ─────────────────────────────────────
+            // ── Finance / Crypto / Banking ───────────────────────────
             'pp'        => 'PayPal',
             'bn'        => 'Binance',
             'cb'        => 'Coinbase',
@@ -285,6 +332,11 @@ class HeroSmsService
             'rvt'       => 'Revolut',
             'nf'        => 'Neteller',
             'sk2'       => 'Skrill',
+            'tr'        => 'Trust Wallet',
+            'mm2'       => 'MetaMask',
+            'ph'        => 'PhonePe',
+            'gp'        => 'Google Pay',
+            'ap2'       => 'Apple Pay',
 
             // ── Streaming / Entertainment ────────────────────────────
             'nf2'       => 'Netflix',
@@ -296,6 +348,8 @@ class HeroSmsService
             'pv'        => 'Prime Video',
             'an'        => 'Apple TV+',
             'dt'        => 'DAZN',
+            'cr'        => 'Crunchyroll',
+            'pw'        => 'Peacock',
 
             // ── Gaming ───────────────────────────────────────────────
             'st'        => 'Steam',
@@ -306,13 +360,19 @@ class HeroSmsService
             'rg'        => 'Riot Games',
             'nv'        => 'NVIDIA',
             'gog'       => 'GOG',
+            'ps'        => 'PlayStation',
+            'xb'        => 'Xbox',
+            'nx'        => 'Nintendo',
+            'ro'        => 'Roblox',
+            'mo'        => 'Mobile Legends',
+            'px'        => 'Playrix',
 
             // ── Dating ───────────────────────────────────────────────
             'ti'        => 'Tinder',
             'bm'        => 'Bumble',
             'hg'        => 'Hinge',
             'ba'        => 'Badoo',
-            'ml'        => 'MeetMe',
+            'ml2'       => 'MeetMe',
 
             // ── Travel / Accommodation ───────────────────────────────
             'ab'        => 'Airbnb',
@@ -320,7 +380,7 @@ class HeroSmsService
             'ex'        => 'Expedia',
             'tz'        => 'Trivago',
 
-            // ── Other Tech / AI ──────────────────────────────────────
+            // ── Other Tech / AI / Productivity ──────────────────────
             'ch'        => 'ChatGPT / OpenAI',
             'cl'        => 'Claude / Anthropic',
             'gi'        => 'GitHub',
@@ -330,10 +390,24 @@ class HeroSmsService
             'nk'        => 'Nike',
             'ad'        => 'Adobe',
             'yax'       => 'Yandex',
+            'ya'        => 'Yandex',
+            'nw'        => 'Yahoo',
+            'ao'        => 'AOL',
+            'cf'        => 'Cloudflare',
+            'tw2'       => 'Twilio',
+            'nu'        => 'Nubank',
+            'gg'        => 'GrabFood',
+            'gx'        => 'Gojek',
+            'ri'        => 'Rappi',
+            'po'        => 'Postmates',
+            'su'        => 'Swiggy',
+            'zo2'       => 'Zomato',
+            'ola'       => 'Ola',
+            'zx'        => 'Lazada (alt)',
         ];
 
         $lower = strtolower(trim($code));
-        return $map[$lower] ?? ucfirst($code);
+        return $map[$lower] ?? strtoupper($code);
     }
 
     /**
@@ -360,45 +434,48 @@ class HeroSmsService
             ]];
         }
 
-        // Known error strings
         $errors = [
-            'NO_NUMBERS'  => 'No numbers available for this service/country combination. Please try a different country.',
-            'NO_BALANCE'  => 'Server 1 account has insufficient balance. Please top up the Server 1 provider account.',
-            'BAD_SERVICE' => 'Invalid service selected. Please reload the page and try again.',
-            'BAD_COUNTRY' => 'Invalid country selected. Please reload the page and try again.',
-            'BAD_KEY'     => 'Server 1 API key is invalid. Please update it in Admin → Settings.',
+            'NO_NUMBERS'  => 'No numbers available for this service/country. Please try a different country.',
+            'NO_BALANCE'  => 'Insufficient API account balance. Please top up the HeroSMS account.',
+            'BAD_SERVICE' => 'Invalid service code. Please refresh the page and try again.',
+            'BAD_COUNTRY' => 'Invalid country selected. Please refresh the page and try again.',
+            'BAD_KEY'     => 'HeroSMS API key is invalid. Please update it in Admin → Settings.',
         ];
 
-        $p = $this->parsePlain($body);
-        if (!$p['ok']) return ['success' => false, 'message' => $p['detail'] ?: ($errors[$p['code']] ?? $p['code'])];
+        $p    = $this->parsePlain($body);
+        $code = $p['ok'] ? $p['code'] : ($p['code'] ?? 'UNKNOWN');
+        if (!$p['ok']) return ['success' => false, 'message' => $p['detail'] ?: ($errors[$code] ?? $code)];
 
-        $code = $p['code'];
-        Log::warning('HeroSms orderNumber unexpected response: ' . $body);
-        return ['success' => false, 'message' => $errors[$code] ?? ('Order failed: ' . $body)];
+        Log::warning('HeroSms orderNumber unexpected: ' . $body);
+        return ['success' => false, 'message' => $errors[$code] ?? 'Order failed: ' . $body];
     }
 
     /**
-     * Signal to Hero-SMS that the number has been received and is ready for SMS.
-     * Must be called immediately after getNumber — without this, Hero-SMS never
-     * triggers the activation and the OTP is never sent.
+     * Signal readiness to receive SMS (setStatus=1).
+     * MUST be called immediately after orderNumber() — Hero-SMS will not send the
+     * OTP until this activation signal is received.
      */
     public function readyForSms(string $orderId): void
     {
         try {
             $r = $this->call(['action' => 'setStatus', 'id' => $orderId, 'status' => 1]);
-            Log::info('HeroSms readyForSms [' . $orderId . '] response: ' . ($r['body'] ?? 'error'));
+            Log::info('HeroSms readyForSms [' . $orderId . '] → ' . ($r['body'] ?? 'error'));
         } catch (\Exception $e) {
-            Log::warning('HeroSms readyForSms failed for order ' . $orderId . ': ' . $e->getMessage());
+            Log::warning('HeroSms readyForSms failed for ' . $orderId . ': ' . $e->getMessage());
         }
     }
 
     /**
      * Check SMS status for an order.
-     * Returns ['success'=>true,'data'=>['status_raw'=>'...','sms'=>'...','status'=>1|3|6]]
      *
-     * Hero-SMS may respond with plain text (SMS-Activate style) OR JSON.
-     * Plain text:  STATUS_WAIT_CODE | STATUS_OK:123456 | STATUS_CANCEL
-     * JSON:        {"status":3,"code":"123456"} or {"ok":true,"sms":"123456"}
+     * Possible plain-text responses:
+     *   STATUS_WAIT_CODE          → waiting (1)
+     *   STATUS_OK:123456          → code received (3)
+     *   STATUS_CANCEL             → cancelled (6)
+     *
+     * Possible JSON responses:
+     *   {"status":3,"code":"123456"}
+     *   {"title":"BAD_KEY","details":"..."}
      */
     public function checkSms(string $orderId): array
     {
@@ -407,16 +484,14 @@ class HeroSmsService
 
         $body = $r['body'];
 
-        // ── JSON response ────────────────────────────────────────────────────
+        // ── JSON response ──────────────────────────────────────────────────────
         if (str_starts_with($body, '{') || str_starts_with($body, '[')) {
             $json = json_decode($body, true);
             if (is_array($json)) {
-                // Error JSON: {"title":"BAD_KEY","details":"..."}
                 if (isset($json['title']) && $json['title'] !== 'OK') {
                     return ['success' => false, 'message' => $json['details'] ?? $json['title']];
                 }
-                // Code present in JSON
-                $smsCode = $json['sms'] ?? $json['code'] ?? $json['text'] ?? null;
+                $smsCode   = $json['sms'] ?? $json['code'] ?? $json['text'] ?? null;
                 $rawStatus = $json['status'] ?? $json['statusCode'] ?? null;
 
                 if ($smsCode) {
@@ -425,24 +500,21 @@ class HeroSmsService
                 if ($rawStatus === 6 || $rawStatus === 'STATUS_CANCEL') {
                     return ['success' => true, 'data' => ['status' => 6, 'sms' => null, 'status_raw' => $body]];
                 }
-                // Any other JSON = still waiting
                 return ['success' => true, 'data' => ['status' => 1, 'sms' => null, 'status_raw' => $body]];
             }
         }
 
-        // ── Plain-text response (standard SMS-Activate format) ────────────────
-        // STATUS_OK:CODE123        → received (3)
+        // ── Plain-text response ────────────────────────────────────────────────
         if (str_starts_with($body, 'STATUS_OK:')) {
             $code = trim(substr($body, 10));
             return ['success' => true, 'data' => ['status' => 3, 'sms' => $code, 'status_raw' => $body]];
         }
 
-        // STATUS_CANCEL            → cancelled (6)
         if (str_starts_with($body, 'STATUS_CANCEL')) {
             return ['success' => true, 'data' => ['status' => 6, 'sms' => null, 'status_raw' => $body]];
         }
 
-        // STATUS_WAIT_CODE / STATUS_WAIT_RESEND / STATUS_WAIT_RETRY → pending (1)
+        // STATUS_WAIT_CODE / STATUS_WAIT_RESEND / STATUS_WAIT_RETRY
         if (str_starts_with($body, 'STATUS_WAIT') || str_starts_with($body, 'STATUS_WAIT_RETRY')) {
             return ['success' => true, 'data' => ['status' => 1, 'sms' => null, 'status_raw' => $body]];
         }
@@ -454,17 +526,16 @@ class HeroSmsService
     }
 
     /**
-     * Cancel an order (setStatus with status=8).
-     * HTTP 409 means the order is already in a final state — treat as success.
+     * Cancel an order (setStatus=8).
+     * HTTP 409 = already in a final state — treat as success.
      */
     public function cancelOrder(string $orderId): array
     {
         $r = $this->call(['action' => 'setStatus', 'id' => $orderId, 'status' => 8]);
 
-        // 409 Conflict = order already used/cancelled on the provider side — safe to mark cancelled locally
         if (!$r['success']) {
             if (($r['http_status'] ?? 0) === 409) {
-                Log::info('HeroSms cancelOrder: HTTP 409 for order ' . $orderId . ' (already in final state, treating as success)');
+                Log::info('HeroSms cancelOrder: HTTP 409 for ' . $orderId . ' (already final)');
                 return ['success' => true, 'data' => []];
             }
             return $r;
@@ -472,14 +543,12 @@ class HeroSmsService
 
         $body = $r['body'];
 
-        // Standard success responses
         if (str_starts_with($body, 'ACCESS_CANCEL') || str_starts_with($body, 'STATUS_CANCEL')) {
             return ['success' => true, 'data' => []];
         }
 
         $p = $this->parsePlain($body);
 
-        // "Already cancelled / completed" codes → treat as success
         if ($p['ok'] && in_array($p['code'], ['STATUS_CANCEL', 'ACCESS_CANCEL', 'STATUS_OK', 'ALREADY_CANCELLED'])) {
             return ['success' => true, 'data' => []];
         }
@@ -488,8 +557,7 @@ class HeroSmsService
             return ['success' => false, 'message' => $p['detail'] ?: 'Could not cancel the order. Please try again.'];
         }
 
-        // Unrecognised response — log it but don't leak internals to the user
-        Log::warning('HeroSms cancelOrder unexpected response for order ' . $orderId . ': ' . $body);
+        Log::warning('HeroSms cancelOrder unexpected for ' . $orderId . ': ' . $body);
         return ['success' => false, 'message' => 'Could not cancel the order. Please try again.'];
     }
 }
