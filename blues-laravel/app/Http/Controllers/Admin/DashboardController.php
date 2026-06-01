@@ -3,7 +3,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\{User, Listing, Purchase, SupportTicket, WalletTransaction, VirtualNumberOrder};
-use App\Services\GrizzlySmsService;
 use App\Services\HeroSmsService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -55,25 +54,6 @@ class DashboardController extends Controller
             $chartOrders[]  = isset($rawRevenue[$d]) ? (int)   $rawRevenue[$d]->count : 0;
         }
 
-        // Fetch GrizzlySMS balance server-side
-        $grizzlyBalance = null;
-        $grizzlyError   = null;
-        $grizzlySvc = new GrizzlySmsService();
-        if ($grizzlySvc->isConfigured()) {
-            try {
-                $result = $grizzlySvc->getBalance();
-                if ($result['success']) {
-                    $grizzlyBalance = $result['data']['balance_usd'] ?? null;
-                } else {
-                    $grizzlyError = $result['message'] ?? 'Could not fetch balance.';
-                }
-            } catch (\Throwable $e) {
-                $grizzlyError = 'Balance fetch failed. Check API connectivity.';
-            }
-        } else {
-            $grizzlyError = 'API not configured. Add your GrizzlySMS key in Settings.';
-        }
-
         // Fetch HeroSMS balance server-side
         $heroBalance = null;
         $heroError   = null;
@@ -95,7 +75,6 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', compact(
             'stats', 'chartLabels', 'chartRevenue', 'chartOrders',
-            'grizzlyBalance', 'grizzlyError',
             'heroBalance', 'heroError'
         ));
     }

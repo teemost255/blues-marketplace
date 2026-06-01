@@ -5,7 +5,6 @@ use App\Models\Setting;
 use App\Models\VirtualNumberOrder;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
-use App\Services\GrizzlySmsService;
 use App\Services\HeroSmsService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -79,13 +78,8 @@ class ExpireVirtualNumberOrders extends Command
             return true;
         }
 
-        if ($order->provider === 'herosms') {
-            $svc    = new HeroSmsService();
-            $result = $svc->cancelOrder($order->external_order_id);
-        } else {
-            $svc    = new GrizzlySmsService();
-            $result = $svc->cancelOrder($order->external_order_id);
-        }
+        $svc    = new HeroSmsService();
+        $result = $svc->cancelOrder($order->external_order_id);
 
         return $result['success'] ?? false;
     }

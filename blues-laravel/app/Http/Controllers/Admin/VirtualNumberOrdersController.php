@@ -3,7 +3,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\VirtualNumberOrder;
-use App\Services\GrizzlySmsService;
 use App\Services\HeroSmsService;
 use Illuminate\Http\Request;
 
@@ -55,20 +54,6 @@ class VirtualNumberOrdersController extends Controller
     {
         $order->delete();
         return back()->with('success', 'Order deleted.');
-    }
-
-    public function grizzlySmsBalance()
-    {
-        $svc = new GrizzlySmsService();
-        if (!$svc->isConfigured()) {
-            return response()->json(['success' => false, 'message' => 'GrizzlySMS API not configured. Add your key in Settings.']);
-        }
-        $result = $svc->getBalance();
-        if ($result['success']) {
-            $balance = $result['data']['balance_usd'] ?? null;
-            return response()->json(['success' => true, 'balance' => $balance]);
-        }
-        return response()->json(['success' => false, 'message' => $result['message'] ?? 'Could not fetch balance.']);
     }
 
     public function heroSmsBalance()

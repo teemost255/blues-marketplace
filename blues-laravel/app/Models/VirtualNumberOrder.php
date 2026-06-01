@@ -29,9 +29,4 @@ class VirtualNumberOrder extends Model
     {
         return $this->provider === 'herosms';
     }
-
-    public function isGrizzly(): bool
-    {
-        return $this->provider === 'grizzlysms';
-    }
 }

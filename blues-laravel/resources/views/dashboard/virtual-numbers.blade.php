@@ -44,26 +44,6 @@
     </div>
 </div>
 
-{{-- ── Server Selector ──────────────────────────────────────────────────────── --}}
-@if($heroSmsConfigured || $grizzlySmsConfigured)
-<div class="flex items-center gap-2 mb-5 flex-wrap">
-    <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Server:</span>
-    @if($heroSmsConfigured)
-    <button id="srv-btn-1" onclick="switchServer('1')"
-        class="srv-btn flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all">
-        <span class="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
-        Server 1
-    </button>
-    @endif
-    @if($grizzlySmsConfigured)
-    <button id="srv-btn-2" onclick="switchServer('2')"
-        class="srv-btn flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all">
-        <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
-        Server 2
-    </button>
-    @endif
-</div>
-@endif
 
 {{-- ── Tabs ──────────────────────────────────────────────────────────────────── --}}
 <div class="flex items-center gap-1 mb-6 bg-slate-800/60 border border-slate-700/60 rounded-xl p-1 w-fit">
@@ -419,9 +399,8 @@
 const COUNTRIES_URL     = '/dashboard/virtual-numbers/api/countries';
 const SERVICES_URL      = '/dashboard/virtual-numbers/api/services';
 const HERO_CONFIGURED   = {{ $heroSmsConfigured ? 'true' : 'false' }};
-const GRIZZLY_CONFIGURED= {{ $grizzlySmsConfigured ? 'true' : 'false' }};
-let currentServer    = HERO_CONFIGURED ? '1' : '2';
-let currentProvider  = HERO_CONFIGURED ? 'herosms' : 'grizzlysms';
+let currentServer    = '1';
+let currentProvider  = 'herosms';
 const USD_TO_NGN     = {{ $usdToNgn }};
 let allServices      = [];
 let walletBalance    = {{ $wallet->balance }};
@@ -467,29 +446,6 @@ function isWhatsApp(name) {
     return (name || '').toLowerCase().includes('whatsapp');
 }
 
-// ── Server switching ───────────────────────────────────────────────────────────
-function switchServer(srv) {
-    currentServer   = srv;
-    currentProvider = srv === '1' ? 'herosms' : 'grizzlysms';
-
-    // Update button styles
-    const btn1 = document.getElementById('srv-btn-1');
-    const btn2 = document.getElementById('srv-btn-2');
-    if (btn1) { btn1.classList.toggle('active-s1', srv === '1'); }
-    if (btn2) { btn2.classList.toggle('active-s2', srv === '2'); }
-
-    // Reset and reload
-    allServices = [];
-    countriesCache = {};
-    const sel = document.getElementById('country-select');
-    if (sel) { sel.innerHTML = '<option value="">— All Countries —</option>'; }
-    loadCountries();
-
-    // Update URL param without reloading the page
-    const url = new URL(window.location);
-    url.searchParams.set('server', srv);
-    history.replaceState(null, '', url);
-}
 
 // ── Tab switching ──────────────────────────────────────────────────────────────
 function switchTab(tab) {
@@ -1023,18 +979,7 @@ function updateActiveBadge() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    // Auto-select server from URL param (?server=1 or ?server=2)
-    const urlParam = new URLSearchParams(window.location.search).get('server');
-    if (urlParam === '1' && HERO_CONFIGURED) {
-        switchServer('1');
-    } else if (urlParam === '2' && GRIZZLY_CONFIGURED) {
-        switchServer('2');
-    } else {
-        // Apply default active style
-        const defaultBtn = document.getElementById(currentServer === '1' ? 'srv-btn-1' : 'srv-btn-2');
-        if (defaultBtn) defaultBtn.classList.add(currentServer === '1' ? 'active-s1' : 'active-s2');
-        loadCountries();
-    }
+    loadCountries();
     @if($activeOrders->count())
     setTimeout(() => switchTab('active'), 300);
     @endif

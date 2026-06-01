@@ -198,58 +198,14 @@
         </div>
     </div>
 
-    {{-- Virtual Numbers / GrizzlySMS --}}
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6" id="virtual-numbers">
-        <div class="flex items-center gap-3 mb-5">
-            <div class="w-9 h-9 rounded-lg bg-green-900/50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-            </div>
-            <div>
-                <h2 class="font-semibold text-white">Virtual Numbers — GrizzlySMS</h2>
-                <p class="text-xs text-slate-400">API credentials for GrizzlySMS virtual number provisioning. Prices in USD, auto-converted to NGN.</p>
-            </div>
-        </div>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-xs text-slate-400 mb-1.5">GrizzlySMS API Key</label>
-                <div class="relative">
-                    <input type="password" name="grizzlysms_api_key" id="grizzlysms-key-input" value="{{ $settings['grizzlysms_api_key'] }}"
-                        placeholder="Paste your GrizzlySMS API key here" class="font-mono text-xs pr-10">
-                    <button type="button" onclick="toggleGrizzlyKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    </button>
-                </div>
-                <p class="text-xs text-slate-500 mt-1">Get your API key from <a href="https://grizzlysms.com/profile-settings" target="_blank" class="text-green-400 hover:underline">GrizzlySMS → Profile Settings</a>. Numbers from $0.04.</p>
-            </div>
-            {{-- Top-up shortcut --}}
-            <div class="flex items-center justify-between bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3">
-                <div>
-                    <p class="text-sm font-medium text-white">GrizzlySMS Wallet</p>
-                    <p class="text-xs text-slate-400 mt-0.5">Opens the GrizzlySMS deposit page in a new tab.</p>
-                </div>
-                <a href="https://grizzlysms.com/balance/add" target="_blank" rel="noopener noreferrer"
-                   class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Top Up Wallet
-                </a>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1.5">USD → NGN Exchange Rate</label>
-                <input type="number" name="usd_to_ngn_rate" value="{{ $settings['usd_to_ngn_rate'] }}"
-                    min="1" step="1" placeholder="e.g. 1600" class="w-full">
-                <p class="text-xs text-slate-500 mt-1">Used to convert USD prices to Naira for display and billing. Update when the exchange rate changes.</p>
-            </div>
-        </div>
-    </div>
-
-    {{-- Virtual Numbers — HeroSMS (Server 1) --}}
+    {{-- Virtual Numbers — HeroSMS --}}
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
         <div class="flex items-center gap-3 mb-5">
             <div class="w-9 h-9 rounded-lg bg-purple-900/50 flex items-center justify-center">
                 <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
             </div>
             <div>
-                <h2 class="font-semibold text-white">Virtual Numbers — HeroSMS <span class="ml-2 text-xs font-bold bg-purple-700/60 text-purple-300 px-2 py-0.5 rounded-full">Server 1</span></h2>
+                <h2 class="font-semibold text-white">Virtual Numbers — HeroSMS</h2>
                 <p class="text-xs text-slate-400">API credentials for HeroSMS virtual number provisioning. Prices in USD, auto-converted to NGN.</p>
             </div>
         </div>
@@ -543,10 +499,7 @@ function toggleSecret() {
     const inp = document.getElementById('secret-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
-function toggleGrizzlyKey() {
-    const inp = document.getElementById('grizzlysms-key-input');
-    inp.type = inp.type === 'password' ? 'text' : 'password';
-}
+
 function toggleHeroKey() {
     const inp = document.getElementById('herosms-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';

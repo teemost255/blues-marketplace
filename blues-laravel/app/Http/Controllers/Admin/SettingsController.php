@@ -19,7 +19,6 @@ class SettingsController extends Controller
             'min_deposit'              => Setting::get('min_deposit', '500'),
             'max_deposit'              => Setting::get('max_deposit', '1000000'),
             'maintenance_mode'         => Setting::get('maintenance_mode', '0'),
-            'grizzlysms_api_key'       => Setting::get('grizzlysms_api_key', ''),
             'herosms_api_key'          => Setting::get('herosms_api_key', ''),
             'usd_to_ngn_rate'          => Setting::get('usd_to_ngn_rate', '1600'),
             'virtual_number_enabled'   => Setting::get('virtual_number_enabled', '1'),
@@ -63,7 +62,7 @@ class SettingsController extends Controller
             'min_deposit'             => 'nullable|numeric|min:1',
             'max_deposit'             => 'nullable|numeric|min:1',
             'maintenance_mode'        => 'nullable|in:0,1',
-            'grizzlysms_api_key'      => 'nullable|string',
+
             'herosms_api_key'         => 'nullable|string',
             'usd_to_ngn_rate'         => 'nullable|numeric|min:1',
             'virtual_number_enabled'  => 'nullable|in:0,1',
@@ -94,7 +93,7 @@ class SettingsController extends Controller
         $keys = [
             'paystack_public_key', 'paystack_secret_key', 'paystack_webhook_secret',
             'site_name', 'support_email', 'min_deposit', 'max_deposit',
-            'grizzlysms_api_key', 'herosms_api_key', 'usd_to_ngn_rate', 'whatsapp_number',
+            'herosms_api_key', 'usd_to_ngn_rate', 'whatsapp_number',
             'mail_mailer', 'mail_host', 'mail_port', 'mail_username',
             'mail_password', 'mail_encryption', 'mail_from_address', 'mail_from_name',
             'referral_bonus', 'referral_bonus_tier2', 'referral_bonus_tier3',
