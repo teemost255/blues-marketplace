@@ -358,6 +358,12 @@ class HeroSmsService
         return $raw === 'ACCESS_READY';
     }
 
+    public function setStatusResend(string $activationId): bool
+    {
+        $raw = $this->call(['action' => 'setStatus', 'id' => $activationId, 'status' => 3]);
+        return in_array($raw, ['ACCESS_RETRY_GET', '1', 'ACCESS_READY']);
+    }
+
     public function setStatusComplete(string $activationId): bool
     {
         $raw = $this->call(['action' => 'setStatus', 'id' => $activationId, 'status' => 6]);

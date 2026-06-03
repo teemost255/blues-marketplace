@@ -298,9 +298,31 @@ class VirtualNumberController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function resend(Request $request, VirtualNumberOrder $order)
+    {
+        if ($order->user_id != Auth::id()) {
+            return response()->json(['error' => 'Unauthorized.'], 403);
+        }
+
+        if ($order->status !== 'waiting') {
+            return response()->json(['error' => 'Can only resend on waiting orders.'], 422);
+        }
+
+        $sms = new HeroSmsService();
+        $ok  = $sms->setStatusResend($order->activation_id);
+
+        Log::info('VirtualNumber resend', [
+            'order_id'      => $order->id,
+            'activation_id' => $order->activation_id,
+            'ok'            => $ok,
+        ]);
+
+        return response()->json(['success' => true, 'sent' => $ok]);
+    }
+
     public function checkStatus(Request $request, VirtualNumberOrder $order)
     {
-        if ($order->user_id !== Auth::id()) {
+        if ($order->user_id != Auth::id()) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
 
@@ -335,7 +357,7 @@ class VirtualNumberController extends Controller
 
     public function complete(Request $request, VirtualNumberOrder $order)
     {
-        if ($order->user_id !== Auth::id()) {
+        if ($order->user_id != Auth::id()) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
 
@@ -353,7 +375,7 @@ class VirtualNumberController extends Controller
 
     public function cancel(Request $request, VirtualNumberOrder $order)
     {
-        if ($order->user_id !== Auth::id()) {
+        if ($order->user_id != Auth::id()) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
 

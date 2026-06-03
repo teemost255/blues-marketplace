@@ -129,6 +129,7 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::post('/virtual-numbers/{order}/status',             [VirtualNumberController::class, 'checkStatus'])->name('virtual-numbers.status');
     Route::post('/virtual-numbers/{order}/complete',           [VirtualNumberController::class, 'complete'])->name('virtual-numbers.complete');
     Route::post('/virtual-numbers/{order}/cancel',             [VirtualNumberController::class, 'cancel'])->name('virtual-numbers.cancel');
+    Route::post('/virtual-numbers/{order}/resend',             [VirtualNumberController::class, 'resend'])->name('virtual-numbers.resend');
 
     // Marketplace (dashboard-only)
     Route::get('/marketplace',           [MarketplaceController::class, 'index'])->name('marketplace');

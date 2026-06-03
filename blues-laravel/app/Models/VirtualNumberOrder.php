@@ -14,6 +14,7 @@ class VirtualNumberOrder extends Model
     protected $casts = [
         'expires_at' => 'datetime',
         'cost'       => 'decimal:2',
+        'user_id'    => 'integer',
     ];
 
     public function user()

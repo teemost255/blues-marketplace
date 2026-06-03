@@ -357,14 +357,28 @@
                 {{-- Actions --}}
                 <div class="flex items-center gap-2 mt-3 flex-wrap" id="actions-{{ $order->id }}">
                     @if($order->status === 'waiting')
-                    {{-- Auto-fetch indicator --}}
+                    {{-- Live fetch indicator with last-checked time --}}
                     <span class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg"
                           style="background:#131f35;color:#60a5fa;border:1px solid #1e3a5f;"
                           id="poll-indicator-{{ $order->id }}">
                         <span class="pulse-dot" style="width:6px;height:6px;background:#60a5fa;border-radius:50%;display:inline-block;animation:pulse-ring 1.5s infinite;"></span>
-                        Fetching SMS…
+                        <span>Fetching SMS…</span>
+                        <span id="last-checked-{{ $order->id }}" class="text-slate-500 font-normal ml-0.5"></span>
                     </span>
+
+                    {{-- Resend SMS button --}}
+                    <button onclick="resendSms({{ $order->id }})"
+                            class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+                            style="background:#131f35;color:#94a3b8;border:1px solid #1e3a5f;"
+                            id="resend-btn-{{ $order->id }}"
+                            title="Request a new SMS code to this number">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Resend SMS
+                    </button>
                     @endif
+
                     @if($order->status === 'received')
                     <button onclick="completeOrder({{ $order->id }})"
                             class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-all"
@@ -376,6 +390,7 @@
                         Mark Complete
                     </button>
                     @endif
+
                     @if($order->status === 'waiting')
                     {{-- Cancel with inline confirmation --}}
                     <span id="cancel-wrap-{{ $order->id }}">
@@ -608,6 +623,48 @@ let allServices       = [];
 let countryMap        = {};
 let selectedService   = null;   // { code, name, count, price, usd_cost }
 let autoRefreshTimers = {};
+
+/* ══════ Browser Push Notifications ══════ */
+function requestNotificationPermission() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+function sendPushNotification(title, body) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+        new Notification(title, {
+            body,
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+            tag: 'sms-code',
+            renotify: true,
+        });
+    } catch (_) {}
+}
+
+/* ══════ SMS arrival sound (Web Audio API — no files needed) ══════ */
+function playSmsSound() {
+    try {
+        const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+        const play = (freq, start, dur) => {
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.type = 'sine'; o.frequency.value = freq;
+            g.gain.setValueAtTime(0, ctx.currentTime + start);
+            g.gain.linearRampToValueAtTime(0.3, ctx.currentTime + start + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+            o.start(ctx.currentTime + start);
+            o.stop(ctx.currentTime + start + dur);
+        };
+        play(880, 0,    0.15);
+        play(1100, 0.15, 0.15);
+        play(1320, 0.30, 0.25);
+    } catch (_) {}
+}
 
 /* ══════ Tab switching ══════ */
 function switchTab(tabId, btn) {
@@ -900,10 +957,11 @@ function applyReceivedState(orderId, code) {
         waitBadge.replaceWith(received);
     }
 
-    // Replace actions: remove poll indicator + cancel wrap, add Mark Complete
+    // Replace actions: remove poll indicator + resend btn + cancel wrap, add Mark Complete
     const actionsDiv = document.getElementById(`actions-${orderId}`);
     if (actionsDiv) {
         document.getElementById(`poll-indicator-${orderId}`)?.remove();
+        document.getElementById(`resend-btn-${orderId}`)?.remove();
         document.getElementById(`cancel-wrap-${orderId}`)?.remove();
 
         if (!document.getElementById(`complete-btn-${orderId}`)) {
@@ -915,6 +973,21 @@ function applyReceivedState(orderId, code) {
             completeBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Mark Complete`;
             actionsDiv.prepend(completeBtn);
         }
+    }
+
+    // 🔔 Play sound + browser push notification
+    playSmsSound();
+    sendPushNotification('SMS Code Received!', `Your verification code: ${code}`);
+
+    // 📋 Auto-copy to clipboard
+    try {
+        navigator.clipboard?.writeText(code).then(() => {
+            showToast(`✓ Code ${code} received & copied to clipboard!`, 'success');
+        }).catch(() => {
+            showToast(`✓ SMS code received: ${code}`, 'success');
+        });
+    } catch (_) {
+        showToast(`✓ SMS code received: ${code}`, 'success');
     }
 }
 
@@ -1020,9 +1093,15 @@ async function pollOrder(orderId) {
         if (!r.ok) return;
         const data = await r.json();
 
+        // Update last-checked timestamp
+        const lcEl = document.getElementById(`last-checked-${orderId}`);
+        if (lcEl) {
+            const now = new Date();
+            lcEl.textContent = `· ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+        }
+
         if (data.status === 'received' && data.code) {
             applyReceivedState(orderId, data.code);
-            showToast(`✓ SMS code received: ${data.code}`, 'success');
             clearInterval(autoRefreshTimers[orderId]);
             delete autoRefreshTimers[orderId];
         } else if (data.status === 'cancelled' || data.status === 'expired') {
@@ -1031,8 +1110,40 @@ async function pollOrder(orderId) {
             showToast(`Rental ${data.status}.`, 'error');
             setTimeout(() => document.getElementById(`active-order-${orderId}`)?.remove(), 1500);
         }
-        // status === 'waiting' → do nothing, keep polling silently
+        // status === 'waiting' → keep polling silently
     } catch (_) {}
+}
+
+/* ══════ Resend SMS ══════ */
+async function resendSms(orderId) {
+    const btn = document.getElementById(`resend-btn-${orderId}`);
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    btn.style.color = '#60a5fa';
+    btn.innerHTML = btn.innerHTML.replace('Resend SMS', 'Requesting…');
+
+    try {
+        const r = await fetch(`/dashboard/virtual-numbers/${orderId}/resend`, {
+            method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, Accept: 'application/json' },
+        });
+        const d = await r.json();
+        if (d.success) {
+            showToast('New SMS requested — code will appear automatically.', 'success');
+        } else {
+            showToast(d.error ?? 'Could not request new SMS.', 'error');
+        }
+    } catch (_) {
+        showToast('Error requesting new SMS.', 'error');
+    }
+
+    // Re-enable after 30s cooldown
+    setTimeout(() => {
+        if (btn) {
+            btn.disabled = false;
+            btn.style.color = '#94a3b8';
+            btn.innerHTML = btn.innerHTML.replace('Requesting…', 'Resend SMS');
+        }
+    }, 30000);
 }
 
 /* ══════ Countdown timers ══════ */
@@ -1098,6 +1209,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Always start live SMS polling immediately for any active orders on the page
     startAutoRefresh();
+
+    // Request push notification permission if there are active orders
+    if (document.querySelectorAll('[id^="active-order-"]').length > 0) {
+        requestNotificationPermission();
+    }
 
     // Auto-switch to Active Rentals tab if redirected after a purchase
     const params = new URLSearchParams(location.search);
