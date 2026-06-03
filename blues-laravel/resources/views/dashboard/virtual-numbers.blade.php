@@ -55,6 +55,7 @@
     .empty-state svg { margin:0 auto 1rem; opacity:.35; }
     .pulse-dot { width:.5rem; height:.5rem; border-radius:50%; background:#3b82f6; animation:pulse-anim 1.5s ease-in-out infinite; display:inline-block; }
     @keyframes pulse-anim { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
+    @keyframes pulse-ring { 0%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} 100%{opacity:1;transform:scale(1)} }
 
     /* ── History table ── */
     .hist-row { border-bottom:1px solid #1e3a5f; transition:background .15s; }
@@ -354,24 +355,21 @@
                 </div>
 
                 {{-- Actions --}}
-                <div class="flex items-center gap-2 mt-3 flex-wrap">
+                <div class="flex items-center gap-2 mt-3 flex-wrap" id="actions-{{ $order->id }}">
                     @if($order->status === 'waiting')
-                    <button onclick="checkStatus({{ $order->id }})"
-                            class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-all"
-                            style="background:#131f35;color:#e2e8f0;border:1px solid #1e3a5f;"
-                            onmouseover="this.style.borderColor='#3b82f6';this.style.color='#60a5fa'"
-                            onmouseout="this.style.borderColor='#1e3a5f';this.style.color='#e2e8f0'"
-                            id="check-btn-{{ $order->id }}">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                        </svg>
-                        Check SMS
-                    </button>
+                    {{-- Auto-fetch indicator --}}
+                    <span class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg"
+                          style="background:#131f35;color:#60a5fa;border:1px solid #1e3a5f;"
+                          id="poll-indicator-{{ $order->id }}">
+                        <span class="pulse-dot" style="width:6px;height:6px;background:#60a5fa;border-radius:50%;display:inline-block;animation:pulse-ring 1.5s infinite;"></span>
+                        Fetching SMS…
+                    </span>
                     @endif
                     @if($order->status === 'received')
                     <button onclick="completeOrder({{ $order->id }})"
                             class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-all"
-                            style="background:#052e16;color:#4ade80;border:1px solid #14532d;">
+                            style="background:#052e16;color:#4ade80;border:1px solid #14532d;"
+                            id="complete-btn-{{ $order->id }}">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
@@ -379,12 +377,15 @@
                     </button>
                     @endif
                     @if($order->status === 'waiting')
-                    <button onclick="cancelOrder({{ $order->id }})"
-                            class="text-xs font-semibold px-3 py-2 rounded-lg text-slate-500 hover:text-red-400 transition-colors"
-                            style="background:#131f35;border:1px solid #1e3a5f;"
-                            id="cancel-btn-{{ $order->id }}">
-                        Cancel
-                    </button>
+                    {{-- Cancel with inline confirmation --}}
+                    <span id="cancel-wrap-{{ $order->id }}">
+                        <button onclick="askCancel({{ $order->id }})"
+                                class="text-xs font-semibold px-3 py-2 rounded-lg text-slate-500 hover:text-red-400 transition-colors"
+                                style="background:#131f35;border:1px solid #1e3a5f;"
+                                id="cancel-btn-{{ $order->id }}">
+                            Cancel
+                        </button>
+                    </span>
                     @endif
                 </div>
             </div>
@@ -874,65 +875,40 @@ async function confirmBuy() {
     }
 }
 
-/* ══════ Check SMS status ══════ */
-async function checkStatus(orderId) {
-    const btn = document.getElementById(`check-btn-${orderId}`);
-    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="pulse-dot"></span> Checking…'; }
-
-    try {
-        const r    = await fetch(`/dashboard/virtual-numbers/${orderId}/status`, {
-            method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, Accept: 'application/json' },
-        });
-        const data = await r.json();
-
-        if (data.status === 'received' && data.code) {
-            applyReceivedState(orderId, data.code);
-            showToast(`✓ SMS code received: ${data.code}`, 'success');
-        } else if (data.status === 'cancelled' || data.status === 'expired') {
-            showToast(`This rental has been ${data.status}.`, 'error');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            let msg = 'No SMS yet — still waiting.';
-            if (data.api_raw) msg += ` (API: ${data.api_raw})`;
-            showToast(msg, 'info');
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Check SMS`;
-            }
-        }
-    } catch (e) {
-        showToast('Error checking status. Please try again.', 'error');
-        if (btn) { btn.disabled = false; btn.innerHTML = 'Check SMS'; }
-    }
-}
-
 /* Update the order card UI when an SMS code has arrived */
 function applyReceivedState(orderId, code) {
-    // Show code box
+    // Show code box with the code
     const codeBox = document.getElementById(`sms-code-${orderId}`);
-    if (codeBox) codeBox.classList.remove('hidden');
+    if (codeBox) {
+        codeBox.classList.remove('hidden');
+        // Update copy button to use the new code
+        const copyBtn = codeBox.querySelector('button');
+        if (copyBtn) copyBtn.setAttribute('onclick', `copyCode('${code}')`);
+    }
     const codeText = document.getElementById(`code-text-${orderId}`);
     if (codeText) codeText.textContent = code;
 
-    // Swap status badge from "Waiting for SMS" to "✓ SMS Received"
+    // Swap status badge
     const card = document.getElementById(`active-order-${orderId}`);
-    if (card) {
-        const waitBadge = card.querySelector('.status-waiting');
-        if (waitBadge) {
-            const received = document.createElement('span');
-            received.className = 'status-received';
-            received.textContent = '✓ SMS Received';
-            waitBadge.replaceWith(received);
-        }
-        // Hide "Check SMS" button and "Cancel" button; show "Mark Complete"
-        const checkBtn  = document.getElementById(`check-btn-${orderId}`);
-        const cancelBtn = document.getElementById(`cancel-btn-${orderId}`);
-        if (checkBtn)  checkBtn.remove();
-        if (cancelBtn) cancelBtn.remove();
+    if (!card) return;
 
-        const actionsDiv = card.querySelector('.flex.items-center.gap-2.mt-3');
-        if (actionsDiv && !actionsDiv.querySelector(`[onclick="completeOrder(${orderId})"]`)) {
+    const waitBadge = card.querySelector('.status-waiting');
+    if (waitBadge) {
+        const received = document.createElement('span');
+        received.className = 'status-received';
+        received.textContent = '✓ SMS Received';
+        waitBadge.replaceWith(received);
+    }
+
+    // Replace actions: remove poll indicator + cancel wrap, add Mark Complete
+    const actionsDiv = document.getElementById(`actions-${orderId}`);
+    if (actionsDiv) {
+        document.getElementById(`poll-indicator-${orderId}`)?.remove();
+        document.getElementById(`cancel-wrap-${orderId}`)?.remove();
+
+        if (!document.getElementById(`complete-btn-${orderId}`)) {
             const completeBtn = document.createElement('button');
+            completeBtn.id = `complete-btn-${orderId}`;
             completeBtn.setAttribute('onclick', `completeOrder(${orderId})`);
             completeBtn.className = 'flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-all';
             completeBtn.style.cssText = 'background:#052e16;color:#4ade80;border:1px solid #14532d;';
@@ -956,11 +932,43 @@ async function completeOrder(orderId) {
     } catch (e) { showToast('Error.', 'error'); }
 }
 
-/* ══════ Cancel order ══════ */
-async function cancelOrder(orderId) {
-    if (!confirm('Cancel this rental? A partial refund may be issued.')) return;
-    const btn = document.getElementById(`cancel-btn-${orderId}`);
-    if (btn) { btn.disabled = true; btn.textContent = 'Cancelling…'; }
+/* ══════ Cancel order — inline confirmation (no confirm() dialog) ══════ */
+function askCancel(orderId) {
+    const wrap = document.getElementById(`cancel-wrap-${orderId}`);
+    if (!wrap) return;
+    wrap.innerHTML = `
+        <span class="flex items-center gap-1.5 text-xs">
+            <span class="text-red-400 font-semibold">Cancel rental?</span>
+            <button onclick="doCancel(${orderId})"
+                    class="px-2.5 py-1 rounded text-xs font-bold text-white transition-colors"
+                    style="background:#dc2626;">Yes, cancel</button>
+            <button onclick="resetCancel(${orderId})"
+                    class="px-2.5 py-1 rounded text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                    style="background:#1e293b;">No</button>
+        </span>`;
+}
+
+function resetCancel(orderId) {
+    const wrap = document.getElementById(`cancel-wrap-${orderId}`);
+    if (!wrap) return;
+    wrap.innerHTML = `
+        <button onclick="askCancel(${orderId})"
+                class="text-xs font-semibold px-3 py-2 rounded-lg text-slate-500 hover:text-red-400 transition-colors"
+                style="background:#131f35;border:1px solid #1e3a5f;"
+                id="cancel-btn-${orderId}">
+            Cancel
+        </button>`;
+}
+
+async function doCancel(orderId) {
+    const wrap = document.getElementById(`cancel-wrap-${orderId}`);
+    if (wrap) wrap.innerHTML = `<span class="text-xs text-slate-500 px-2">Cancelling…</span>`;
+
+    // Stop polling this order
+    if (autoRefreshTimers[orderId]) {
+        clearInterval(autoRefreshTimers[orderId]);
+        delete autoRefreshTimers[orderId];
+    }
 
     try {
         const r = await fetch(`/dashboard/virtual-numbers/${orderId}/cancel`, {
@@ -969,30 +977,33 @@ async function cancelOrder(orderId) {
         const d = await r.json();
         if (d.success) {
             let msg = 'Rental cancelled.';
-            if (d.refunded > 0) msg += ` ₦${d.refunded.toLocaleString()} refunded.`;
+            if (d.refunded > 0) msg += ` ₦${Number(d.refunded).toLocaleString('en-NG', {minimumFractionDigits:2})} refunded.`;
             showToast(msg, 'success');
-            document.getElementById(`active-order-${orderId}`)?.remove();
-            // Update balance display
+            setTimeout(() => document.getElementById(`active-order-${orderId}`)?.remove(), 600);
             const hdr = document.getElementById('hdr-balance');
             if (hdr && d.refunded > 0) {
-                const current = parseFloat(hdr.textContent.replace(/[₦,]/g,'')) + d.refunded;
+                const current = parseFloat(hdr.textContent.replace(/[₦,]/g, '')) + d.refunded;
                 hdr.textContent = '₦' + current.toLocaleString('en-NG', { minimumFractionDigits:2, maximumFractionDigits:2 });
             }
+        } else {
+            showToast(d.error ?? 'Could not cancel.', 'error');
+            resetCancel(orderId);
         }
     } catch (e) {
-        showToast('Could not cancel.', 'error');
-        if (btn) { btn.disabled = false; btn.textContent = 'Cancel'; }
+        showToast('Could not cancel — please try again.', 'error');
+        resetCancel(orderId);
     }
 }
 
-/* ══════ Auto-refresh active tab ══════ */
+/* ══════ Live auto-polling — starts immediately on page load ══════ */
 function startAutoRefresh() {
     document.querySelectorAll('[id^="active-order-"]').forEach(el => {
-        const orderId = el.id.replace('active-order-','');
+        const orderId = el.id.replace('active-order-', '');
         if (autoRefreshTimers[orderId]) return;
-        autoRefreshTimers[orderId] = setInterval(() => {
-            checkStatusSilent(orderId);
-        }, 5000);
+        // Stagger first poll so multiple orders don't hit server simultaneously
+        const delay = Math.random() * 1000;
+        setTimeout(() => pollOrder(orderId), delay);
+        autoRefreshTimers[orderId] = setInterval(() => pollOrder(orderId), 3000);
     });
 }
 
@@ -1001,22 +1012,27 @@ function stopAutoRefresh() {
     autoRefreshTimers = {};
 }
 
-async function checkStatusSilent(orderId) {
+async function pollOrder(orderId) {
     try {
         const r    = await fetch(`/dashboard/virtual-numbers/${orderId}/status`, {
             method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, Accept: 'application/json' },
         });
+        if (!r.ok) return;
         const data = await r.json();
+
         if (data.status === 'received' && data.code) {
             applyReceivedState(orderId, data.code);
-            showToast(`✓ SMS received: ${data.code}`, 'success');
-            // Stop polling this order once code is received
-            if (autoRefreshTimers[orderId]) {
-                clearInterval(autoRefreshTimers[orderId]);
-                delete autoRefreshTimers[orderId];
-            }
+            showToast(`✓ SMS code received: ${data.code}`, 'success');
+            clearInterval(autoRefreshTimers[orderId]);
+            delete autoRefreshTimers[orderId];
+        } else if (data.status === 'cancelled' || data.status === 'expired') {
+            clearInterval(autoRefreshTimers[orderId]);
+            delete autoRefreshTimers[orderId];
+            showToast(`Rental ${data.status}.`, 'error');
+            setTimeout(() => document.getElementById(`active-order-${orderId}`)?.remove(), 1500);
         }
-    } catch (e) {}
+        // status === 'waiting' → do nothing, keep polling silently
+    } catch (_) {}
 }
 
 /* ══════ Countdown timers ══════ */
@@ -1080,12 +1096,14 @@ document.addEventListener('DOMContentLoaded', () => {
     @endif
     startCountdownTimers();
 
+    // Always start live SMS polling immediately for any active orders on the page
+    startAutoRefresh();
+
     // Auto-switch to Active Rentals tab if redirected after a purchase
     const params = new URLSearchParams(location.search);
     if (params.get('tab') === 'active') {
         const activeTabBtn = document.querySelector('.vn-tab:nth-child(2)');
         if (activeTabBtn) switchTab('active', activeTabBtn);
-        // Clean the URL without reloading
         history.replaceState(null, '', location.pathname);
     }
 });
