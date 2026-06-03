@@ -587,7 +587,7 @@ async function loadServices() {
         return (data?.success && Array.isArray(data.data)) ? data.data.map(s => ({
             serviceId:   String(s.serviceId ?? ''),
             name:        s.name ?? '',
-            apiPrice:    parseFloat(s.cost_ngn ?? s.cost ?? 0),
+            apiPrice:    s.cost_ngn != null ? parseFloat(s.cost_ngn) : parseFloat((s.cost ?? 0) * USD_TO_NGN),
             count:       parseInt(s.count ?? 0),
             country:     s.country_name || label,
             countryCode: s.country_code || code,
@@ -730,6 +730,10 @@ function buildCard(s) {
         ? '₦' + total.toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
         : '<span class="text-green-400">Free</span>';
 
+    const commissionBreakdown = commission > 0
+        ? `<span class="text-[10px] text-slate-500 mt-0.5 block">₦${apiPrice.toLocaleString('en-NG',{minimumFractionDigits:0,maximumFractionDigits:2})} API + ₦${commission.toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2})} fee</span>`
+        : '';
+
     const stockBadge = count > 100
         ? `<span class="text-[10px] text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full font-semibold">${count > 9999 ? '9999+' : count} left</span>`
         : count > 0
@@ -750,7 +754,10 @@ function buildCard(s) {
         </div>
         {{-- Price --}}
         <div class="flex items-center justify-between pt-1 border-t border-slate-700/40">
-            <span class="text-lg font-extrabold text-white">${priceDisplay}</span>
+            <div>
+                <span class="text-lg font-extrabold text-white">${priceDisplay}</span>
+                ${commissionBreakdown}
+            </div>
             <button onclick="openModalFromData(this)"
                 data-id="${escHtml(id)}"
                 data-name="${escHtml(name)}"

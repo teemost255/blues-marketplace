@@ -5,14 +5,14 @@
 @section('content')
 {{-- Stats row --}}
 <div class="grid grid-cols-2 gap-4 mb-8">
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 sm:p-5 overflow-hidden">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Wallet Balance</p>
-        <p class="text-2xl font-bold text-white mt-1">₦{{ number_format($wallet->balance, 2) }}</p>
+        <p class="text-lg sm:text-2xl font-bold text-white mt-1 truncate">₦{{ number_format($wallet->balance, 2) }}</p>
         <a href="{{ route('dashboard.wallet') }}" class="text-xs text-brand hover:underline mt-1 inline-block">Top up →</a>
     </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 sm:p-5 overflow-hidden">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Orders</p>
-        <p class="text-2xl font-bold text-white mt-1">{{ $orderCount }}</p>
+        <p class="text-lg sm:text-2xl font-bold text-white mt-1 truncate">{{ $orderCount }}</p>
     </div>
 </div>
 

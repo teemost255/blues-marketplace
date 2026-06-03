@@ -20,14 +20,14 @@
 
 {{-- Summary stats --}}
 <div class="grid grid-cols-2 gap-4 mb-6">
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 overflow-hidden">
         <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Total Funded</p>
-        <p class="text-xl font-bold text-green-400">₦{{ number_format($summary['total_deposited'], 2) }}</p>
+        <p class="text-base sm:text-xl font-bold text-green-400 truncate">₦{{ number_format($summary['total_deposited'], 2) }}</p>
         <p class="text-xs text-slate-500 mt-0.5">All-time deposits</p>
     </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 overflow-hidden">
         <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Referral Earned</p>
-        <p class="text-xl font-bold text-purple-400">₦{{ number_format($summary['referral_earned'], 2) }}</p>
+        <p class="text-base sm:text-xl font-bold text-purple-400 truncate">₦{{ number_format($summary['referral_earned'], 2) }}</p>
         <p class="text-xs text-slate-500 mt-0.5">Bonus credited</p>
     </div>
 </div>
@@ -42,7 +42,7 @@
                 <svg class="w-5 h-5 text-sky-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                 <p class="text-sky-100 text-sm font-medium">Available Balance</p>
             </div>
-            <p class="text-4xl font-extrabold tracking-tight">₦{{ number_format($wallet->balance, 2) }}</p>
+            <p class="text-2xl sm:text-4xl font-extrabold tracking-tight break-all">₦{{ number_format($wallet->balance, 2) }}</p>
             <p class="text-sky-200 text-xs mt-3">Funds ready to use in the marketplace</p>
         </div>
     </div>

@@ -5,71 +5,71 @@
 
 {{-- Top stats row --}}
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 sm:p-5 overflow-hidden">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Users</p>
-        <p class="text-3xl font-bold text-white mt-1">{{ number_format($stats['total_users']) }}</p>
-        <div class="flex gap-3 mt-2 text-xs flex-wrap">
+        <p class="text-xl sm:text-3xl font-bold text-white mt-1 truncate">{{ number_format($stats['total_users']) }}</p>
+        <div class="flex gap-2 mt-2 text-xs flex-wrap">
             <span class="text-green-400">{{ $stats['active_users'] }} active</span>
-            <span class="text-yellow-400">{{ $stats['suspended_users'] }} suspended</span>
-            <span class="text-red-400">{{ $stats['banned_users'] }} banned</span>
+            <span class="text-yellow-400">{{ $stats['suspended_users'] }} susp.</span>
+            <span class="text-red-400">{{ $stats['banned_users'] }} ban.</span>
         </div>
-        <p class="text-xs text-slate-500 mt-1">+{{ $stats['new_users_today'] }} today · +{{ $stats['new_users_week'] }} this week</p>
+        <p class="text-xs text-slate-500 mt-1 truncate">+{{ $stats['new_users_today'] }} today</p>
     </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 sm:p-5 overflow-hidden">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Listings</p>
-        <p class="text-3xl font-bold text-white mt-1">{{ number_format($stats['total_listings']) }}</p>
+        <p class="text-xl sm:text-3xl font-bold text-white mt-1 truncate">{{ number_format($stats['total_listings']) }}</p>
         <p class="text-xs text-green-400 mt-2">{{ $stats['active_listings'] }} active</p>
     </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 sm:p-5 overflow-hidden">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Purchases</p>
-        <p class="text-3xl font-bold text-white mt-1">{{ number_format($stats['total_purchases']) }}</p>
-        <p class="text-xs text-slate-500 mt-2">VN orders: {{ number_format($stats['vn_total']) }}</p>
+        <p class="text-xl sm:text-3xl font-bold text-white mt-1 truncate">{{ number_format($stats['total_purchases']) }}</p>
+        <p class="text-xs text-slate-500 mt-2">VN: {{ number_format($stats['vn_total']) }}</p>
     </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 sm:p-5 overflow-hidden">
         <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Revenue</p>
-        <p class="text-3xl font-bold text-white mt-1">₦{{ number_format($stats['total_revenue'], 2) }}</p>
-        <p class="text-xs text-slate-400 mt-1">+₦{{ number_format($stats['revenue_today'], 2) }} today</p>
-        <p class="text-xs text-slate-500">Wallet vol: ₦{{ number_format($stats['wallet_volume'], 2) }}</p>
+        <p class="text-xl sm:text-2xl font-bold text-white mt-1 truncate">₦{{ number_format($stats['total_revenue'], 2) }}</p>
+        <p class="text-xs text-slate-400 mt-1 truncate">+₦{{ number_format($stats['revenue_today'], 2) }} today</p>
+        <p class="text-xs text-slate-500 truncate">Vol: ₦{{ number_format($stats['wallet_volume'], 2) }}</p>
     </div>
 </div>
 
 {{-- Secondary stats --}}
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-3">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-3 overflow-hidden">
         <div class="w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
         </div>
-        <div>
+        <div class="min-w-0">
             <p class="text-xs text-slate-400">VN Active</p>
-            <p class="text-xl font-bold text-white">{{ $stats['vn_active'] }}</p>
+            <p class="text-lg sm:text-xl font-bold text-white truncate">{{ $stats['vn_active'] }}</p>
         </div>
     </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-3">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-3 overflow-hidden">
         <div class="w-9 h-9 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
-        <div>
+        <div class="min-w-0">
             <p class="text-xs text-slate-400">VN Revenue</p>
-            <p class="text-xl font-bold text-white">₦{{ number_format($stats['vn_revenue'], 0) }}</p>
+            <p class="text-sm sm:text-lg font-bold text-white truncate">₦{{ number_format($stats['vn_revenue'], 0) }}</p>
         </div>
     </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-3">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-3 overflow-hidden">
         <div class="w-9 h-9 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </div>
-        <div>
-            <p class="text-xs text-slate-400">Qualified Referrals</p>
-            <p class="text-xl font-bold text-white">{{ $stats['qualified_referrals'] }}</p>
+        <div class="min-w-0">
+            <p class="text-xs text-slate-400 truncate">Referrals</p>
+            <p class="text-lg sm:text-xl font-bold text-white">{{ $stats['qualified_referrals'] }}</p>
             <p class="text-xs text-yellow-400">{{ $stats['pending_referrals'] }} pending</p>
         </div>
     </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-3">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-3 overflow-hidden">
         <div class="w-9 h-9 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
         </div>
-        <div>
+        <div class="min-w-0">
             <p class="text-xs text-slate-400">Open Tickets</p>
-            <p class="text-xl font-bold text-yellow-400">{{ $stats['open_tickets'] }}</p>
+            <p class="text-lg sm:text-xl font-bold text-yellow-400">{{ $stats['open_tickets'] }}</p>
             <a href="{{ route('admin.tickets') }}" class="text-xs text-brand hover:underline">View →</a>
         </div>
     </div>
