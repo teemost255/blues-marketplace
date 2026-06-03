@@ -110,6 +110,92 @@ class VirtualNumberOrdersController extends Controller
         ]);
     }
 
+    /**
+     * Render the admin Services & Pricing Catalog page.
+     */
+    public function servicesCatalog()
+    {
+        $usdToNgn        = (float) \App\Models\Setting::get('usd_to_ngn_rate', '1600');
+        $commissionType  = \App\Models\Setting::get('vn_commission_type', 'flat');
+        $commissionValue = (float) \App\Models\Setting::get('vn_commission_value', '0');
+        $configured      = (new HeroSmsService())->isConfigured();
+        return view('admin.virtual-numbers-services', compact('usdToNgn', 'commissionType', 'commissionValue', 'configured'));
+    }
+
+    /**
+     * JSON endpoint: fetch services & prices from HeroSMS for the admin catalog.
+     * Supports optional ?country= and ?bust=1 (bypass cache).
+     */
+    public function servicesCatalogData(Request $request)
+    {
+        $svc = new HeroSmsService();
+        if (!$svc->isConfigured()) {
+            return response()->json(['success' => false, 'message' => 'HeroSMS API key not configured. Add it in Admin → Settings.']);
+        }
+
+        $country   = trim((string) $request->get('country', ''));
+        $bust      = (bool) $request->get('bust', false);
+        $usdToNgn  = (float) \App\Models\Setting::get('usd_to_ngn_rate', '1600');
+        $cacheKey  = 'admin.vn.services.' . md5($country . '_' . $usdToNgn);
+
+        if ($bust) {
+            \Illuminate\Support\Facades\Cache::forget($cacheKey);
+        }
+
+        if (!$bust && \Illuminate\Support\Facades\Cache::has($cacheKey)) {
+            $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return response()->json(['success' => true, 'data' => $cached, 'cached' => true]);
+            }
+        }
+
+        $result = $svc->getServices($country ?: null);
+        if (!$result['success']) {
+            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Could not fetch services from HeroSMS.']);
+        }
+
+        $data = array_map(function ($s) use ($usdToNgn) {
+            $s['cost_ngn'] = round(($s['cost'] ?? 0) * $usdToNgn, 2);
+            return $s;
+        }, $result['data']);
+
+        \Illuminate\Support\Facades\Cache::put($cacheKey, $data, 300);
+        return response()->json(['success' => true, 'data' => $data, 'cached' => false]);
+    }
+
+    /**
+     * JSON endpoint: fetch countries list for the admin catalog.
+     */
+    public function servicesCatalogCountries(Request $request)
+    {
+        $svc = new HeroSmsService();
+        if (!$svc->isConfigured()) {
+            return response()->json(['success' => false, 'message' => 'HeroSMS API key not configured.']);
+        }
+
+        $bust     = (bool) $request->get('bust', false);
+        $cacheKey = 'admin.vn.countries';
+
+        if ($bust) {
+            \Illuminate\Support\Facades\Cache::forget($cacheKey);
+        }
+
+        if (!$bust && \Illuminate\Support\Facades\Cache::has($cacheKey)) {
+            $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return response()->json(['success' => true, 'data' => $cached]);
+            }
+        }
+
+        $result = $svc->getCountries();
+        if (!$result['success']) {
+            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Could not fetch countries.']);
+        }
+
+        \Illuminate\Support\Facades\Cache::put($cacheKey, $result['data'], 600);
+        return response()->json(['success' => true, 'data' => $result['data']]);
+    }
+
     public function exportCsv(Request $request)
     {
         $query = VirtualNumberOrder::with('user');

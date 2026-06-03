@@ -86,15 +86,22 @@ class VirtualNumberController extends Controller
         if (!$svc->isConfigured()) {
             return response()->json(['success' => false, 'message' => 'Virtual number service is not available. Please contact support.']);
         }
-        $data = Cache::remember($cacheKey, 600, function () use ($svc) {
-            $result = $svc->getCountries();
-            return $result['success'] ? $result['data'] : null;
-        });
-        if ($data === null) {
-            Cache::forget($cacheKey);
-            return response()->json(['success' => false, 'message' => 'Could not fetch countries. Please try again.']);
+
+        // Only serve from cache if it has a non-null value
+        if (Cache::has($cacheKey)) {
+            $cached = Cache::get($cacheKey);
+            if ($cached !== null) {
+                return response()->json(['success' => true, 'data' => $cached, 'flow' => 'TWO_STEP']);
+            }
         }
-        return response()->json(['success' => true, 'data' => $data, 'flow' => 'TWO_STEP']);
+
+        $result = $svc->getCountries();
+        if (!$result['success']) {
+            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Could not fetch countries. Please try again.']);
+        }
+
+        Cache::put($cacheKey, $result['data'], 600);
+        return response()->json(['success' => true, 'data' => $result['data'], 'flow' => 'TWO_STEP']);
     }
 
     // ── Services ──────────────────────────────────────────────────────────────
@@ -107,24 +114,29 @@ class VirtualNumberController extends Controller
         if (!$svc->isConfigured()) {
             return response()->json(['success' => false, 'message' => 'Virtual number service is not available. Please contact support.']);
         }
+
         $usdToNgn = (float) Setting::get('usd_to_ngn_rate', '1600');
         $cacheKey = 'vn.services.1.' . md5($country . '_' . $usdToNgn);
-        $errorMsg = null;
-        $data = Cache::remember($cacheKey, 300, function () use ($svc, $country, $usdToNgn, &$errorMsg) {
-            $result = $svc->getServices($country);
-            if (!$result['success']) {
-                $errorMsg = $result['message'] ?? 'Could not fetch services.';
-                return null;
+
+        // Only serve from cache if it has a non-null value (never serve cached errors)
+        if (Cache::has($cacheKey)) {
+            $cached = Cache::get($cacheKey);
+            if ($cached !== null) {
+                return response()->json(['success' => true, 'data' => $cached]);
             }
-            return array_map(function ($s) use ($usdToNgn) {
-                $s['cost_ngn'] = round(($s['cost'] ?? 0) * $usdToNgn, 2);
-                return $s;
-            }, $result['data']);
-        });
-        if ($data === null) {
-            Cache::forget($cacheKey);
-            return response()->json(['success' => false, 'message' => $errorMsg ?? 'Could not fetch services. Please try again.']);
         }
+
+        $result = $svc->getServices($country ?: null);
+        if (!$result['success']) {
+            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Could not fetch services. Please try again.']);
+        }
+
+        $data = array_map(function ($s) use ($usdToNgn) {
+            $s['cost_ngn'] = round(($s['cost'] ?? 0) * $usdToNgn, 2);
+            return $s;
+        }, $result['data']);
+
+        Cache::put($cacheKey, $data, 300);
         return response()->json(['success' => true, 'data' => $data]);
     }
 

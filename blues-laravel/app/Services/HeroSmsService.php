@@ -100,12 +100,16 @@ class HeroSmsService
 
     /**
      * Returns list of countries as array of ['code'=>'N', 'name'=>'Country', 'iso'=>'xx'].
-     * This endpoint is public — no api_key needed.
+     * Passes api_key when configured so authenticated users get the full country list.
      */
     public function getCountries(): array
     {
         try {
-            $response = $this->client()->get($this->baseUrl, ['action' => 'getCountries']);
+            $params = ['action' => 'getCountries'];
+            if (!empty($this->apiKey)) {
+                $params['api_key'] = $this->apiKey;
+            }
+            $response = $this->client()->get($this->baseUrl, $params);
             $body = trim($response->body());
         } catch (\Exception $e) {
             return ['success' => false, 'message' => 'Service temporarily unavailable. Please try again.'];
