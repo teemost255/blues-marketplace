@@ -101,6 +101,7 @@
         [data-theme="light"] .theme-toggle:hover { background:#e2e8f0; color:#0f172a; }
         [data-theme="light"] .theme-toggle { color: #64748b; }
     </style>
+    @stack('styles')
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex">
 
