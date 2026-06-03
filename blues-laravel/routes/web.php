@@ -38,6 +38,8 @@ use App\Http\Controllers\User\NotificationsController;
 use App\Http\Controllers\User\SupportController;
 use App\Http\Controllers\User\ProfileController;
 use App\Http\Controllers\User\ReferralPageController;
+use App\Http\Controllers\User\VirtualNumberController;
+use App\Http\Controllers\Admin\VirtualNumbersController;
 
 // ── Public ────────────────────────────────────────────────────────────────────
 // Paystack webhook (no CSRF)
@@ -114,6 +116,15 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
 
     Route::get('/referrals',        [ReferralPageController::class,  'index'])->name('referrals');
 
+    // Virtual Numbers
+    Route::get('/virtual-numbers',                             [VirtualNumberController::class, 'index'])->name('virtual-numbers');
+    Route::get('/virtual-numbers/countries',                   [VirtualNumberController::class, 'getCountries'])->name('virtual-numbers.countries');
+    Route::get('/virtual-numbers/services',                    [VirtualNumberController::class, 'getServices'])->name('virtual-numbers.services');
+    Route::post('/virtual-numbers/order',                      [VirtualNumberController::class, 'order'])->name('virtual-numbers.order');
+    Route::post('/virtual-numbers/{order}/status',             [VirtualNumberController::class, 'checkStatus'])->name('virtual-numbers.status');
+    Route::post('/virtual-numbers/{order}/complete',           [VirtualNumberController::class, 'complete'])->name('virtual-numbers.complete');
+    Route::post('/virtual-numbers/{order}/cancel',             [VirtualNumberController::class, 'cancel'])->name('virtual-numbers.cancel');
+
     // Marketplace (dashboard-only)
     Route::get('/marketplace',           [MarketplaceController::class, 'index'])->name('marketplace');
     Route::post('/marketplace/{id}/buy', [MarketplaceController::class, 'buy'])->name('marketplace.buy');
@@ -175,6 +186,9 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::get('/referrals',      [ReferralLeaderboardController::class, 'index'])->name('referrals');
     Route::get('/reviews',        [AdminReviewsController::class,        'index'])->name('reviews');
     Route::delete('/reviews/{review}', [AdminReviewsController::class,   'destroy'])->name('reviews.destroy');
+
+    // Virtual Numbers
+    Route::get('/virtual-numbers', [VirtualNumbersController::class, 'index'])->name('virtual-numbers');
 
     // Bank Transfers
     Route::get('/bank-transfers',                [AdminBankTransferController::class, 'index'])->name('bank-transfers');
