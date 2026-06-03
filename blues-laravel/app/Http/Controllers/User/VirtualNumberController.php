@@ -56,14 +56,15 @@ class VirtualNumberController extends Controller
 
     public function getServices(Request $request)
     {
-        $request->validate(['country' => 'required|integer']);
+        $request->validate(['country' => 'nullable|integer']);
         $sms     = new HeroSmsService();
 
         if (!$sms->isConfigured()) {
             return response()->json(['error' => 'Service not configured.'], 503);
         }
 
-        $raw      = $sms->getServicesForCountry((int) $request->country);
+        $country  = (int) ($request->country ?? 0);
+        $raw      = $sms->getServicesForCountry($country);
         $services = [];
 
         foreach ($raw as $code => $count) {
@@ -76,7 +77,14 @@ class VirtualNumberController extends Controller
             }
         }
 
-        usort($services, fn($a, $b) => $b['count'] <=> $a['count']);
+        $sort = $request->input('sort', 'az');
+        if ($sort === 'az') {
+            usort($services, fn($a, $b) => strcmp($a['name'], $b['name']));
+        } elseif ($sort === 'za') {
+            usort($services, fn($a, $b) => strcmp($b['name'], $a['name']));
+        } else {
+            usort($services, fn($a, $b) => $b['count'] <=> $a['count']);
+        }
 
         return response()->json(['services' => $services]);
     }
