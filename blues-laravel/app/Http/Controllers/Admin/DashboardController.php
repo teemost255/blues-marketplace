@@ -2,8 +2,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\{User, Listing, Purchase, SupportTicket, WalletTransaction, VirtualNumberOrder};
-use App\Services\HeroSmsService;
+use App\Models\{User, Listing, Purchase, SupportTicket, WalletTransaction};
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -24,9 +23,6 @@ class DashboardController extends Controller
             'wallet_volume'    => WalletTransaction::whereIn('type', ['deposit', 'admin_credit', 'referral_bonus'])->sum('amount'),
             'recent_purchases' => Purchase::with(['user', 'listing'])->latest()->take(8)->get(),
             'recent_users'     => User::latest()->take(5)->get(),
-            'vn_total'         => VirtualNumberOrder::count(),
-            'vn_active'        => VirtualNumberOrder::where('status', 'active')->count(),
-            'vn_revenue'       => VirtualNumberOrder::where('status', '!=', 'cancelled')->sum('cost'),
             'new_users_today'  => User::whereDate('created_at', today())->count(),
             'new_users_week'   => User::where('created_at', '>=', now()->subDays(7))->count(),
             'revenue_today'    => Purchase::where('status', 'completed')->whereDate('created_at', today())->sum('amount'),
@@ -54,28 +50,8 @@ class DashboardController extends Controller
             $chartOrders[]  = isset($rawRevenue[$d]) ? (int)   $rawRevenue[$d]->count : 0;
         }
 
-        // Fetch HeroSMS balance server-side
-        $heroBalance = null;
-        $heroError   = null;
-        $heroSvc = new HeroSmsService();
-        if ($heroSvc->isConfigured()) {
-            try {
-                $result = $heroSvc->getBalance();
-                if ($result['success']) {
-                    $heroBalance = $result['data']['balance'] ?? null;
-                } else {
-                    $heroError = $result['message'] ?? 'Could not fetch balance.';
-                }
-            } catch (\Throwable $e) {
-                $heroError = 'Balance fetch failed. Check API connectivity.';
-            }
-        } else {
-            $heroError = 'API not configured. Add your HeroSMS key in Settings.';
-        }
-
         return view('admin.dashboard', compact(
-            'stats', 'chartLabels', 'chartRevenue', 'chartOrders',
-            'heroBalance', 'heroError'
+            'stats', 'chartLabels', 'chartRevenue', 'chartOrders'
         ));
     }
 }

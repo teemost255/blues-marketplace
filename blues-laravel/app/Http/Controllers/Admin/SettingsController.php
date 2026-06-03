@@ -19,11 +19,6 @@ class SettingsController extends Controller
             'min_deposit'              => Setting::get('min_deposit', '500'),
             'max_deposit'              => Setting::get('max_deposit', '1000000'),
             'maintenance_mode'         => Setting::get('maintenance_mode', '0'),
-            'herosms_api_key'          => Setting::get('herosms_api_key', ''),
-            'usd_to_ngn_rate'          => Setting::get('usd_to_ngn_rate', '1600'),
-            'virtual_number_enabled'   => Setting::get('virtual_number_enabled', '1'),
-            'server1_enabled'          => Setting::get('server1_enabled', '1'),
-            'server2_enabled'          => Setting::get('server2_enabled', '1'),
             'whatsapp_number'          => Setting::get('whatsapp_number', ''),
             'mail_mailer'              => Setting::get('mail_mailer', 'smtp'),
             'mail_host'                => Setting::get('mail_host', ''),
@@ -42,9 +37,6 @@ class SettingsController extends Controller
             'promo_banner_text'        => Setting::get('promo_banner_text', ''),
             'promo_banner_color'       => Setting::get('promo_banner_color', 'brand'),
             'low_balance_threshold'    => Setting::get('low_balance_threshold', '5'),
-            'vn_commission_type'       => Setting::get('vn_commission_type', 'flat'),
-            'vn_commission_value'      => Setting::get('vn_commission_value', '0'),
-            'vn_auto_expire_minutes'   => Setting::get('vn_auto_expire_minutes', '20'),
             'bank_transfer_enabled'    => Setting::get('bank_transfer_enabled', '0'),
             'bank_name'                => Setting::get('bank_name', ''),
             'bank_account_number'      => Setting::get('bank_account_number', ''),
@@ -65,11 +57,6 @@ class SettingsController extends Controller
             'max_deposit'             => 'nullable|numeric|min:1',
             'maintenance_mode'        => 'nullable|in:0,1',
 
-            'herosms_api_key'         => 'nullable|string',
-            'usd_to_ngn_rate'         => 'nullable|numeric|min:1',
-            'virtual_number_enabled'  => 'nullable|in:0,1',
-            'server1_enabled'         => 'nullable|in:0,1',
-            'server2_enabled'         => 'nullable|in:0,1',
             'mail_mailer'             => 'nullable|string|in:smtp,sendmail,log',
             'mail_host'               => 'nullable|string|max:255',
             'mail_port'               => 'nullable|integer|min:1|max:65535',
@@ -86,9 +73,6 @@ class SettingsController extends Controller
             'promo_banner_text'       => 'nullable|string|max:300',
             'promo_banner_color'      => 'nullable|string|in:brand,green,yellow,red,purple',
             'low_balance_threshold'   => 'nullable|numeric|min:0',
-            'vn_commission_type'      => 'nullable|in:flat,percent',
-            'vn_commission_value'     => 'nullable|numeric|min:0',
-            'vn_auto_expire_minutes'  => 'nullable|integer|min:0|max:1440',
             'bank_name'               => 'nullable|string|max:100',
             'bank_account_number'     => 'nullable|string|max:50',
             'bank_account_name'       => 'nullable|string|max:100',
@@ -97,36 +81,21 @@ class SettingsController extends Controller
         $keys = [
             'paystack_public_key', 'paystack_secret_key', 'paystack_webhook_secret',
             'site_name', 'support_email', 'min_deposit', 'max_deposit',
-            'herosms_api_key', 'usd_to_ngn_rate', 'whatsapp_number',
+            'whatsapp_number',
             'mail_mailer', 'mail_host', 'mail_port', 'mail_username',
             'mail_password', 'mail_encryption', 'mail_from_address', 'mail_from_name',
             'referral_bonus', 'referral_bonus_tier2', 'referral_bonus_tier3',
             'referral_bonus_tier2_threshold', 'referral_bonus_tier3_threshold',
             'promo_banner_text', 'promo_banner_color', 'low_balance_threshold',
-            'vn_commission_type', 'vn_commission_value', 'vn_auto_expire_minutes',
             'bank_name', 'bank_account_number', 'bank_account_name',
         ];
         Setting::set('bank_transfer_enabled', $request->boolean('bank_transfer_enabled') ? '1' : '0');
         Setting::set('promo_banner_enabled', $request->boolean('promo_banner_enabled') ? '1' : '0');
 
-        // If the exchange rate changed, flush all cached service prices so
-        // users see updated NGN prices immediately on the next request.
-        $oldRate = Setting::get('usd_to_ngn_rate', '1600');
-        $newRate = $request->input('usd_to_ngn_rate', $oldRate);
-        $rateChanged = (float) $oldRate !== (float) $newRate;
-
         foreach ($keys as $key) {
             Setting::set($key, $request->input($key, ''));
         }
         Setting::set('maintenance_mode', $request->boolean('maintenance_mode') ? '1' : '0');
-        Setting::set('virtual_number_enabled', $request->boolean('virtual_number_enabled') ? '1' : '0');
-        Setting::set('server1_enabled', $request->boolean('server1_enabled') ? '1' : '0');
-        Setting::set('server2_enabled', $request->boolean('server2_enabled') ? '1' : '0');
-
-        if ($rateChanged) {
-            // Flush all virtual-number service price caches for both user and admin views
-            \Illuminate\Support\Facades\Cache::flush();
-        }
 
         return back()->with('success', 'Settings saved successfully.');
     }

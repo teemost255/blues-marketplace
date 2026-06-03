@@ -14,7 +14,6 @@ use App\Http\Controllers\Admin\TransactionsController;
 use App\Http\Controllers\Admin\TicketsController;
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\SettingsController;
-use App\Http\Controllers\Admin\VirtualNumberOrdersController;
 use App\Http\Controllers\Admin\AnnouncementsController;
 use App\Http\Controllers\Admin\ReferralLeaderboardController;
 use App\Http\Controllers\Admin\ReviewsController as AdminReviewsController;
@@ -38,7 +37,6 @@ use App\Http\Controllers\User\WishlistController;
 use App\Http\Controllers\User\NotificationsController;
 use App\Http\Controllers\User\SupportController;
 use App\Http\Controllers\User\ProfileController;
-use App\Http\Controllers\User\VirtualNumberController;
 use App\Http\Controllers\User\ReferralPageController;
 
 // ── Public ────────────────────────────────────────────────────────────────────
@@ -120,14 +118,6 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::get('/marketplace',           [MarketplaceController::class, 'index'])->name('marketplace');
     Route::post('/marketplace/{id}/buy', [MarketplaceController::class, 'buy'])->name('marketplace.buy');
 
-    Route::get('/virtual-numbers',                  [VirtualNumberController::class, 'index'])->name('virtual-numbers');
-    Route::get('/virtual-numbers/server2',          [VirtualNumberController::class, 'server2'])->name('virtual-numbers.server2');
-    Route::get('/virtual-numbers/api/countries',    [VirtualNumberController::class, 'getCountries'])->name('virtual-numbers.countries');
-    Route::get('/virtual-numbers/api/services',     [VirtualNumberController::class, 'getServices'])->name('virtual-numbers.services');
-    Route::post('/virtual-numbers/order',           [VirtualNumberController::class, 'order'])->name('virtual-numbers.order');
-    Route::get('/virtual-numbers/{id}/sms',         [VirtualNumberController::class, 'checkSms'])->name('virtual-numbers.sms');
-    Route::post('/virtual-numbers/{id}/resend',     [VirtualNumberController::class, 'resend'])->name('virtual-numbers.resend');
-    Route::delete('/virtual-numbers/{id}/cancel',   [VirtualNumberController::class, 'cancel'])->name('virtual-numbers.cancel');
 });
 
 // ── Admin Auth ────────────────────────────────────────────────────────────────
@@ -178,15 +168,6 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::post('/settings',                    [SettingsController::class,          'update'])->name('settings.update');
     Route::post('/settings/test-email',         [SettingsController::class,          'sendTestEmail'])->name('settings.test-email');
 
-    Route::get('/virtual-numbers',                              [VirtualNumberOrdersController::class, 'index'])->name('virtual-numbers');
-    Route::get('/virtual-numbers/herosms-balance',             [VirtualNumberOrdersController::class, 'heroSmsBalance'])->name('virtual-numbers.herosms-balance');
-    Route::get('/virtual-numbers/herosms-diagnose',            [VirtualNumberOrdersController::class, 'heroSmsDiagnose'])->name('virtual-numbers.herosms-diagnose');
-    Route::get('/virtual-numbers/export',                      [VirtualNumberOrdersController::class, 'exportCsv'])->name('virtual-numbers.export');
-    Route::get('/virtual-numbers/services-catalog',            [VirtualNumberOrdersController::class, 'servicesCatalog'])->name('virtual-numbers.services-catalog');
-    Route::get('/virtual-numbers/services-catalog/data',       [VirtualNumberOrdersController::class, 'servicesCatalogData'])->name('virtual-numbers.services-catalog.data');
-    Route::get('/virtual-numbers/services-catalog/countries',  [VirtualNumberOrdersController::class, 'servicesCatalogCountries'])->name('virtual-numbers.services-catalog.countries');
-    Route::post('/virtual-numbers/{order}/status',             [VirtualNumberOrdersController::class, 'updateStatus'])->name('virtual-numbers.status');
-    Route::delete('/virtual-numbers/{order}',                  [VirtualNumberOrdersController::class, 'destroy'])->name('virtual-numbers.destroy');
 
     Route::get('/announcements',  [AnnouncementsController::class, 'index'])->name('announcements');
     Route::post('/announcements', [AnnouncementsController::class, 'store'])->name('announcements.store');

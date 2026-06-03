@@ -24,12 +24,6 @@
         </div>
         <span class="text-sm font-medium text-white">Marketplace</span>
     </a>
-    <a href="{{ route('dashboard.virtual-numbers') }}" class="bg-slate-800 border border-slate-700 hover:border-brand/50 rounded-xl p-4 flex items-center gap-3 transition-all group">
-        <div class="w-9 h-9 bg-green-500/10 rounded-lg flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
-            <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-        </div>
-        <span class="text-sm font-medium text-white">Virtual Numbers</span>
-    </a>
     <a href="{{ route('dashboard.orders') }}" class="bg-slate-800 border border-slate-700 hover:border-brand/50 rounded-xl p-4 flex items-center gap-3 transition-all group">
         <div class="w-9 h-9 bg-purple-500/10 rounded-lg flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
             <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
