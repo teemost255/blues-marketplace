@@ -213,7 +213,7 @@ class HeroSmsService
         }
 
         // Shape C: { "0": {"cost":"0.25"}, "7": {"cost":"0.30"}, ... }
-        // Keys are country IDs (numeric), values have 'cost' — single-service price response
+        // Keys are country IDs (numeric), values have 'cost' directly — single-service price response
         if (is_numeric($firstKey) && is_array($firstValue) && array_key_exists('cost', $firstValue)) {
             $target = $data[$country] ?? $data['0'] ?? $data[0] ?? array_values($data)[0] ?? null;
             if ($target && isset($target['cost']) && is_numeric($target['cost'])) {
@@ -221,9 +221,48 @@ class HeroSmsService
             }
         }
 
+        // Shape D (confirmed from live API):
+        //   { "countryId": { "serviceCode": {"cost": 0.145, "count": 7650, ...} }, ... }
+        // Outer keys = numeric country IDs, inner keys = service codes, leaf has 'cost'
+        if (is_numeric($firstKey) && is_array($firstValue) && !array_key_exists('cost', $firstValue)) {
+            // Confirm inner values look like service entries
+            $firstInner = !empty($firstValue) ? array_values($firstValue)[0] : null;
+            if (is_array($firstInner) && array_key_exists('cost', $firstInner)) {
+                if ($country > 0) {
+                    // Use prices for the exact requested country
+                    $countryData = $data[$country] ?? $data[(string) $country] ?? null;
+                    if ($countryData && is_array($countryData)) {
+                        $result = [];
+                        foreach ($countryData as $code => $info) {
+                            if (is_array($info) && isset($info['cost']) && is_numeric($info['cost']) && (float)$info['cost'] > 0) {
+                                $result[(string) $code] = (float) $info['cost'];
+                            }
+                        }
+                        if (!empty($result)) return $result;
+                    }
+                }
+
+                // country = 0 (all countries) OR country not found — take the minimum price
+                // per service code across all countries in the response
+                $result = [];
+                foreach ($data as $cid => $services) {
+                    if (!is_array($services)) continue;
+                    foreach ($services as $code => $info) {
+                        if (!is_array($info) || !isset($info['cost']) || !is_numeric($info['cost'])) continue;
+                        $cost = (float) $info['cost'];
+                        if ($cost <= 0) continue;
+                        if (!isset($result[(string) $code]) || $cost < $result[(string) $code]) {
+                            $result[(string) $code] = $cost;
+                        }
+                    }
+                }
+                return $result;
+            }
+        }
+
         Log::warning('HeroSMS getPrices: unrecognized response shape', [
             'first_key'   => $firstKey,
-            'first_value' => json_encode($firstValue),
+            'first_value' => json_encode(array_slice((array) $firstValue, 0, 2, true)),
         ]);
         return [];
     }
