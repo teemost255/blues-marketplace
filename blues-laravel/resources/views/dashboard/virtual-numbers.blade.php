@@ -858,9 +858,10 @@ async function confirmBuy() {
             // Reload and switch to Active Rentals tab
             setTimeout(() => { location.href = location.pathname + '?tab=active'; }, 1200);
         } else {
-            // data.error = our custom message; data.message = Laravel's validation/server message
-            const msg = data.error || data.message || 'Something went wrong. Please try again.';
-            errTxt.textContent = msg;
+            // data.error = our custom message; data.debug = raw DB error; data.message = Laravel's format
+            const msg  = data.error || data.message || 'Something went wrong. Please try again.';
+            const dbug = data.debug ? ` (${data.debug})` : '';
+            errTxt.textContent = msg + dbug;
             errBox.classList.remove('hidden');
             btn.disabled = false;
             btn.innerHTML = resetLabel;

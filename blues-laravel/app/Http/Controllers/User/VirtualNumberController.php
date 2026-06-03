@@ -180,11 +180,13 @@ class VirtualNumberController extends Controller
                 $user, $wallet, $price, $result, $request,
                 $serviceName, $expiryMins, $country, $apiUsdPrice
             ) {
-                $wallet->decrement('balance', $price);
+                // Use lockForUpdate to prevent race conditions on the wallet row
+                Wallet::where('id', $wallet->id)->lockForUpdate()->first();
+                $wallet->decrement('balance', round((float) $price, 2));
 
                 WalletTransaction::create([
                     'user_id'     => $user->id,
-                    'amount'      => -$price,
+                    'amount'      => -round((float) $price, 2),
                     'type'        => 'purchase',
                     'reference'   => 'VN-' . strtoupper(uniqid()),
                     'description' => "Virtual number: {$serviceName}" . ($apiUsdPrice !== null ? " (\${$apiUsdPrice})" : ''),
@@ -192,22 +194,15 @@ class VirtualNumberController extends Controller
 
                 $order = VirtualNumberOrder::create([
                     'user_id'       => $user->id,
-                    'activation_id' => $result['activation_id'],
-                    'phone_number'  => $result['phone_number'],
-                    'service'       => $request->service,
-                    'service_name'  => $serviceName,
-                    'country'       => $country,
-                    'country_name'  => $request->input('country_name', ''),
-                    'cost'          => $price,
+                    'activation_id' => (string) ($result['activation_id'] ?? ''),
+                    'phone_number'  => (string) ($result['phone_number'] ?? ''),
+                    'service'       => (string) $request->service,
+                    'service_name'  => mb_substr((string) $serviceName, 0, 100),
+                    'country'       => (int) $country,
+                    'country_name'  => mb_substr((string) $request->input('country_name', ''), 0, 100),
+                    'cost'          => round((float) $price, 2),
                     'status'        => 'waiting',
                     'expires_at'    => now()->addMinutes($expiryMins),
-                ]);
-
-                Notification::create([
-                    'user_id' => $user->id,
-                    'title'   => 'Virtual Number Assigned',
-                    'message' => "Your {$serviceName} number is ready: {$result['phone_number']}",
-                    'type'    => 'info',
                 ]);
 
                 return $order;
@@ -219,10 +214,25 @@ class VirtualNumberController extends Controller
                 'user_id'       => $user->id,
                 'activation_id' => $result['activation_id'] ?? null,
                 'error'         => $e->getMessage(),
+                'trace'         => $e->getTraceAsString(),
             ]);
             return response()->json([
                 'error' => 'Order could not be saved. Your balance has not been charged. Please try again.',
+                'debug' => $e->getMessage(),
             ], 500);
+        }
+
+        // Notification is intentionally OUTSIDE the transaction — a notification
+        // failure must never roll back a successfully saved order.
+        try {
+            Notification::create([
+                'user_id' => $user->id,
+                'title'   => 'Virtual Number Assigned',
+                'message' => "Your {$serviceName} number is ready: {$result['phone_number']}",
+                'type'    => 'info',
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('VirtualNumber: notification create failed', ['error' => $e->getMessage()]);
         }
 
         return response()->json([
