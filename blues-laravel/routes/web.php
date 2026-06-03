@@ -41,6 +41,7 @@ use App\Http\Controllers\User\ReferralPageController;
 use App\Http\Controllers\User\VirtualNumberController;
 use App\Http\Controllers\Admin\VirtualNumbersController;
 use App\Http\Controllers\Admin\VirtualNumberSettingsController;
+use App\Http\Controllers\Admin\SystemToolsController;
 
 // ── Public ────────────────────────────────────────────────────────────────────
 // Paystack webhook (no CSRF)
@@ -208,4 +209,10 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::post('/profile',          [AdminProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/password', [AdminProfileController::class, 'updatePassword'])->name('profile.password');
     Route::get('/api/pending-count', [AdminProfileController::class, 'pendingCount'])->name('api.pending-count');
+
+    // System Tools
+    Route::get('/system-tools',             [SystemToolsController::class, 'index'])->name('system-tools');
+    Route::post('/system-tools/migrate',    [SystemToolsController::class, 'runMigrations'])->name('system-tools.migrate');
+    Route::post('/system-tools/clear-caches',[SystemToolsController::class, 'clearCaches'])->name('system-tools.clear-caches');
+    Route::get('/system-tools/log',         [SystemToolsController::class, 'getLog'])->name('system-tools.log');
 });
