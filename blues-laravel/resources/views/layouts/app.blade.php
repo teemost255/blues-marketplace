@@ -7,7 +7,18 @@
     <script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);if(t==='light')document.documentElement.classList.add('light-mode');}());</script>
     <title>@yield('title', 'Blues Marketplace') — Buy Digital Accounts</title>
     <meta name="description" content="@yield('meta_description', 'Blues Marketplace — Buy verified Facebook, Instagram, TikTok accounts and second phone numbers.')">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { DEFAULT: '#0ea5e9', dark: '#0284c7', light: '#38bdf8' }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         /* ── Mobile overflow / zoom prevention ── */
         *, *::before, *::after { box-sizing: border-box; }
