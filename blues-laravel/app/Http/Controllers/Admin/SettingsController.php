@@ -22,6 +22,8 @@ class SettingsController extends Controller
             'herosms_api_key'          => Setting::get('herosms_api_key', ''),
             'usd_to_ngn_rate'          => Setting::get('usd_to_ngn_rate', '1600'),
             'virtual_number_enabled'   => Setting::get('virtual_number_enabled', '1'),
+            'server1_enabled'          => Setting::get('server1_enabled', '1'),
+            'server2_enabled'          => Setting::get('server2_enabled', '1'),
             'whatsapp_number'          => Setting::get('whatsapp_number', ''),
             'mail_mailer'              => Setting::get('mail_mailer', 'smtp'),
             'mail_host'                => Setting::get('mail_host', ''),
@@ -66,6 +68,8 @@ class SettingsController extends Controller
             'herosms_api_key'         => 'nullable|string',
             'usd_to_ngn_rate'         => 'nullable|numeric|min:1',
             'virtual_number_enabled'  => 'nullable|in:0,1',
+            'server1_enabled'         => 'nullable|in:0,1',
+            'server2_enabled'         => 'nullable|in:0,1',
             'mail_mailer'             => 'nullable|string|in:smtp,sendmail,log',
             'mail_host'               => 'nullable|string|max:255',
             'mail_port'               => 'nullable|integer|min:1|max:65535',
@@ -110,6 +114,8 @@ class SettingsController extends Controller
         }
         Setting::set('maintenance_mode', $request->boolean('maintenance_mode') ? '1' : '0');
         Setting::set('virtual_number_enabled', $request->boolean('virtual_number_enabled') ? '1' : '0');
+        Setting::set('server1_enabled', $request->boolean('server1_enabled') ? '1' : '0');
+        Setting::set('server2_enabled', $request->boolean('server2_enabled') ? '1' : '0');
 
         return back()->with('success', 'Settings saved successfully.');
     }

@@ -121,6 +121,7 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::post('/marketplace/{id}/buy', [MarketplaceController::class, 'buy'])->name('marketplace.buy');
 
     Route::get('/virtual-numbers',                  [VirtualNumberController::class, 'index'])->name('virtual-numbers');
+    Route::get('/virtual-numbers/server2',          [VirtualNumberController::class, 'server2'])->name('virtual-numbers.server2');
     Route::get('/virtual-numbers/api/countries',    [VirtualNumberController::class, 'getCountries'])->name('virtual-numbers.countries');
     Route::get('/virtual-numbers/api/services',     [VirtualNumberController::class, 'getServices'])->name('virtual-numbers.services');
     Route::post('/virtual-numbers/order',           [VirtualNumberController::class, 'order'])->name('virtual-numbers.order');

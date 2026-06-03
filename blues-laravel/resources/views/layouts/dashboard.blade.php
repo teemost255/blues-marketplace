@@ -159,14 +159,14 @@
             </button>
         </div>
         <div id="vn-submenu" class="{{ request()->routeIs('dashboard.virtual-numbers*') ? '' : 'hidden' }} pl-6 space-y-0.5 mt-0.5">
-            <a href="{{ route('dashboard.virtual-numbers') }}?server=1"
-               class="sidebar-link py-1.5 text-xs {{ request()->routeIs('dashboard.virtual-numbers*') && request()->get('server') === '1' ? 'active' : '' }}">
+            <a href="{{ route('dashboard.virtual-numbers') }}"
+               class="sidebar-link py-1.5 text-xs {{ request()->routeIs('dashboard.virtual-numbers') && !request()->routeIs('dashboard.virtual-numbers.server2') ? 'active' : '' }}">
                 <span class="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
                 Server 1
             </a>
-            <a href="{{ route('dashboard.virtual-numbers') }}?server=2"
-               class="sidebar-link py-1.5 text-xs {{ request()->routeIs('dashboard.virtual-numbers*') && request()->get('server') === '2' ? 'active' : '' }}">
-                <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
+            <a href="{{ route('dashboard.virtual-numbers.server2') }}"
+               class="sidebar-link py-1.5 text-xs {{ request()->routeIs('dashboard.virtual-numbers.server2') ? 'active' : '' }}">
+                <span class="w-2 h-2 rounded-full bg-orange-400 shrink-0"></span>
                 Server 2
             </a>
         </div>
@@ -260,6 +260,7 @@
     </main>
 </div>
 
+@stack('scripts')
 <script>
 function openMobileSidebar() {
     document.getElementById('dash-sidebar').classList.add('sidebar-open');

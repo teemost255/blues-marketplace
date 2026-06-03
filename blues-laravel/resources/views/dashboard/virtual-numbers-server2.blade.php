@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
-@section('title', 'Virtual Numbers')
-@section('page-title', 'Virtual Numbers')
+@section('title', 'Virtual Numbers — Server 2')
+@section('page-title', 'Virtual Numbers — Server 2')
 @section('content')
 
 @if(!$enabled)
@@ -11,13 +11,13 @@
     <h2 class="text-xl font-semibold text-white mb-2">Virtual Numbers Unavailable</h2>
     <p class="text-slate-400 max-w-sm">This feature is currently disabled. Please check back later.</p>
 </div>
-@elseif(!$server1Enabled)
+@elseif(!$server2Enabled)
 <div class="flex flex-col items-center justify-center py-24 text-center">
     <div class="w-16 h-16 rounded-2xl bg-orange-900/30 flex items-center justify-center mb-4">
         <svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
     </div>
-    <h2 class="text-xl font-semibold text-white mb-2">Server 1 Unavailable</h2>
-    <p class="text-slate-400 max-w-sm">Server 1 is currently offline. Please try <a href="{{ route('dashboard.virtual-numbers.server2') }}" class="text-brand hover:underline">Server 2</a> or check back later.</p>
+    <h2 class="text-xl font-semibold text-white mb-2">Server 2 Unavailable</h2>
+    <p class="text-slate-400 max-w-sm">Server 2 is currently offline. Please try <a href="{{ route('dashboard.virtual-numbers') }}" class="text-brand hover:underline">Server 1</a> or check back later.</p>
 </div>
 @elseif(!$configured)
 <div class="flex flex-col items-center justify-center py-24 text-center">
@@ -30,15 +30,15 @@
 @else
 
 {{-- ── Hero Bar ──────────────────────────────────────────────────────────────── --}}
-<div class="rounded-2xl bg-gradient-to-r from-[#0f172a] via-[#0c1a3a] to-[#0f172a] border border-slate-700/60 p-5 mb-6 flex flex-wrap items-center justify-between gap-4">
+<div class="rounded-2xl bg-gradient-to-r from-[#1a0f00] via-[#1a120a] to-[#1a0f00] border border-orange-900/40 p-5 mb-6 flex flex-wrap items-center justify-between gap-4">
     <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-2xl bg-brand/20 border border-brand/30 flex items-center justify-center shrink-0">
-            <svg class="w-6 h-6 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        <div class="w-12 h-12 rounded-2xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
         </div>
         <div>
             <div class="flex items-center gap-2">
                 <h2 class="text-lg font-bold text-white">Virtual Numbers</h2>
-                <span class="bg-purple-700/50 text-purple-300 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">Server 1</span>
+                <span class="bg-orange-700/50 text-orange-300 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">Server 2</span>
             </div>
             <p class="text-xs text-slate-400">Receive SMS verification codes instantly · Valid ~20 minutes</p>
         </div>
@@ -49,7 +49,7 @@
             <span class="text-xs text-slate-400">Balance:</span>
             <span class="font-bold text-white text-sm" id="wallet-display">₦{{ number_format($wallet->balance, 2) }}</span>
         </div>
-        <a href="{{ route('dashboard.wallet') }}" class="px-4 py-2 bg-brand hover:bg-brand-dark text-white rounded-xl text-xs font-bold transition-colors">
+        <a href="{{ route('dashboard.wallet') }}" class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-colors">
             + Top Up
         </a>
     </div>
@@ -59,7 +59,7 @@
 {{-- ── Tabs ──────────────────────────────────────────────────────────────────── --}}
 <div class="flex items-center gap-1 mb-6 bg-slate-800/60 border border-slate-700/60 rounded-xl p-1 w-fit">
     <button onclick="switchTab('browse')" id="tab-browse"
-        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-brand text-white transition-all">
+        class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-orange-500 text-white transition-all">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
         Services
     </button>
@@ -90,7 +90,7 @@
             @php $popular = ['whatsapp','telegram','google','instagram','facebook','tiktok','twitter','discord','snapchat','microsoft','amazon','netflix']; @endphp
             @foreach($popular as $svc)
             <button onclick="quickSearch('{{ $svc }}')"
-                class="popular-chip flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-brand/50 rounded-full text-xs font-medium text-slate-300 hover:text-white transition-all">
+                class="popular-chip flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-orange-500/50 rounded-full text-xs font-medium text-slate-300 hover:text-white transition-all">
                 <span class="text-base leading-none">{{ ['whatsapp'=>'💬','telegram'=>'✈️','google'=>'🔍','instagram'=>'📸','facebook'=>'👤','tiktok'=>'🎵','twitter'=>'🐦','discord'=>'🎮','snapchat'=>'👻','microsoft'=>'🪟','amazon'=>'📦','netflix'=>'🎬'][$svc] ?? '⚡' }}</span>
                 {{ ucfirst($svc) }}
             </button>
@@ -106,7 +106,7 @@
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             <input id="svc-search" type="text" placeholder="Search service (e.g. WhatsApp, Google…)" oninput="handleSearchInput()"
                 style="font-size:16px"
-                class="w-full pl-9 pr-9 py-2.5 bg-slate-800 border border-slate-700 text-white rounded-xl text-sm focus:outline-none focus:border-brand placeholder-slate-500">
+                class="w-full pl-9 pr-9 py-2.5 bg-slate-800 border border-slate-700 text-white rounded-xl text-sm focus:outline-none focus:border-orange-500 placeholder-slate-500">
             <button id="svc-search-clear" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
@@ -116,7 +116,7 @@
         <div class="relative">
             <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
             <select id="country-select" onchange="loadServices()"
-                class="appearance-none bg-slate-800 border border-slate-700 text-white rounded-xl pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:border-brand min-w-[160px]">
+                class="appearance-none bg-slate-800 border border-slate-700 text-white rounded-xl pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:border-orange-500 min-w-[160px]">
                 <option value="">All Countries</option>
             </select>
             <svg class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -125,7 +125,7 @@
         {{-- Sort --}}
         <div class="relative">
             <select id="svc-sort" onchange="applyFilter()"
-                class="appearance-none bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 pr-8 text-sm focus:outline-none focus:border-brand">
+                class="appearance-none bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 pr-8 text-sm focus:outline-none focus:border-orange-500">
                 <option value="name">A – Z</option>
                 <option value="price_asc">Cheapest first</option>
                 <option value="price_desc">Most expensive</option>
@@ -138,7 +138,7 @@
 
     {{-- State / Loading --}}
     <div id="svc-state" class="flex flex-col items-center justify-center py-20 rounded-2xl bg-slate-800/30 border border-slate-700/40">
-        <div class="w-10 h-10 border-[3px] border-brand border-t-transparent rounded-full animate-spin mb-4"></div>
+        <div class="w-10 h-10 border-[3px] border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p class="text-slate-400 text-sm">Loading services…</p>
     </div>
 
@@ -157,7 +157,7 @@
         </div>
         <p class="text-white font-semibold mb-1">No active rentals</p>
         <p class="text-slate-400 text-sm mb-4">Order a number to start receiving SMS codes.</p>
-        <button onclick="switchTab('browse')" class="px-5 py-2 bg-brand hover:bg-brand-dark text-white rounded-xl text-sm font-bold transition-colors">Browse Services</button>
+        <button onclick="switchTab('browse')" class="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-bold transition-colors">Browse Services</button>
     </div>
     @else
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="active-orders-list">
@@ -183,13 +183,13 @@
             {{-- Phone number --}}
             <div class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 flex items-center gap-2">
                 <svg class="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                <span class="font-mono text-sm text-brand flex-1 select-all truncate" id="phone-{{ $order->id }}">{{ $order->phone_number ?? 'Assigning…' }}</span>
-                <button onclick="copyText('phone-{{ $order->id }}', this)" class="p-1 rounded-lg text-slate-400 hover:text-brand transition-colors shrink-0">
+                <span class="font-mono text-sm text-orange-400 flex-1 select-all truncate" id="phone-{{ $order->id }}">{{ $order->phone_number ?? 'Assigning…' }}</span>
+                <button onclick="copyText('phone-{{ $order->id }}', this)" class="p-1 rounded-lg text-slate-400 hover:text-orange-400 transition-colors shrink-0">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 </button>
             </div>
 
-            {{-- SMS Code — Waiting state (hidden once code arrives) --}}
+            {{-- SMS Code — Waiting state --}}
             <div id="sms-wait-{{ $order->id }}" class="{{ $order->sms_code ? 'hidden' : '' }} bg-slate-900/60 border border-slate-700/50 rounded-xl px-4 py-3.5 flex items-center gap-3">
                 <div class="flex gap-1 shrink-0">
                     <span class="w-2 h-2 rounded-full bg-slate-600 animate-bounce" style="animation-delay:0s"></span>
@@ -202,7 +202,7 @@
                 </div>
             </div>
 
-            {{-- SMS Code — Received state (hidden until code arrives) --}}
+            {{-- SMS Code — Received state --}}
             <div id="sms-code-wrap-{{ $order->id }}" class="{{ $order->sms_code ? '' : 'hidden' }} bg-green-950/60 border-2 border-green-500/50 rounded-xl px-4 py-3.5 flex items-center gap-3">
                 <svg class="w-5 h-5 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <div class="flex-1 min-w-0">
@@ -223,7 +223,7 @@
                 <span class="text-slate-600">₦{{ number_format($order->cost, 2) }} · {{ $order->created_at->diffForHumans() }}</span>
             </div>
 
-            {{-- 3-minute countdown (shown only after code is received) --}}
+            {{-- 3-minute countdown --}}
             <div id="countdown-wrap-{{ $order->id }}" class="{{ $order->status === 'received' ? '' : 'hidden' }} bg-green-900/20 border border-green-700/30 rounded-xl px-4 py-2.5 flex items-center gap-2">
                 <svg class="w-4 h-4 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <p class="text-xs text-green-300 flex-1">Moving to history in <span id="countdown-{{ $order->id }}" class="font-bold font-mono">3:00</span></p>
@@ -232,7 +232,7 @@
             {{-- Actions --}}
             <div class="flex gap-2 pt-1 border-t border-slate-700/50">
                 <button onclick="checkSmsOnce({{ $order->id }}, this)"
-                    class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-brand/10 hover:bg-brand/20 text-brand border border-brand/20 rounded-lg text-sm font-semibold transition-colors">
+                    class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 rounded-lg text-sm font-semibold transition-colors">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     Check
                 </button>
@@ -324,12 +324,12 @@
         {{-- Modal header --}}
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700/60">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-brand/20 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                <div class="w-9 h-9 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                 </div>
                 <div>
                     <p class="font-bold text-white">Confirm Order</p>
-                    <p class="text-xs text-slate-400">Review before proceeding</p>
+                    <p class="text-xs text-slate-400">via Server 2</p>
                 </div>
             </div>
             <button onclick="closeModal()" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors">
@@ -375,7 +375,7 @@
 
                 <button type="submit" id="rent-confirm-btn"
                     class="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all"
-                    style="background: linear-gradient(135deg, #0ea5e9, #6366f1)">
+                    style="background: linear-gradient(135deg, #f97316, #ef4444)">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Rent Number Now
                 </button>
@@ -396,22 +396,23 @@
 .service-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 30px rgba(0,0,0,0.35);
-    border-color: rgba(14,165,233,0.35);
+    border-color: rgba(249,115,22,0.35);
 }
 .rent-btn {
-    background: linear-gradient(135deg, #0ea5e9, #6366f1);
+    background: linear-gradient(135deg, #f97316, #ef4444);
     transition: opacity 0.15s, transform 0.1s;
 }
 .rent-btn:hover { opacity: 0.88; }
 .rent-btn:active { transform: scale(0.97); }
 .popular-chip { transition: all 0.15s; }
-.popular-chip.active { background: rgba(14,165,233,0.15); border-color: rgba(14,165,233,0.5); color: #38bdf8; }
+.popular-chip.active { background: rgba(249,115,22,0.15); border-color: rgba(249,115,22,0.5); color: #fb923c; }
 </style>
 
+@push('scripts')
 <script>
 const COUNTRIES_URL     = '/dashboard/virtual-numbers/api/countries';
 const SERVICES_URL      = '/dashboard/virtual-numbers/api/services';
-const currentServer   = '1';
+const currentServer   = '2';
 const currentProvider = 'herosms';
 const USD_TO_NGN     = {{ $usdToNgn }};
 let allServices      = [];
@@ -421,7 +422,6 @@ let countriesCache   = {};
 const COMM_TYPE      = '{{ $commissionType }}';
 const COMM_VALUE     = {{ $commissionValue }};
 
-// Service icon map (emoji)
 const SERVICE_ICONS = {
     'whatsapp':  '💬', 'telegram':  '✈️', 'google':    '🔍', 'instagram': '📸',
     'facebook':  '👤', 'tiktok':    '🎵', 'twitter':   '🐦', 'discord':   '🎮',
@@ -458,39 +458,33 @@ function isWhatsApp(name) {
     return (name || '').toLowerCase().includes('whatsapp');
 }
 
-
-// ── Tab switching ──────────────────────────────────────────────────────────────
 function switchTab(tab) {
     ['browse','active','history'].forEach(t => {
         document.getElementById('pane-' + t)?.classList.add('hidden');
         const btn = document.getElementById('tab-' + t);
         if (btn) {
-            btn.classList.remove('bg-brand','text-white');
+            btn.classList.remove('bg-orange-500','text-white');
             btn.classList.add('text-slate-400');
         }
     });
     document.getElementById('pane-' + tab)?.classList.remove('hidden');
     const active = document.getElementById('tab-' + tab);
     if (active) {
-        active.classList.add('bg-brand','text-white');
+        active.classList.add('bg-orange-500','text-white');
         active.classList.remove('text-slate-400');
     }
     if (tab === 'active') startPolling();
     else stopPolling();
 }
 
-// ── Quick search (popular chip click) ─────────────────────────────────────────
 function quickSearch(term) {
     const input = document.getElementById('svc-search');
     const clearBtn = document.getElementById('svc-search-clear');
     input.value = term;
     clearBtn.classList.remove('hidden');
-
-    // Highlight active chip
     document.querySelectorAll('.popular-chip').forEach(c => {
         c.classList.toggle('active', c.textContent.trim().toLowerCase() === term.toLowerCase());
     });
-
     if (allServices.length === 0) {
         loadServices();
     } else {
@@ -498,7 +492,6 @@ function quickSearch(term) {
     }
 }
 
-// ── Load countries ─────────────────────────────────────────────────────────────
 async function loadCountries() {
     showState('loading');
     try {
@@ -532,16 +525,12 @@ function flagEmoji(iso) {
     return iso.toUpperCase().split('').map(c => String.fromCodePoint(c.charCodeAt(0) - 65 + 0x1F1E6)).join('');
 }
 
-// ── Search helpers ─────────────────────────────────────────────────────────────
 let searchDebounceTimer = null;
 
 function handleSearchInput() {
     const q = document.getElementById('svc-search').value;
     document.getElementById('svc-search-clear').classList.toggle('hidden', q.length === 0);
-
-    // Clear chip highlights if search was manually typed
     document.querySelectorAll('.popular-chip').forEach(c => c.classList.remove('active'));
-
     if (allServices.length === 0 && q.length >= 2) {
         clearTimeout(searchDebounceTimer);
         searchDebounceTimer = setTimeout(() => loadServices(), 400);
@@ -559,12 +548,10 @@ function clearSearch() {
     input.focus();
 }
 
-// ── Country helpers ────────────────────────────────────────────────────────────
 function isUSA(name) { const n=(name||'').toLowerCase(); return n.includes('usa')||n.includes('united states')||n==='us'; }
 function isCanada(name) { const n=(name||'').toLowerCase(); return n.includes('canada')||n==='ca'; }
 function findCountryCodeByPredicate(pred) { return Object.entries(countriesCache).find(([,info]) => pred(info.name))?.[0] || null; }
 
-// ── Load services ──────────────────────────────────────────────────────────────
 async function loadServices() {
     showState('loading');
     const country      = document.getElementById('country-select').value;
@@ -601,15 +588,12 @@ async function loadServices() {
         let services = mapServices(primaryData, displayLabel, country || '');
 
         if (usaSelected) {
-            // Remove the cheapest USA WhatsApp entry, then add Canada WhatsApp under USA label
             try {
                 const canadaCode = findCountryCodeByPredicate(isCanada);
                 if (canadaCode && canadaCode !== country) {
                     const canadaData = await fetchForCode(canadaCode);
                     const canadaWa   = mapServices(canadaData, displayLabel, canadaCode)
                                           .filter(s => isWhatsApp(s.name));
-
-                    // Drop the single cheapest USA WhatsApp to make room for the Canada replacement
                     const usaWaList = services.filter(s => isWhatsApp(s.name));
                     if (usaWaList.length > 0) {
                         const lowestPrice = Math.min(...usaWaList.map(s => s.apiPrice));
@@ -622,17 +606,9 @@ async function loadServices() {
                             return true;
                         });
                     }
-
-                    // Add Canada WhatsApp entries relabelled under USA.
-                    // IMPORTANT: keep Canada's original countryCode so the backend orders from Canada.
-                    // Only the display label (country) changes — the user sees "USA" but we order a Canadian number.
-                    canadaWa.forEach(s => {
-                        services.push({ ...s, country: displayLabel });
-                    });
+                    canadaWa.forEach(s => { services.push({ ...s, country: displayLabel }); });
                 }
             } catch(e) {}
-        } else if (country && isCanada(selectedName)) {
-            // Canada shows its own services normally — no changes needed
         }
 
         if (services.length) { allServices = services; applyFilter(); }
@@ -646,11 +622,9 @@ async function loadServices() {
     }
 }
 
-// ── Filter + render ────────────────────────────────────────────────────────────
 function applyFilter() {
     const q       = document.getElementById('svc-search').value.toLowerCase().trim();
     const sort    = document.getElementById('svc-sort').value;
-    const country = document.getElementById('country-select').value;
 
     let list = allServices.filter(s => {
         if (!q) return true;
@@ -684,7 +658,6 @@ function renderServices(list) {
     grid.classList.remove('hidden');
     count.textContent = list.length + ' service' + (list.length !== 1 ? 's' : '');
 
-    // Group by country
     const grouped = {};
     list.forEach(s => {
         const key = s.country || 'Unknown';
@@ -738,7 +711,6 @@ function buildCard(s) {
 
     return `
     <div class="service-card bg-slate-800 border border-slate-700/60 rounded-2xl p-4 flex flex-col gap-3 cursor-default">
-        {{-- Top row: icon + name --}}
         <div class="flex items-start gap-3">
             <div class="w-11 h-11 rounded-xl bg-slate-700/60 border border-slate-600/40 flex items-center justify-center text-2xl leading-none shrink-0">
                 ${icon}
@@ -748,19 +720,20 @@ function buildCard(s) {
                 ${stockBadge}
             </div>
         </div>
-        {{-- Price --}}
-        <div class="flex items-center justify-between pt-1 border-t border-slate-700/40">
-            <span class="text-lg font-extrabold text-white">${priceDisplay}</span>
-            <button onclick="openModalFromData(this)"
-                data-id="${escHtml(id)}"
-                data-name="${escHtml(name)}"
-                data-price="${apiPrice}"
-                data-country="${escHtml(country)}"
-                data-code="${escHtml(code)}"
-                class="rent-btn px-4 py-2 rounded-xl text-white font-bold text-xs">
-                Get Number
-            </button>
+        <div class="flex items-center justify-between">
+            <div class="text-xl font-extrabold text-white">${priceDisplay}</div>
         </div>
+        <button
+            class="rent-btn w-full py-2.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2"
+            data-id="${escHtml(id)}"
+            data-name="${escHtml(name)}"
+            data-price="${apiPrice}"
+            data-country="${escHtml(country)}"
+            data-code="${escHtml(code)}"
+            onclick="openModalFromData(this)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            Get Number
+        </button>
     </div>`;
 }
 
@@ -768,7 +741,6 @@ function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── State placeholder ──────────────────────────────────────────────────────────
 function showState(type, msg) {
     const grid  = document.getElementById('svc-grid');
     const state = document.getElementById('svc-state');
@@ -777,7 +749,7 @@ function showState(type, msg) {
     document.getElementById('svc-count').textContent = '';
 
     if (type === 'loading') {
-        state.innerHTML = `<div class="w-10 h-10 border-[3px] border-brand border-t-transparent rounded-full animate-spin mb-4"></div><p class="text-slate-400 text-sm">Loading services…</p>`;
+        state.innerHTML = `<div class="w-10 h-10 border-[3px] border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div><p class="text-slate-400 text-sm">Loading services…</p>`;
     } else if (type === 'empty') {
         state.innerHTML = `
             <svg class="w-12 h-12 text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064"/></svg>
@@ -787,11 +759,10 @@ function showState(type, msg) {
         state.innerHTML = `
             <svg class="w-10 h-10 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             <p class="text-red-400 text-sm font-semibold mb-2">${escHtml(msg || 'Error loading services.')}</p>
-            <button onclick="loadServices()" class="px-4 py-1.5 bg-brand/10 hover:bg-brand/20 text-brand border border-brand/20 rounded-lg text-xs font-semibold transition-colors">Retry</button>`;
+            <button onclick="loadServices()" class="px-4 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 rounded-lg text-xs font-semibold transition-colors">Retry</button>`;
     }
 }
 
-// ── Modal ──────────────────────────────────────────────────────────────────────
 function openModalFromData(btn) {
     openModal(btn.dataset.id, btn.dataset.name, parseFloat(btn.dataset.price), btn.dataset.country, btn.dataset.code);
 }
@@ -844,11 +815,9 @@ document.getElementById('rent-form')?.addEventListener('submit', function() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-// ── SMS ping sound ─────────────────────────────────────────────────────────────
 function playPing() {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        // Two-tone chime: a high note then a slightly lower follow note
         [[880, 0, 0.15], [1108, 0.18, 0.15]].forEach(([freq, start, dur]) => {
             const osc  = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -865,12 +834,11 @@ function playPing() {
     } catch(e) {}
 }
 
-// ── SMS polling ─────────────────────────────────────────────────────────────────
 let activeOrderIds = [{{ $activeOrders->pluck('id')->join(', ') }}];
-const countdownTimers = {}; // orderId → setInterval handle
+const countdownTimers = {};
 
 function startCountdown(orderId, receivedAt) {
-    if (countdownTimers[orderId]) return; // already running
+    if (countdownTimers[orderId]) return;
 
     const wrap      = document.getElementById('countdown-wrap-' + orderId);
     const countEl   = document.getElementById('countdown-' + orderId);
@@ -925,7 +893,6 @@ async function requestNewCode(orderId, btn) {
         const data = await res.json();
 
         if (data.success) {
-            // Reset the card back to the "waiting" state
             const waitEl     = document.getElementById('sms-wait-' + orderId);
             const codeWrapEl = document.getElementById('sms-code-wrap-' + orderId);
             const codeEl     = document.getElementById('sms-code-' + orderId);
@@ -941,14 +908,10 @@ async function requestNewCode(orderId, btn) {
                 statusEl.className   = 'text-yellow-400';
             }
 
-            // Stop any running countdown for this order
             if (countdownTimers[orderId]) { clearInterval(countdownTimers[orderId]); delete countdownTimers[orderId]; }
-
-            // Ensure polling resumes
             if (!activeOrderIds.includes(orderId)) activeOrderIds.push(orderId);
             startPolling();
 
-            // Flash the button green briefly
             if (btn) {
                 btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Sent!';
                 btn.classList.add('text-green-400');
@@ -959,10 +922,7 @@ async function requestNewCode(orderId, btn) {
                 }, 3000);
             }
         } else {
-            if (btn) {
-                btn.innerHTML = orig;
-                btn.disabled  = false;
-            }
+            if (btn) { btn.innerHTML = orig; btn.disabled = false; }
             const statusEl = document.getElementById('poll-status-' + orderId);
             if (statusEl) {
                 statusEl.textContent = data.message || 'Request failed. Try again.';
@@ -992,26 +952,18 @@ async function checkSmsOnce(orderId, btn) {
             const statusEl   = document.getElementById('poll-status-' + orderId);
 
             if (data.sms_code && codeEl) {
-                // Only play sound + animate when the code is newly arriving (element was empty before)
                 const isNew = !codeEl.textContent.trim();
-
-                // Populate the code text
                 codeEl.textContent = data.sms_code;
-
-                // Swap visible states
                 if (waitEl)     waitEl.classList.add('hidden');
                 if (codeWrapEl) {
                     codeWrapEl.classList.remove('hidden');
                     if (isNew) {
-                        // Flash the box green to draw attention
                         codeWrapEl.style.transition = 'background-color 0.3s';
                         codeWrapEl.style.backgroundColor = 'rgba(34,197,94,0.25)';
                         setTimeout(() => { codeWrapEl.style.backgroundColor = ''; }, 1200);
                         playPing();
                     }
                 }
-
-                // Update status label
                 if (statusEl) {
                     statusEl.textContent  = '✓ Code received!';
                     statusEl.className    = 'text-green-400';
@@ -1063,21 +1015,18 @@ function updateActiveBadge() {
     if (badge) badge.textContent = remaining;
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     loadCountries();
     @if($activeOrders->count())
     setTimeout(() => switchTab('active'), 300);
     @endif
 
-    // Resume countdowns for any cards already in 'received' state on page load
     document.querySelectorAll('[data-received-at]').forEach(card => {
         const receivedAt = card.dataset.receivedAt;
         if (!receivedAt) return;
         const orderId = card.id.replace('active-card-', '');
         const endsAt  = new Date(receivedAt).getTime() + 3 * 60 * 1000;
         if (Date.now() >= endsAt) {
-            // Already past 3 mins — server will clean it up on next load, just hide it
             card.classList.add('hidden');
         } else {
             startCountdown(orderId, receivedAt);
@@ -1085,4 +1034,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
+@endpush
 @endsection

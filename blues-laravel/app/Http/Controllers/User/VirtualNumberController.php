@@ -17,10 +17,10 @@ class VirtualNumberController extends Controller
     public function index()
     {
         $enabled           = Setting::get('virtual_number_enabled', '1') === '1';
+        $server1Enabled    = Setting::get('server1_enabled', '1') === '1';
         $heroSmsConfigured = (new HeroSmsService())->isConfigured();
         $configured        = $heroSmsConfigured;
 
-        $orders  = VirtualNumberOrder::where('user_id', auth()->id())->latest()->paginate(10);
         $wallet  = Wallet::firstOrCreate(['user_id' => auth()->id()], ['balance' => 0]);
 
         $commissionType  = Setting::get('vn_commission_type', 'flat');
@@ -40,7 +40,37 @@ class VirtualNumberController extends Controller
         $historyOrders = $orders->getCollection()->filter(fn($o) => in_array($o->status, ['completed', 'cancelled']));
 
         return view('dashboard.virtual-numbers', compact(
-            'enabled', 'configured', 'heroSmsConfigured',
+            'enabled', 'server1Enabled', 'configured', 'heroSmsConfigured',
+            'orders', 'wallet', 'commissionType', 'commissionValue', 'usdToNgn',
+            'activeOrders', 'historyOrders'
+        ));
+    }
+
+    public function server2()
+    {
+        $enabled        = Setting::get('virtual_number_enabled', '1') === '1';
+        $server2Enabled = Setting::get('server2_enabled', '1') === '1';
+        $configured     = (new HeroSmsService())->isConfigured();
+
+        $wallet = Wallet::firstOrCreate(['user_id' => auth()->id()], ['balance' => 0]);
+
+        $commissionType  = Setting::get('vn_commission_type', 'flat');
+        $commissionValue = (float) Setting::get('vn_commission_value', '0');
+        $usdToNgn        = (float) Setting::get('usd_to_ngn_rate', '1600');
+
+        // Auto-graduate any 'received' orders older than 3 minutes to 'completed'
+        VirtualNumberOrder::where('user_id', auth()->id())
+            ->where('status', 'received')
+            ->where('sms_received_at', '<', now()->subMinutes(3))
+            ->update(['status' => 'completed']);
+
+        $orders = VirtualNumberOrder::where('user_id', auth()->id())->latest()->paginate(10);
+
+        $activeOrders  = $orders->getCollection()->filter(fn($o) => in_array($o->status, ['active', 'received']));
+        $historyOrders = $orders->getCollection()->filter(fn($o) => in_array($o->status, ['completed', 'cancelled']));
+
+        return view('dashboard.virtual-numbers-server2', compact(
+            'enabled', 'server2Enabled', 'configured',
             'orders', 'wallet', 'commissionType', 'commissionValue', 'usdToNgn',
             'activeOrders', 'historyOrders'
         ));

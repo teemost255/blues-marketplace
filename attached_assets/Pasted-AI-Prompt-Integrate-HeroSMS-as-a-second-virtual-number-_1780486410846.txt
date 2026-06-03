@@ -1,0 +1,90 @@
+AI Prompt — Integrate HeroSMS as a second virtual number server into a Laravel 12 marketplace
+
+I have a Laravel 12 / PHP 8.2 marketplace called TopVerifi. It already has GrizzlySMS integrated as "Server 1" for virtual number rentals. I want to add HeroSMS as "Server 2". Follow these exact steps:
+
+1. Service class — app/Services/HeroSmsService.php
+
+Store the API key in the settings database table under the key herosms_api_key. Retrieve it via Setting::get('herosms_api_key', '').
+Add an isConfigured(): bool method that returns true only if the key is non-empty.
+Base API URL: https://hero-sms.com/stubs/handler_api.php
+All requests are GET with ?api_key=KEY&action=ACTION plus any extra params. Use Laravel's HTTP client with a 15-second timeout.
+Implement these methods:
+getBalance() — action getBalance. Success response body starts with ACCESS_BALANCE:. Extract the float after the colon. Return ['success'=>true, 'data'=>['balance'=>(float)]].
+getCountries() — action getCountries. Returns JSON array of country objects each with id, name, isoCode, prefix. Map to ['id','name','iso','prefix'].
+getServices(string $countryId = '') — action getServices with optional country param. Response is a JSON object keyed by service abbreviation, each value has count and cost. Map abbreviations to human-readable names using a SERVICE_NAMES constant array (covering ~300+ common services: go→Google, fb→Facebook, wa→WhatsApp, tg→Telegram, tk→TikTok, ig→Instagram, etc). Add a serviceName(string $code): string helper.
+getAllServices() — when no country is specified, call getNumbersStatus action with no country to retrieve a global price list. Aggregate count and find min_cost across all countries per service. Return the same shape as getServices().
+orderNumber(string $service, string $country) — action getNumber with service and country params. Success response starts with ACCESS_NUMBER:. Parse orderId:phoneNumber from the part after the colon. Return ['success'=>true, 'data'=>['order_id'=>…, 'phone'=>…]].
+getStatus(string $orderId) — action getStatus with id param. Parse known prefixes: STATUS_WAIT_CODE=waiting, STATUS_CANCEL=cancelled, STATUS_OK:CODE=received (extract the SMS code). Return ['success'=>true, 'data'=>['status'=>…, 'code'=>…]].
+cancelOrder(string $orderId) — action setStatus with id and status=8. Success response is ACCESS_CANCEL.
+Add a private call(array $params): array method that sends the GET, catches exceptions, and always returns ['success'=>bool, 'body'=>string, 'message'=>string].
+Add a private parsePlain(string $body): array method that maps known error strings (NO_KEY, BAD_KEY, NO_NUMBERS, NO_BALANCE, etc.) to human-readable messages.
+2. Database — virtual_number_orders table
+
+The existing table already has a provider column (varchar). No migration needed.
+When creating a HeroSMS order, set provider = 'herosms'. When querying Server 2 orders, always filter by where('provider', 'herosms').
+3. Routes — routes/web.php
+
+Inside the authenticated user route group, add:
+
+Route::get('/dashboard/virtual-numbers/server2', [VirtualNumberController::class, 'server2'])
+     ->name('dashboard.virtual-numbers.server2');
+Place this before any parameterised routes like /{id} to avoid conflicts.
+
+In the admin route group, add:
+
+Route::get('/admin/virtual-numbers/herosms-balance', [VirtualNumberOrdersController::class, 'heroSmsBalance'])
+     ->name('admin.virtual-numbers.herosms-balance');
+4. User controller — VirtualNumberController
+
+Keep index() as Server 1 only: filter orders by where('provider','grizzlysms'), check server1_enabled setting.
+Add server2() method: filter orders by where('provider','herosms'), check server2_enabled setting, instantiate HeroSmsService, pass heroSmsConfigured to the view.
+The existing order() POST endpoint already reads provider from the hidden form field and routes to the correct service class. The HeroSMS branch calls orderNumber(), stores the result with provider='herosms'.
+The existing sms() (polling) and cancel() endpoints already check the order's provider field and call the correct service.
+5. Admin controller — VirtualNumberOrdersController
+
+Add a heroSmsBalance() method:
+
+public function heroSmsBalance() {
+    $svc = new HeroSmsService();
+    if (!$svc->isConfigured()) return response()->json(['success'=>false,'message'=>'Not configured']);
+    $result = $svc->getBalance();
+    if ($result['success']) return response()->json(['success'=>true,'balance'=>$result['data']['balance']]);
+    return response()->json(['success'=>false,'message'=>$result['message']]);
+}
+6. Admin Settings — SettingsController
+
+Add these keys everywhere (load, validate, save):
+
+herosms_api_key — nullable string, saved via Setting::set.
+server1_enabled — boolean (checkbox), saved as '1' or '0' using Setting::set('server1_enabled', $request->boolean('server1_enabled') ? '1' : '0').
+server2_enabled — same pattern as server1_enabled.
+7. Admin Settings view
+
+Add two new settings cards:
+
+"Virtual Numbers — Server 2" card: password input for herosms_api_key with show/hide toggle button, and an orange on/off toggle for server2_enabled.
+Inside the GrizzlySMS card: add an orange on/off toggle for server1_enabled below the API key and exchange-rate fields.
+Add JS event listeners for both toggles that animate the background and dot (match the existing toggle pattern in the file).
+8. Admin Dashboard — DashboardController + view
+
+In DashboardController::index(), fetch HeroSMS balance server-side (same pattern as GrizzlySMS). Pass $heroBalance and $heroError to the view.
+In the dashboard view, change the balance widget grid from md:grid-cols-2 to md:grid-cols-3 and add a third card: "Server 2 API Wallet" with provider name in a small subtitle, orange icon, live refresh button that hits /admin/virtual-numbers/herosms-balance.
+Add a refreshHeroBalance() async JS function matching the existing refreshGrizzlyBalance() pattern.
+9. User-facing views — hide provider names
+
+Sidebar dropdown: show "Server 1" and "Server 2" only — no provider brand names.
+Server 1 page badge and filter pill: "Server 1" only.
+Server 2 page badge, confirmation modal subtitle, unconfigured-state message: "Server 2" only.
+Admin dashboard and settings pages may show the real provider name (GrizzlySMS / HeroSMS) as a small subtitle for admin reference.
+10. Server 2 Blade view — virtual-numbers-server2.blade.php
+
+Create a standalone page (do not share state with Server 1's view):
+
+"Server 2" badge in orange in the header.
+Country selector (fetches /dashboard/virtual-numbers/api/countries?provider=herosms).
+Service grid (fetches /dashboard/virtual-numbers/api/services?provider=herosms&country=X). Shows all services globally when no country selected.
+Rent button posts to /dashboard/virtual-numbers/order with hidden provider=herosms.
+Active rentals tab with 5-second SMS polling (/dashboard/virtual-numbers/{id}/sms).
+Rental history tab.
+Confirmation modal labelled "via Server 2" (no provider name).
+@push('scripts') block — requires @stack('scripts') in the layout.

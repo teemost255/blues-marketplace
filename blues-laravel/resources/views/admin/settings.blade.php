@@ -233,6 +233,67 @@
                     Top Up Wallet
                 </a>
             </div>
+
+            {{-- Server 1 toggle --}}
+            <div class="pt-4 border-t border-slate-700">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <div class="relative">
+                        <input type="checkbox" name="server1_enabled" value="1" id="server1-toggle"
+                            {{ $settings['server1_enabled'] === '1' ? 'checked' : '' }} class="sr-only">
+                        <div class="w-10 h-6 rounded-full transition-colors" id="server1-toggle-bg"
+                             style="background: {{ $settings['server1_enabled'] === '1' ? '#f97316' : '#475569' }}"></div>
+                        <div class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform" id="server1-toggle-dot"
+                             style="transform: {{ $settings['server1_enabled'] === '1' ? 'translateX(1rem)' : 'translateX(0)' }}"></div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-white font-medium">Enable Server 1</p>
+                        <p class="text-xs text-slate-400">Show / hide the Server 1 virtual numbers tab for users</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    {{-- Virtual Numbers — Server 2 --}}
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6" id="server2">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-lg bg-orange-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-white">Virtual Numbers — Server 2</h2>
+                <p class="text-xs text-slate-400">Uses the same HeroSMS API key as Server 1. Toggle independently to control which servers users see.</p>
+            </div>
+        </div>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between bg-slate-700/30 border border-slate-600/50 rounded-lg px-4 py-3">
+                <div>
+                    <p class="text-sm text-white">API Provider</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Server 2 uses the HeroSMS API key configured above.</p>
+                </div>
+                <span class="inline-flex items-center gap-1.5 bg-orange-700/40 text-orange-300 text-xs font-semibold px-3 py-1.5 rounded-lg">
+                    <span class="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block"></span>
+                    HeroSMS
+                </span>
+            </div>
+
+            {{-- Server 2 toggle --}}
+            <div class="pt-2">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <div class="relative">
+                        <input type="checkbox" name="server2_enabled" value="1" id="server2-toggle"
+                            {{ $settings['server2_enabled'] === '1' ? 'checked' : '' }} class="sr-only">
+                        <div class="w-10 h-6 rounded-full transition-colors" id="server2-toggle-bg"
+                             style="background: {{ $settings['server2_enabled'] === '1' ? '#f97316' : '#475569' }}"></div>
+                        <div class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform" id="server2-toggle-dot"
+                             style="transform: {{ $settings['server2_enabled'] === '1' ? 'translateX(1rem)' : 'translateX(0)' }}"></div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-white font-medium">Enable Server 2</p>
+                        <p class="text-xs text-slate-400">Show / hide the Server 2 virtual numbers tab for users</p>
+                    </div>
+                </label>
+            </div>
         </div>
     </div>
 
@@ -511,6 +572,14 @@ function toggleMailPassword() {
 document.getElementById('vn-toggle').addEventListener('change', function() {
     document.getElementById('vn-toggle-bg').style.background = this.checked ? '#0ea5e9' : '#475569';
     document.getElementById('vn-toggle-dot').style.transform = this.checked ? 'translateX(1rem)' : 'translateX(0)';
+});
+document.getElementById('server1-toggle').addEventListener('change', function() {
+    document.getElementById('server1-toggle-bg').style.background = this.checked ? '#f97316' : '#475569';
+    document.getElementById('server1-toggle-dot').style.transform = this.checked ? 'translateX(1rem)' : 'translateX(0)';
+});
+document.getElementById('server2-toggle').addEventListener('change', function() {
+    document.getElementById('server2-toggle-bg').style.background = this.checked ? '#f97316' : '#475569';
+    document.getElementById('server2-toggle-dot').style.transform = this.checked ? 'translateX(1rem)' : 'translateX(0)';
 });
 document.getElementById('bt-toggle').addEventListener('change', function() {
     document.getElementById('bt-toggle-bg').style.background = this.checked ? '#10b981' : '#475569';
