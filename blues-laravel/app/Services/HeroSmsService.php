@@ -79,22 +79,69 @@ class HeroSmsService
 
             $response = Http::timeout(15)->get($this->baseUrl, $params);
             $body     = trim($response->body());
+            $status   = $response->status();
 
-            // Try JSON first — most common format
-            $data = $response->json();
-            if (is_array($data)) {
-                return $this->normalizePrices($data, $country);
-            }
+            // Log the raw response for debugging
+            Log::debug('HeroSMS getPrices raw response', [
+                'country'      => $country,
+                'http_status'  => $status,
+                'body_length'  => strlen($body),
+                'body_preview' => substr($body, 0, 500),
+            ]);
 
-            // Fallback: plain numeric (single-service response like "0.25")
-            if (is_numeric($body)) {
+            if ($status !== 200 || empty($body)) {
+                Log::warning('HeroSMS getPrices: bad HTTP status or empty body', [
+                    'country' => $country, 'status' => $status,
+                ]);
                 return [];
             }
 
+            // Try JSON first — most common format
+            $data = $response->json();
+            if (is_array($data) && !empty($data)) {
+                $normalized = $this->normalizePrices($data, $country);
+                Log::debug('HeroSMS getPrices normalized', [
+                    'country' => $country,
+                    'shape_count' => count($normalized),
+                    'sample' => array_slice($normalized, 0, 3, true),
+                ]);
+                return $normalized;
+            }
+
+            // Non-JSON response (e.g. "BAD_ACTION", "ERROR_KEY", plain number)
+            Log::warning('HeroSMS getPrices: non-JSON or empty JSON response', [
+                'country' => $country,
+                'body'    => $body,
+            ]);
             return [];
         } catch (\Exception $e) {
             Log::error('HeroSMS getPrices error', ['country' => $country, 'error' => $e->getMessage()]);
             return [];
+        }
+    }
+
+    /**
+     * Return the raw body from a getPrices call — used by the admin debug endpoint.
+     */
+    public function getRawPricesResponse(int $country): array
+    {
+        try {
+            $params = ['api_key' => $this->apiKey, 'action' => 'getPrices'];
+            if ($country > 0) $params['country'] = $country;
+
+            $response = Http::timeout(15)->get($this->baseUrl, $params);
+            $body     = trim($response->body());
+
+            return [
+                'http_status'  => $response->status(),
+                'body_length'  => strlen($body),
+                'body_preview' => substr($body, 0, 2000),
+                'is_json'      => is_array($response->json()),
+                'json_keys'    => is_array($response->json()) ? array_slice(array_keys($response->json()), 0, 10) : [],
+                'first_value'  => is_array($response->json()) ? json_encode(array_values($response->json())[0] ?? null) : null,
+            ];
+        } catch (\Exception $e) {
+            return ['error' => $e->getMessage()];
         }
     }
 
@@ -119,51 +166,65 @@ class HeroSmsService
         $firstKey   = array_key_first($data);
         $firstValue = $data[$firstKey] ?? null;
 
-        // Shape A: keys are service codes (non-numeric), values have 'cost' directly
-        if (!is_numeric($firstKey) && is_array($firstValue) && isset($firstValue['cost'])) {
+        // Shape A: { "tg": {"cost": "0.25", "count": 100}, ... }
+        // Keys are service codes (non-numeric), values have 'cost' directly (may be string or float)
+        if (!is_numeric($firstKey) && is_array($firstValue) && array_key_exists('cost', $firstValue)) {
             $result = [];
             foreach ($data as $code => $info) {
                 $cost = is_array($info) ? ($info['cost'] ?? null) : $info;
-                if ($cost !== null) {
+                if ($cost !== null && is_numeric($cost) && (float)$cost > 0) {
                     $result[(string) $code] = (float) $cost;
                 }
             }
             return $result;
         }
 
-        // Shape B: keys are service codes (non-numeric), values are country-keyed maps
-        // e.g. { "tg": { "0": {"cost":0.25}, "7": {"cost":0.30} } }
-        if (!is_numeric($firstKey) && is_array($firstValue) && !isset($firstValue['cost'])) {
+        // Shape B: { "tg": {"0": {"cost":"0.25"}, "7": {"cost":"0.30"}}, ... }
+        // Keys are service codes (non-numeric), values are country-keyed maps
+        if (!is_numeric($firstKey) && is_array($firstValue) && !array_key_exists('cost', $firstValue)) {
             $result = [];
             foreach ($data as $code => $countryMap) {
                 if (!is_array($countryMap)) continue;
-                // Prefer the requested country, fall back to global (0), then take min
-                if (isset($countryMap[$country]['cost'])) {
-                    $result[(string) $code] = (float) $countryMap[$country]['cost'];
-                } elseif (isset($countryMap[0]['cost'])) {
-                    $result[(string) $code] = (float) $countryMap[0]['cost'];
+
+                // Try exact country match first, then global (0), then minimum
+                $cost = null;
+                if (isset($countryMap[$country]) && is_array($countryMap[$country]) && isset($countryMap[$country]['cost'])) {
+                    $cost = $countryMap[$country]['cost'];
+                } elseif (isset($countryMap['0']) && is_array($countryMap['0']) && isset($countryMap['0']['cost'])) {
+                    $cost = $countryMap['0']['cost'];
+                } elseif (isset($countryMap[0]) && is_array($countryMap[0]) && isset($countryMap[0]['cost'])) {
+                    $cost = $countryMap[0]['cost'];
                 } else {
-                    // Pick the minimum price across all countries
-                    $costs = array_filter(array_map(
-                        fn($v) => is_array($v) ? ($v['cost'] ?? null) : null,
-                        $countryMap
-                    ), fn($c) => $c !== null);
-                    if (!empty($costs)) {
-                        $result[(string) $code] = (float) min($costs);
+                    // Pick the minimum cost across all countries
+                    $costs = [];
+                    foreach ($countryMap as $v) {
+                        if (is_array($v) && isset($v['cost']) && is_numeric($v['cost']) && (float)$v['cost'] > 0) {
+                            $costs[] = (float) $v['cost'];
+                        }
                     }
+                    if (!empty($costs)) $cost = min($costs);
+                }
+
+                if ($cost !== null && is_numeric($cost) && (float)$cost > 0) {
+                    $result[(string) $code] = (float) $cost;
                 }
             }
             return $result;
         }
 
-        // Shape C: keys are country IDs (numeric), values have 'cost'
-        if (is_numeric($firstKey) && is_array($firstValue) && isset($firstValue['cost'])) {
-            $target = $data[$country] ?? $data[0] ?? null;
-            if ($target && isset($target['cost'])) {
+        // Shape C: { "0": {"cost":"0.25"}, "7": {"cost":"0.30"}, ... }
+        // Keys are country IDs (numeric), values have 'cost' — single-service price response
+        if (is_numeric($firstKey) && is_array($firstValue) && array_key_exists('cost', $firstValue)) {
+            $target = $data[$country] ?? $data['0'] ?? $data[0] ?? array_values($data)[0] ?? null;
+            if ($target && isset($target['cost']) && is_numeric($target['cost'])) {
                 return ['*' => (float) $target['cost']];
             }
         }
 
+        Log::warning('HeroSMS getPrices: unrecognized response shape', [
+            'first_key'   => $firstKey,
+            'first_value' => json_encode($firstValue),
+        ]);
         return [];
     }
 

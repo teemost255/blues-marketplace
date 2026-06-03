@@ -82,4 +82,26 @@ class VirtualNumberSettingsController extends Controller
             return response()->json(['success' => false, 'message' => 'Connection failed: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Debug endpoint: returns the raw getPrices API response so we can diagnose
+     * which JSON shape HeroSMS is actually sending back.
+     */
+    public function debugPrices(\Illuminate\Http\Request $request)
+    {
+        $sms = new HeroSmsService();
+        if (!$sms->isConfigured()) {
+            return response()->json(['error' => 'API key not configured.'], 422);
+        }
+
+        $country = (int) $request->query('country', 0);
+        $raw     = $sms->getRawPricesResponse($country);
+
+        // Also run the normalized result so we can compare
+        $normalized = $sms->getPricesForCountry($country);
+        $raw['normalized_count']  = count($normalized);
+        $raw['normalized_sample'] = array_slice($normalized, 0, 5, true);
+
+        return response()->json($raw);
+    }
 }

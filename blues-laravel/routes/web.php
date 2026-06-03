@@ -195,7 +195,8 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::get('/virtual-numbers', [VirtualNumbersController::class, 'index'])->name('virtual-numbers');
     Route::get('/virtual-number-settings',        [VirtualNumberSettingsController::class, 'index'])->name('virtual-number-settings');
     Route::post('/virtual-number-settings',       [VirtualNumberSettingsController::class, 'update'])->name('virtual-number-settings.update');
-    Route::get('/virtual-number-settings/test',   [VirtualNumberSettingsController::class, 'testConnection'])->name('virtual-number-settings.test');
+    Route::get('/virtual-number-settings/test',        [VirtualNumberSettingsController::class, 'testConnection'])->name('virtual-number-settings.test');
+    Route::get('/virtual-number-settings/debug-prices', [VirtualNumberSettingsController::class, 'debugPrices'])->name('virtual-number-settings.debug-prices');
 
     // Bank Transfers
     Route::get('/bank-transfers',                [AdminBankTransferController::class, 'index'])->name('bank-transfers');

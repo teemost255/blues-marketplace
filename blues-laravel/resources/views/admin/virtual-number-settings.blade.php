@@ -179,15 +179,28 @@
                 <p class="field-hint">How many Naira per 1 USD of API cost. E.g. <strong style="color:#f1f5f9;">1600</strong> means $0.25 API cost = ₦400 base price. Update this whenever the exchange rate changes.</p>
             </div>
 
-            {{-- Test connection --}}
-            <div class="flex items-center gap-3">
+            {{-- Test connection + Debug prices --}}
+            <div class="flex items-center flex-wrap gap-3">
                 <button type="button" id="test-btn" onclick="testConnection()">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
                     Test Connection
                 </button>
+                <button type="button" id="debug-btn" onclick="debugPrices()"
+                        style="display:inline-flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:600;padding:.5rem 1rem;border-radius:.5rem;background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);cursor:pointer;transition:all .15s;"
+                        onmouseover="this.style.background='rgba(99,102,241,.25)'" onmouseout="this.style.background='rgba(99,102,241,.15)'">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    Debug Prices API
+                </button>
                 <span id="test-result" class="text-xs hidden"></span>
+            </div>
+
+            {{-- Debug result panel (hidden by default) --}}
+            <div id="debug-panel" class="hidden rounded-lg p-3 text-xs font-mono overflow-auto max-h-64"
+                 style="background:#0a0f1a;border:1px solid rgba(99,102,241,.25);color:#94a3b8;white-space:pre-wrap;word-break:break-all;">
             </div>
         </div>
 
@@ -554,6 +567,40 @@ async function testConnection() {
 
 /* Init commission label */
 updateCommissionLabel();
+
+/* ── Debug prices API ── */
+async function debugPrices() {
+    const btn   = document.getElementById('debug-btn');
+    const panel = document.getElementById('debug-panel');
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Loading…`;
+    panel.classList.remove('hidden');
+    panel.textContent = 'Calling HeroSMS getPrices…';
+
+    try {
+        const r = await fetch('{{ route("admin.virtual-number-settings.debug-prices") }}?country=0', {
+            headers: { Accept: 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+        });
+        const d = await r.json();
+        panel.textContent = JSON.stringify(d, null, 2);
+
+        // Colour the panel based on result
+        if (d.normalized_count > 0) {
+            panel.style.borderColor = 'rgba(74,222,128,.3)';
+            panel.style.color = '#86efac';
+        } else {
+            panel.style.borderColor = 'rgba(248,113,113,.3)';
+            panel.style.color = '#fca5a5';
+        }
+    } catch (e) {
+        panel.textContent = 'Request failed: ' + e.message;
+        panel.style.borderColor = 'rgba(248,113,113,.3)';
+        panel.style.color = '#fca5a5';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg> Debug Prices API`;
+}
 
 /* ── Copy webhook URL ── */
 function copyWebhookUrl() {
