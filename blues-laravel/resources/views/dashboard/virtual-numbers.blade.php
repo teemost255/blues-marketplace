@@ -164,7 +164,8 @@
         @foreach($activeOrders as $order)
         <div id="active-card-{{ $order->id }}"
             class="bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col gap-3.5 relative overflow-hidden"
-            data-received-at="{{ $order->sms_received_at ? $order->sms_received_at->toIso8601String() : '' }}">
+            data-received-at="{{ $order->sms_received_at ? $order->sms_received_at->toIso8601String() : '' }}"
+            data-created-at="{{ $order->created_at->toIso8601String() }}">
 
             {{-- Pulse indicator --}}
             <div class="absolute top-4 right-4 flex items-center gap-1.5">
@@ -218,7 +219,7 @@
             {{-- Status + cost --}}
             <div class="flex items-center justify-between text-xs">
                 <p id="poll-status-{{ $order->id }}" class="{{ $order->status === 'received' ? 'text-green-400' : 'text-slate-500' }}">
-                    {{ $order->status === 'received' ? '✓ Code received!' : 'Checking every 5 s…' }}
+                    {{ $order->status === 'received' ? '✓ Code received!' : 'Checking every 3 s…' }}
                 </p>
                 <span class="text-slate-600">₦{{ number_format($order->cost, 2) }} · {{ $order->created_at->diffForHumans() }}</span>
             </div>
@@ -234,26 +235,20 @@
                 <button onclick="checkSmsOnce({{ $order->id }}, this)"
                     class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-brand/10 hover:bg-brand/20 text-brand border border-brand/20 rounded-lg text-sm font-semibold transition-colors">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    Check
+                    Check Now
                 </button>
-                <button onclick="requestNewCode({{ $order->id }}, this)" id="resend-btn-{{ $order->id }}"
-                    class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-yellow-900/10 hover:bg-yellow-900/30 text-yellow-400 border border-yellow-700/20 rounded-lg text-sm font-semibold transition-colors">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    New Code
+                {{-- Cancel button: hidden until 2 minutes have elapsed since order creation --}}
+                <button id="cancel-btn-{{ $order->id }}"
+                    onclick="cancelOrder({{ $order->id }}, this)"
+                    class="hidden flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-900/10 hover:bg-red-900/30 text-red-400 border border-red-700/20 rounded-lg text-sm font-semibold transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Cancel
                 </button>
-                <form method="POST" action="{{ route('dashboard.virtual-numbers.cancel', $order->id) }}"
-                    onsubmit="return confirm('Cancel this rental? Your balance will be refunded if no SMS was received.')" class="flex-1">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="w-full flex items-center justify-center gap-1.5 py-2 bg-red-900/10 hover:bg-red-900/30 text-red-400 border border-red-700/20 rounded-lg text-sm font-semibold transition-colors">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        Cancel
-                    </button>
-                </form>
             </div>
         </div>
         @endforeach
     </div>
-    <p class="text-xs text-slate-600 text-center mt-4">Codes are checked automatically every 5 seconds.</p>
+    <p class="text-xs text-slate-600 text-center mt-4">Codes are checked automatically every 3 seconds. Cancel button appears after 2 minutes.</p>
     @endif
 </div>
 
@@ -912,16 +907,18 @@ function dismissCard(orderId) {
     if (countdownTimers[orderId]) { clearInterval(countdownTimers[orderId]); delete countdownTimers[orderId]; }
 }
 
-async function requestNewCode(orderId, btn) {
-    const orig = btn?.innerHTML;
-    const spinner = '<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Requesting…';
+async function cancelOrder(orderId, btn) {
+    if (!confirm('Cancel this rental? Your wallet balance will be refunded if no SMS was received.')) return;
+
+    const orig    = btn?.innerHTML;
+    const spinner = '<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Cancelling…';
     if (btn) { btn.innerHTML = spinner; btn.disabled = true; }
 
     try {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
             || document.querySelector('input[name="_token"]')?.value || '';
-        const res  = await fetch(`/dashboard/virtual-numbers/${orderId}/resend`, {
-            method: 'POST',
+        const res  = await fetch(`/dashboard/virtual-numbers/${orderId}/cancel`, {
+            method: 'DELETE',
             credentials: 'same-origin',
             headers: {
                 'Accept': 'application/json',
@@ -932,56 +929,23 @@ async function requestNewCode(orderId, btn) {
         const data = await res.json();
 
         if (data.success) {
-            // Reset the card back to the "waiting" state
-            const waitEl     = document.getElementById('sms-wait-' + orderId);
-            const codeWrapEl = document.getElementById('sms-code-wrap-' + orderId);
-            const codeEl     = document.getElementById('sms-code-' + orderId);
-            const statusEl   = document.getElementById('poll-status-' + orderId);
-            const cntWrap    = document.getElementById('countdown-wrap-' + orderId);
-
-            if (codeEl)     codeEl.textContent = '';
-            if (waitEl)     waitEl.classList.remove('hidden');
-            if (codeWrapEl) codeWrapEl.classList.add('hidden');
-            if (cntWrap)    cntWrap.classList.add('hidden');
-            if (statusEl) {
-                statusEl.textContent = 'New code requested. Waiting for SMS…';
-                statusEl.className   = 'text-yellow-400';
-            }
-
-            // Stop any running countdown for this order
-            if (countdownTimers[orderId]) { clearInterval(countdownTimers[orderId]); delete countdownTimers[orderId]; }
-
-            // Ensure polling resumes
-            if (!activeOrderIds.includes(orderId)) activeOrderIds.push(orderId);
-            startPolling();
-
-            // Flash the button green briefly
-            if (btn) {
-                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Sent!';
-                btn.classList.add('text-green-400');
-                setTimeout(() => {
-                    btn.innerHTML = orig;
-                    btn.classList.remove('text-green-400');
-                    btn.disabled = false;
-                }, 3000);
-            }
+            // Stop polling this order and remove the card from the DOM
+            activeOrderIds = activeOrderIds.filter(id => id !== orderId);
+            dismissCard(orderId);
         } else {
-            if (btn) {
-                btn.innerHTML = orig;
-                btn.disabled  = false;
-            }
+            if (btn) { btn.innerHTML = orig; btn.disabled = false; }
             const statusEl = document.getElementById('poll-status-' + orderId);
             if (statusEl) {
-                statusEl.textContent = data.message || 'Request failed. Try again.';
+                statusEl.textContent = data.message || 'Could not cancel. Please try again.';
                 statusEl.className   = 'text-red-400';
                 setTimeout(() => {
-                    statusEl.textContent = 'Checking every 5 s…';
+                    statusEl.textContent = 'Checking every 3 s…';
                     statusEl.className   = 'text-slate-500';
                 }, 4000);
             }
         }
     } catch (e) {
-        console.warn('requestNewCode error', e);
+        console.warn('cancelOrder error', e);
         if (btn) { btn.innerHTML = orig; btn.disabled = false; }
     }
 }
@@ -1039,8 +1003,9 @@ async function checkSmsOnce(orderId, btn) {
 
 function startPolling() {
     if (pollInterval || !activeOrderIds.length) return;
+    // Immediate first check, then every 3 s
     activeOrderIds.forEach(id => checkSmsOnce(id, null));
-    pollInterval = setInterval(() => { activeOrderIds.forEach(id => checkSmsOnce(id, null)); }, 5000);
+    pollInterval = setInterval(() => { activeOrderIds.forEach(id => checkSmsOnce(id, null)); }, 3000);
 }
 function stopPolling() { if (pollInterval) { clearInterval(pollInterval); pollInterval = null; } }
 
@@ -1089,6 +1054,21 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             startCountdown(orderId, receivedAt);
         }
+    });
+
+    // Show the cancel button 2 minutes after order creation.
+    // If the order is already ≥2 min old when the page loads, reveal it immediately.
+    const TWO_MIN = 2 * 60 * 1000;
+    document.querySelectorAll('[data-created-at]').forEach(card => {
+        const createdAt = card.dataset.createdAt;
+        if (!createdAt) return;
+        const orderId   = card.id.replace('active-card-', '');
+        const elapsed   = Date.now() - new Date(createdAt).getTime();
+        const delay     = Math.max(0, TWO_MIN - elapsed);
+        setTimeout(() => {
+            const cancelBtn = document.getElementById('cancel-btn-' + orderId);
+            if (cancelBtn) cancelBtn.classList.remove('hidden');
+        }, delay);
     });
 });
 </script>

@@ -327,16 +327,19 @@ class VirtualNumberController extends Controller
 
     // ── Cancel ────────────────────────────────────────────────────────────────
 
-    public function cancel(string $orderId)
+    public function cancel(Request $request, string $orderId)
     {
         $order = VirtualNumberOrder::where('id', $orderId)
             ->where('user_id', auth()->id())
             ->whereIn('status', ['active', 'received'])
             ->firstOrFail();
 
-        // If SMS was already received, just dismiss the order — no API cancel, no refund
+        // If SMS was already received, just dismiss — no API cancel, no refund
         if ($order->status === 'received') {
             $order->update(['status' => 'cancelled']);
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Order dismissed.']);
+            }
             return back()->with('success', 'Order dismissed.');
         }
 
@@ -352,9 +355,15 @@ class VirtualNumberController extends Controller
             if ($order->cost > 0) {
                 $this->processRefund($order);
             }
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Order cancelled and wallet refunded.']);
+            }
             return back()->with('success', 'Order cancelled and wallet refunded.');
         }
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Could not cancel order. Please try again.'], 422);
+        }
         return back()->with('error', $result['message'] ?? 'Could not cancel order.');
     }
 
