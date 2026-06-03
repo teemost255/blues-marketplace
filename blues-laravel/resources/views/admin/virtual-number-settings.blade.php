@@ -170,6 +170,15 @@
                 <p class="field-hint">Obtain from your <a href="https://hero-sms.com" target="_blank" class="field-link">HeroSMS</a> provider account settings.</p>
             </div>
 
+            {{-- Exchange Rate --}}
+            <div class="vn-field">
+                <label>USD → NGN Exchange Rate</label>
+                <input type="number" name="herosms_exchange_rate"
+                       value="{{ $settings['herosms_exchange_rate'] }}"
+                       min="1" step="1" placeholder="1600">
+                <p class="field-hint">How many Naira per 1 USD of API cost. E.g. <strong style="color:#f1f5f9;">1600</strong> means $0.25 API cost = ₦400 base price. Update this whenever the exchange rate changes.</p>
+            </div>
+
             {{-- Test connection --}}
             <div class="flex items-center gap-3">
                 <button type="button" id="test-btn" onclick="testConnection()">
@@ -234,19 +243,25 @@
                     <label>Commission Type</label>
                     <div class="sel-wrap">
                         <select name="herosms_commission_type" id="commission-type" onchange="updateCommissionLabel()">
-                            <option value="flat"       {{ ($settings['herosms_commission_type'] ?? 'flat') === 'flat'       ? 'selected' : '' }}>Flat amount (₦)</option>
-                            <option value="percentage" {{ ($settings['herosms_commission_type'] ?? 'flat') === 'percentage' ? 'selected' : '' }}>Percentage (%)</option>
+                            <option value="flat"       {{ $settings['herosms_commission_type'] === 'flat'       ? 'selected' : '' }}>Flat amount (₦)</option>
+                            <option value="percentage" {{ $settings['herosms_commission_type'] === 'percentage' ? 'selected' : '' }}>Percentage (%)</option>
                         </select>
                     </div>
                 </div>
                 <div class="vn-field">
-                    <label id="commission-amount-label">Commission (<span id="commission-unit">₦</span>)</label>
+                    <label id="commission-amount-label">Commission (<span id="commission-unit">{{ $settings['herosms_commission_type'] === 'percentage' ? '%' : '₦' }}</span>)</label>
                     <input type="number" name="herosms_number_price"
                            id="commission-amount"
                            value="{{ $settings['herosms_number_price'] }}"
-                           min="0" step="0.01" placeholder="500">
-                    <p class="field-hint">Set to 0 to charge no commission.</p>
+                           min="0" step="0.01" placeholder="200">
+                    <p class="field-hint">Added on top of the USD→NGN converted API cost. Set 0 for no extra charge.</p>
                 </div>
+            </div>
+
+            {{-- Live price preview --}}
+            <div class="rounded-lg px-3 py-2.5" style="background:#0f172a;border:1px solid rgba(255,255,255,.08);">
+                <p class="text-xs text-slate-400 mb-1">Example price preview</p>
+                <p class="text-xs text-slate-500">If API cost is <strong style="color:#f1f5f9;" id="preview-usd">$0.25</strong> → Base: <strong style="color:#f1f5f9;" id="preview-base">₦400</strong> + Commission: <strong style="color:#f1f5f9;" id="preview-commission">₦200</strong> = <strong style="color:#fb923c;" id="preview-total">₦600</strong></p>
             </div>
 
             {{-- Cancellation refund --}}
@@ -414,21 +429,45 @@ document.getElementById('herosms-enabled-toggle').addEventListener('change', fun
     syncEnableToggle(this);
 });
 
-/* ── Commission label ── */
+/* ── Commission label + live preview ── */
 function updateCommissionLabel() {
     const type = document.getElementById('commission-type').value;
     const unit = document.getElementById('commission-unit');
     const inp  = document.getElementById('commission-amount');
     if (type === 'percentage') {
         unit.textContent = '%';
-        inp.setAttribute('max', '100');
+        inp.setAttribute('max', '500');
         inp.placeholder = '10';
     } else {
         unit.textContent = '₦';
         inp.removeAttribute('max');
-        inp.placeholder = '500';
+        inp.placeholder = '200';
     }
+    updatePricePreview();
 }
+
+function updatePricePreview() {
+    const exRate     = parseFloat(document.querySelector('[name=herosms_exchange_rate]')?.value) || 1600;
+    const commType   = document.getElementById('commission-type')?.value || 'flat';
+    const commAmount = parseFloat(document.getElementById('commission-amount')?.value) || 0;
+    const exampleUsd = 0.25;
+    const baseNgn    = exampleUsd * exRate;
+    let total, commDisplay;
+    if (commType === 'percentage') {
+        total = Math.ceil(baseNgn * (1 + commAmount / 100));
+        commDisplay = commAmount + '%';
+    } else {
+        total = Math.ceil(baseNgn + commAmount);
+        commDisplay = '₦' + commAmount.toLocaleString();
+    }
+    const el = (id) => document.getElementById(id);
+    if (el('preview-base'))  el('preview-base').textContent  = '₦' + Math.ceil(baseNgn).toLocaleString();
+    if (el('preview-commission')) el('preview-commission').textContent = commDisplay;
+    if (el('preview-total')) el('preview-total').textContent = '₦' + total.toLocaleString();
+}
+
+document.querySelector('[name=herosms_exchange_rate]')?.addEventListener('input', updatePricePreview);
+document.getElementById('commission-amount')?.addEventListener('input', updatePricePreview);
 
 /* ── Test connection ── */
 async function testConnection() {

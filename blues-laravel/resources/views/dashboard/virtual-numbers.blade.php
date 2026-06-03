@@ -551,15 +551,18 @@
         {{-- Cost summary --}}
         <div class="rounded-xl px-4 py-3 mb-2 flex items-center justify-between"
              style="background:#0a1628;border:1px solid #1e3a5f;">
-            <span class="text-xs text-slate-400">Wallet deduction</span>
-            <span class="text-lg font-bold" style="color:#60a5fa;">₦{{ number_format($price, 2) }}</span>
+            <div>
+                <span class="text-xs text-slate-400">Wallet deduction</span>
+                <p class="text-xs text-slate-500 mt-0.5" id="modal-price-breakdown"></p>
+            </div>
+            <span class="text-lg font-bold" id="modal-price-display" style="color:#60a5fa;">—</span>
         </div>
         <div class="rounded-xl px-4 py-2.5 mb-5 flex items-center gap-2"
              style="background:#0a1e3a;border:1px solid #1e3a5f;">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color:#60a5fa;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <p class="text-xs text-slate-400">Number expires after 20 minutes if no SMS received. Partial refund may apply on cancellation.</p>
+            <p class="text-xs text-slate-400">Price is fetched live from the provider. Number expires if no SMS received. Partial refund may apply on cancellation.</p>
         </div>
 
         {{-- Error message --}}
@@ -585,7 +588,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
-                Buy — ₦{{ number_format($price, 0) }}
+                <span id="confirm-buy-label">Buy</span>
             </button>
         </div>
     </div>
@@ -598,12 +601,11 @@
 
 @push('scripts')
 <script>
-const CSRF  = document.querySelector('meta[name="csrf-token"]')?.content ?? '{{ csrf_token() }}';
-const PRICE = {{ $price }};
+const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '{{ csrf_token() }}';
 
-let allServices     = [];
-let countryMap      = {};
-let selectedService = null;
+let allServices       = [];
+let countryMap        = {};
+let selectedService   = null;   // { code, name, count, price, usd_cost }
 let autoRefreshTimers = {};
 
 /* ══════ Tab switching ══════ */
@@ -671,12 +673,12 @@ async function loadServices() {
 }
 
 function renderServices(services) {
-    const grid   = document.getElementById('svc-grid');
-    const empty  = document.getElementById('svc-empty');
-    const label  = document.getElementById('svc-section-label');
-    const count  = document.getElementById('svc-section-count');
-    const countLbl = document.getElementById('svc-count-label');
-    const country  = document.getElementById('country-filter');
+    const grid      = document.getElementById('svc-grid');
+    const empty     = document.getElementById('svc-empty');
+    const label     = document.getElementById('svc-section-label');
+    const count     = document.getElementById('svc-section-count');
+    const countLbl  = document.getElementById('svc-count-label');
+    const country   = document.getElementById('country-filter');
     const countryName = country.options[country.selectedIndex]?.text ?? 'All Countries';
 
     label.textContent = country.value === '0' ? 'All Countries' : countryName;
@@ -690,28 +692,43 @@ function renderServices(services) {
     }
     empty.classList.add('hidden');
 
-    // Sort for price options (client-side fallback)
+    // Client-side price sort fallback
     const sort = document.getElementById('sort-filter').value;
     let sorted = [...services];
-    if (sort === 'price_asc')  sorted.sort((a,b) => (a.price ?? 999) - (b.price ?? 999));
+    if (sort === 'price_asc')  sorted.sort((a,b) => (a.price ?? 999999) - (b.price ?? 999999));
     if (sort === 'price_desc') sorted.sort((a,b) => (b.price ?? 0) - (a.price ?? 0));
 
     grid.innerHTML = sorted.map(svc => {
-        const initial = (svc.name[0] ?? '?').toUpperCase();
+        const initial  = (svc.name[0] ?? '?').toUpperCase();
         const countTxt = svc.count >= 1000
             ? (svc.count / 1000).toFixed(1) + 'k'
             : svc.count.toLocaleString();
-        const priceTag = `<span class="text-sm font-bold" style="color:#60a5fa;">₦${PRICE.toLocaleString()}</span>`;
+
+        const priceNgn = svc.price ?? null;
+        const priceTag = priceNgn !== null
+            ? `<span class="text-sm font-bold" style="color:#60a5fa;">₦${Math.ceil(priceNgn).toLocaleString()}</span>`
+            : `<span class="text-xs text-slate-500">—</span>`;
+
+        // USD hint shown below price
+        const usdHint = svc.usd_cost !== null && svc.usd_cost !== undefined
+            ? `<span class="text-xs text-slate-600">$${parseFloat(svc.usd_cost).toFixed(2)}</span>`
+            : '';
+
+        const priceJson  = priceNgn !== null ? priceNgn : 0;
+        const usdJson    = svc.usd_cost !== null && svc.usd_cost !== undefined ? svc.usd_cost : null;
+        const nameEsc    = svc.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
         return `
-        <div class="svc-card" onclick="openBuyModal('${svc.code}', '${svc.name.replace(/'/g,"\\'")}', ${svc.count})">
+        <div class="svc-card" onclick="openBuyModal('${svc.code}', '${nameEsc}', ${svc.count}, ${priceJson}, ${JSON.stringify(usdJson)})">
             <div class="svc-badge">${initial}</div>
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-white truncate">${svc.name}</p>
-                <p class="text-xs text-slate-500 mt-0.5">${countTxt} pcs available</p>
+                <p class="text-xs text-slate-500 mt-0.5">${countTxt} available</p>
             </div>
-            <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
+            <div class="flex flex-col items-end gap-1 flex-shrink-0">
                 ${priceTag}
-                <button class="buy-btn" onclick="event.stopPropagation(); openBuyModal('${svc.code}', '${svc.name.replace(/'/g,"\\'")}', ${svc.count})">
+                ${usdHint}
+                <button class="buy-btn" onclick="event.stopPropagation(); openBuyModal('${svc.code}', '${nameEsc}', ${svc.count}, ${priceJson}, ${JSON.stringify(usdJson)})">
                     Buy
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -729,14 +746,37 @@ function filterServices() {
 }
 
 /* ══════ Buy Modal ══════ */
-function openBuyModal(code, name, count) {
-    selectedService = { code, name, count };
+function openBuyModal(code, name, count, priceNgn, usdCost) {
+    selectedService = { code, name, count, price: priceNgn, usd_cost: usdCost };
     document.getElementById('modal-service-name').textContent = name;
     document.getElementById('modal-service-count').textContent = `${count.toLocaleString()} numbers available`;
     document.getElementById('modal-error').classList.add('hidden');
     populateModalCountries();
+    updateModalPrice();
     document.getElementById('buy-modal').classList.add('open');
     document.body.style.overflow = 'hidden';
+}
+
+function updateModalPrice() {
+    if (!selectedService) return;
+    const priceEl     = document.getElementById('modal-price-display');
+    const breakdownEl = document.getElementById('modal-price-breakdown');
+    const btnLabel    = document.getElementById('confirm-buy-label');
+
+    const price = selectedService.price;
+    if (price && price > 0) {
+        const fmt = '₦' + Math.ceil(price).toLocaleString();
+        if (priceEl)     priceEl.textContent = fmt;
+        if (btnLabel)    btnLabel.textContent = `Buy — ${fmt}`;
+        if (breakdownEl && selectedService.usd_cost) {
+            breakdownEl.textContent = `API cost: $${parseFloat(selectedService.usd_cost).toFixed(2)} → NGN + commission`;
+        } else if (breakdownEl) {
+            breakdownEl.textContent = '';
+        }
+    } else {
+        if (priceEl)  priceEl.textContent = '—';
+        if (btnLabel) btnLabel.textContent = 'Buy (price loading…)';
+    }
 }
 
 function closeBuyModal() {
@@ -757,6 +797,11 @@ async function confirmBuy() {
     btn.innerHTML = '<span class="pulse-dot"></span> Processing…';
     errBox.classList.add('hidden');
 
+    const priceFmt = selectedService.price
+        ? '₦' + Math.ceil(selectedService.price).toLocaleString()
+        : '';
+    const resetLabel = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> <span>Buy${priceFmt ? ' — ' + priceFmt : ''}</span>`;
+
     try {
         const r = await fetch('{{ route("dashboard.virtual-numbers.order") }}', {
             method: 'POST',
@@ -773,13 +818,13 @@ async function confirmBuy() {
             errTxt.textContent = data.error ?? 'Something went wrong.';
             errBox.classList.remove('hidden');
             btn.disabled = false;
-            btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Buy — ₦${PRICE.toLocaleString()}`;
+            btn.innerHTML = resetLabel;
         }
     } catch (e) {
         errTxt.textContent = 'Network error. Please try again.';
         errBox.classList.remove('hidden');
         btn.disabled = false;
-        btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Buy — ₦${PRICE.toLocaleString()}`;
+        btn.innerHTML = resetLabel;
     }
 }
 

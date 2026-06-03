@@ -15,7 +15,7 @@ class VirtualNumberController extends Controller
         'tk' => 'TikTok',    'ds' => 'Discord',    'am' => 'Amazon',
         'ma' => 'Microsoft', 'ap' => 'Apple',      'ya' => 'Yahoo',
         'li' => 'LinkedIn',  'ub' => 'Uber',       'nf' => 'Netflix',
-        'vi' => 'Viber',     'si' => 'Signal',      'mm' => 'Mail.ru',
+        'vi' => 'Viber',     'si' => 'Signal',     'mm' => 'Mail.ru',
         'vk' => 'VKontakte', 'ok' => 'OK.ru',
     ];
 
@@ -24,13 +24,12 @@ class VirtualNumberController extends Controller
         $user    = Auth::user();
         $wallet  = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
         $enabled = Setting::get('herosms_enabled', '0') === '1';
-        $price   = (float) Setting::get('herosms_number_price', '200');
 
         $orders = VirtualNumberOrder::where('user_id', $user->id)
             ->latest()
             ->paginate(20);
 
-        return view('dashboard.virtual-numbers', compact('wallet', 'enabled', 'price', 'orders'));
+        return view('dashboard.virtual-numbers', compact('wallet', 'enabled', 'orders'));
     }
 
     public function getCountries()
@@ -57,24 +56,41 @@ class VirtualNumberController extends Controller
     public function getServices(Request $request)
     {
         $request->validate(['country' => 'nullable|integer']);
-        $sms     = new HeroSmsService();
+        $sms = new HeroSmsService();
 
         if (!$sms->isConfigured()) {
             return response()->json(['error' => 'Service not configured.'], 503);
         }
 
-        $country  = (int) ($request->country ?? 0);
-        $raw      = $sms->getServicesForCountry($country);
+        $country = (int) ($request->country ?? 0);
+
+        // Fetch availability counts and prices in parallel (both needed)
+        $rawCounts = $sms->getServicesForCountry($country);
+        $rawPrices = $sms->getPricesForCountry($country);
+
         $services = [];
 
-        foreach ($raw as $code => $count) {
-            if ((int) $count > 0) {
-                $services[] = [
-                    'code'  => $code,
-                    'name'  => $this->serviceNames[$code] ?? strtoupper($code),
-                    'count' => (int) $count,
-                ];
+        foreach ($rawCounts as $code => $count) {
+            if ((int) $count <= 0) continue;
+
+            // Look up API USD price for this service
+            $apiUsdPrice = $rawPrices[$code] ?? $rawPrices['*'] ?? null;
+            $priceNgn    = null;
+
+            if ($apiUsdPrice !== null) {
+                $priceNgn = HeroSmsService::calculateNgnPrice((float) $apiUsdPrice);
+            } else {
+                // Fallback: use the stored flat commission as minimum price
+                $priceNgn = (float) Setting::get('herosms_number_price', '200');
             }
+
+            $services[] = [
+                'code'     => $code,
+                'name'     => $this->serviceNames[$code] ?? strtoupper($code),
+                'count'    => (int) $count,
+                'price'    => $priceNgn,
+                'usd_cost' => $apiUsdPrice,
+            ];
         }
 
         $sort = $request->input('sort', 'az');
@@ -82,8 +98,12 @@ class VirtualNumberController extends Controller
             usort($services, fn($a, $b) => strcmp($a['name'], $b['name']));
         } elseif ($sort === 'za') {
             usort($services, fn($a, $b) => strcmp($b['name'], $a['name']));
-        } else {
+        } elseif ($sort === 'count') {
             usort($services, fn($a, $b) => $b['count'] <=> $a['count']);
+        } elseif ($sort === 'price_asc') {
+            usort($services, fn($a, $b) => ($a['price'] ?? 999999) <=> ($b['price'] ?? 999999));
+        } elseif ($sort === 'price_desc') {
+            usort($services, fn($a, $b) => ($b['price'] ?? 0) <=> ($a['price'] ?? 0));
         }
 
         return response()->json(['services' => $services]);
@@ -100,28 +120,52 @@ class VirtualNumberController extends Controller
             return response()->json(['error' => 'Virtual numbers are not available right now.'], 503);
         }
 
-        $price = (float) Setting::get('herosms_number_price', '200');
-        $user  = Auth::user();
-
-        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
-
-        if ($wallet->balance < $price) {
-            return response()->json(['error' => 'Insufficient wallet balance. Please top up first.'], 422);
-        }
-
         $sms = new HeroSmsService();
         if (!$sms->isConfigured()) {
             return response()->json(['error' => 'Service not configured. Contact support.'], 503);
         }
 
-        $result = $sms->getNumber($request->service, (int) $request->country);
+        // Fetch live API price for this service+country
+        $country     = (int) $request->country;
+        $rawPrices   = $sms->getPricesForCountry($country);
+        $apiUsdPrice = $rawPrices[$request->service] ?? $rawPrices['*'] ?? null;
+
+        if ($apiUsdPrice !== null) {
+            $price = HeroSmsService::calculateNgnPrice((float) $apiUsdPrice);
+        } else {
+            // Fallback to flat commission setting when API price unavailable
+            $price = (float) Setting::get('herosms_number_price', '200');
+        }
+
+        $user   = Auth::user();
+        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+
+        if ($wallet->balance < $price) {
+            return response()->json([
+                'error' => 'Insufficient wallet balance. You need ₦' . number_format($price, 2) . '. Please top up first.',
+            ], 422);
+        }
+
+        // Check active rental limit
+        $maxActive  = (int) Setting::get('herosms_max_active', '3');
+        $activeCount = VirtualNumberOrder::where('user_id', $user->id)
+            ->whereIn('status', ['waiting', 'received'])
+            ->count();
+
+        if ($activeCount >= $maxActive) {
+            return response()->json([
+                'error' => "You have reached the maximum of {$maxActive} active rentals. Complete or cancel existing ones first.",
+            ], 422);
+        }
+
+        $result = $sms->getNumber($request->service, $country);
 
         if (!$result['success']) {
             $msg = match($result['error'] ?? '') {
-                'NO_NUMBERS'   => 'No numbers available for this service/country combination.',
-                'NO_BALANCE'   => 'Service temporarily unavailable. Try again later.',
-                'BAD_SERVICE'  => 'Invalid service selected.',
-                default        => 'Could not get a number. Please try another service or country.',
+                'NO_NUMBERS'  => 'No numbers available for this service/country combination.',
+                'NO_BALANCE'  => 'Service temporarily unavailable. Try again later.',
+                'BAD_SERVICE' => 'Invalid service selected.',
+                default       => 'Could not get a number. Please try another service or country.',
             };
             return response()->json(['error' => $msg], 422);
         }
@@ -130,15 +174,16 @@ class VirtualNumberController extends Controller
 
         $wallet->decrement('balance', $price);
 
+        $serviceName = $this->serviceNames[$request->service] ?? strtoupper($request->service);
+        $expiryMins  = (int) Setting::get('herosms_expiry_minutes', '20');
+
         WalletTransaction::create([
             'user_id'     => $user->id,
             'amount'      => -$price,
             'type'        => 'virtual_number',
             'reference'   => 'VN-' . strtoupper(uniqid()),
-            'description' => 'Virtual number: ' . ($this->serviceNames[$request->service] ?? $request->service),
+            'description' => "Virtual number: {$serviceName}" . ($apiUsdPrice !== null ? " (\${$apiUsdPrice})" : ''),
         ]);
-
-        $serviceName = $this->serviceNames[$request->service] ?? strtoupper($request->service);
 
         $order = VirtualNumberOrder::create([
             'user_id'       => $user->id,
@@ -146,11 +191,11 @@ class VirtualNumberController extends Controller
             'phone_number'  => $result['phone_number'],
             'service'       => $request->service,
             'service_name'  => $serviceName,
-            'country'       => (int) $request->country,
+            'country'       => $country,
             'country_name'  => $request->input('country_name', ''),
             'cost'          => $price,
             'status'        => 'waiting',
-            'expires_at'    => now()->addMinutes(20),
+            'expires_at'    => now()->addMinutes($expiryMins),
         ]);
 
         Notification::create([
@@ -230,8 +275,8 @@ class VirtualNumberController extends Controller
 
         $order->update(['status' => 'cancelled']);
 
-        $refundPct  = (float) Setting::get('herosms_cancel_refund_pct', '50');
-        $refundAmt  = round($order->cost * ($refundPct / 100), 2);
+        $refundPct = (float) Setting::get('herosms_cancel_refund_pct', '50');
+        $refundAmt = round($order->cost * ($refundPct / 100), 2);
 
         if ($refundAmt > 0) {
             $wallet = Wallet::firstOrCreate(['user_id' => $order->user_id], ['balance' => 0]);

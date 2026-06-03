@@ -61,6 +61,101 @@ class HeroSmsService
         }
     }
 
+    /**
+     * Fetch prices for all services in a given country.
+     * Returns [ 'service_code' => float_usd_price, ... ]
+     * Falls back to empty array on failure.
+     */
+    public function getPricesForCountry(int $country): array
+    {
+        try {
+            $params = [
+                'api_key' => $this->apiKey,
+                'action'  => 'getPrices',
+            ];
+            if ($country > 0) {
+                $params['country'] = $country;
+            }
+
+            $response = Http::timeout(15)->get($this->baseUrl, $params);
+            $body     = trim($response->body());
+
+            // Try JSON first — most common format
+            $data = $response->json();
+            if (is_array($data)) {
+                return $this->normalizePrices($data, $country);
+            }
+
+            // Fallback: plain numeric (single-service response like "0.25")
+            if (is_numeric($body)) {
+                return [];
+            }
+
+            return [];
+        } catch (\Exception $e) {
+            Log::error('HeroSMS getPrices error', ['country' => $country, 'error' => $e->getMessage()]);
+            return [];
+        }
+    }
+
+    /**
+     * Normalize the price response into [ 'service_code' => float_price ]
+     * Handles two known response shapes:
+     *   A) { "tg": { "cost": 0.25, "count": 100 }, ... }   ← country-based query
+     *   B) { "7":  { "cost": 0.25, "count": 100 }, ... }   ← service-based query (keys = country IDs)
+     */
+    private function normalizePrices(array $data, int $country): array
+    {
+        if (empty($data)) return [];
+
+        $firstKey   = array_key_first($data);
+        $firstValue = $data[$firstKey] ?? null;
+
+        // Shape A: keys are service codes (non-numeric), values have 'cost'
+        if (!is_numeric($firstKey) && is_array($firstValue) && isset($firstValue['cost'])) {
+            $result = [];
+            foreach ($data as $code => $info) {
+                $cost = is_array($info) ? ($info['cost'] ?? null) : $info;
+                if ($cost !== null) {
+                    $result[(string) $code] = (float) $cost;
+                }
+            }
+            return $result;
+        }
+
+        // Shape B: keys are country IDs, values have 'cost'
+        // We want the entry for the requested country (or country 0 = global)
+        if (is_numeric($firstKey) && is_array($firstValue) && isset($firstValue['cost'])) {
+            $target = $data[$country] ?? $data[0] ?? null;
+            if ($target && isset($target['cost'])) {
+                return ['*' => (float) $target['cost']];
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Get the NGN price for a specific service in a country.
+     * Returns the full user-facing price in NGN (API cost × exchange rate + commission).
+     */
+    public static function calculateNgnPrice(float $usdCost): float
+    {
+        $exchangeRate    = (float) Setting::get('herosms_exchange_rate', '1600');
+        $commissionType  = Setting::get('herosms_commission_type', 'flat');
+        $commissionValue = (float) Setting::get('herosms_number_price', '200');
+
+        $baseNgn = $usdCost * $exchangeRate;
+
+        if ($commissionType === 'percentage') {
+            $total = $baseNgn * (1 + $commissionValue / 100);
+        } else {
+            $total = $baseNgn + $commissionValue;
+        }
+
+        return ceil($total);
+    }
+
     public function getNumber(string $service, int $country): array
     {
         $raw = $this->call([
