@@ -210,17 +210,61 @@
             </div>
         </div>
         <div class="space-y-4">
+            {{-- API Key + Test button --}}
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">HeroSMS API Key</label>
-                <div class="relative">
-                    <input type="password" name="herosms_api_key" id="herosms-key-input" value="{{ $settings['herosms_api_key'] }}"
-                        placeholder="Paste your HeroSMS API key here" class="font-mono text-xs pr-10">
-                    <button type="button" onclick="toggleHeroKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <div class="flex gap-2">
+                    <div class="relative flex-1">
+                        <input type="password" name="herosms_api_key" id="herosms-key-input" value="{{ $settings['herosms_api_key'] }}"
+                            placeholder="Paste your HeroSMS API key here" class="font-mono text-xs pr-10">
+                        <button type="button" onclick="toggleHeroKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
+                    </div>
+                    <button type="button" onclick="testHeroKey()" id="hero-test-btn"
+                        class="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white text-sm font-semibold rounded-lg transition-colors">
+                        <svg id="hero-test-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Test Key
                     </button>
                 </div>
-                <p class="text-xs text-slate-500 mt-1">Get your API key from <a href="https://hero-sms.com/profile" target="_blank" class="text-purple-400 hover:underline">HeroSMS → Profile</a>. Used as Server 1 for virtual number orders.</p>
+                <div id="hero-test-result" class="hidden mt-2 text-xs px-3 py-2 rounded-lg border"></div>
+                <p class="text-xs text-slate-500 mt-1">Get your API key from <a href="https://hero-sms.com/profile" target="_blank" class="text-purple-400 hover:underline">HeroSMS → Profile</a>. Used as Server 1 and Server 2 for virtual number orders.</p>
             </div>
+
+            {{-- USD → NGN Exchange Rate --}}
+            <div class="bg-slate-700/30 border border-slate-600/60 rounded-xl p-4">
+                <div class="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                        <p class="text-sm font-semibold text-white">USD → NGN Exchange Rate</p>
+                        <p class="text-xs text-slate-400 mt-0.5">HeroSMS prices are in USD. This rate converts them to Naira for users.</p>
+                    </div>
+                    <div class="shrink-0 text-right">
+                        <p class="text-xs text-slate-500">Preview</p>
+                        <p class="text-sm font-bold text-green-400" id="rate-preview">
+                            $1 = ₦{{ number_format((float)$settings['usd_to_ngn_rate'], 0) }}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-sm text-slate-400 shrink-0">
+                        $1 USD =
+                    </div>
+                    <div class="relative flex-1 max-w-[180px]">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold pointer-events-none">₦</span>
+                        <input type="number" name="usd_to_ngn_rate" id="usd-to-ngn-rate"
+                            value="{{ $settings['usd_to_ngn_rate'] }}"
+                            min="1" step="1" placeholder="1600"
+                            oninput="updateRatePreview(this.value)"
+                            class="pl-7">
+                    </div>
+                    <p class="text-xs text-slate-500">NGN</p>
+                </div>
+                <p class="text-xs text-slate-500 mt-2.5">
+                    Changing this rate automatically applies to all new service price calculations.
+                    Cached prices (5 min) will refresh with the new rate on next load.
+                </p>
+            </div>
+
             {{-- Top-up shortcut --}}
             <div class="flex items-center justify-between bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3">
                 <div>
@@ -564,6 +608,40 @@ function toggleSecret() {
 function toggleHeroKey() {
     const inp = document.getElementById('herosms-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+async function testHeroKey() {
+    const btn     = document.getElementById('hero-test-btn');
+    const icon    = document.getElementById('hero-test-icon');
+    const result  = document.getElementById('hero-test-result');
+    btn.disabled  = true;
+    icon.innerHTML = '<animate attributeName="opacity" values="1;0.3;1" dur="1s" repeatCount="indefinite"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>';
+    result.className = 'mt-2 text-xs px-3 py-2 rounded-lg border bg-slate-700/50 border-slate-600 text-slate-300';
+    result.textContent = 'Testing connection to HeroSMS…';
+    result.classList.remove('hidden');
+    try {
+        const r = await fetch('{{ route('admin.virtual-numbers.herosms-balance') }}');
+        const d = await r.json();
+        if (d.success) {
+            result.className = 'mt-2 text-xs px-3 py-2 rounded-lg border bg-green-900/30 border-green-700/50 text-green-300';
+            result.innerHTML = '✓ API key is valid — HeroSMS Balance: <strong>$' + parseFloat(d.balance).toFixed(4) + '</strong>';
+        } else {
+            result.className = 'mt-2 text-xs px-3 py-2 rounded-lg border bg-red-900/30 border-red-700/50 text-red-300';
+            result.textContent = '✗ ' + (d.message || 'API key appears to be invalid or HeroSMS is unreachable.');
+        }
+    } catch(e) {
+        result.className = 'mt-2 text-xs px-3 py-2 rounded-lg border bg-red-900/30 border-red-700/50 text-red-300';
+        result.textContent = '✗ Network error — could not reach HeroSMS.';
+    } finally {
+        btn.disabled = false;
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+    }
+}
+
+function updateRatePreview(val) {
+    const n = parseFloat(val);
+    const el = document.getElementById('rate-preview');
+    if (el) el.textContent = '$1 = ₦' + (isNaN(n) || n <= 0 ? '—' : Math.round(n).toLocaleString('en-NG'));
 }
 function toggleMailPassword() {
     const inp = document.getElementById('mail-password-input');

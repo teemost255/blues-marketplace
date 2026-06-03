@@ -109,6 +109,12 @@ class SettingsController extends Controller
         Setting::set('bank_transfer_enabled', $request->boolean('bank_transfer_enabled') ? '1' : '0');
         Setting::set('promo_banner_enabled', $request->boolean('promo_banner_enabled') ? '1' : '0');
 
+        // If the exchange rate changed, flush all cached service prices so
+        // users see updated NGN prices immediately on the next request.
+        $oldRate = Setting::get('usd_to_ngn_rate', '1600');
+        $newRate = $request->input('usd_to_ngn_rate', $oldRate);
+        $rateChanged = (float) $oldRate !== (float) $newRate;
+
         foreach ($keys as $key) {
             Setting::set($key, $request->input($key, ''));
         }
@@ -116,6 +122,11 @@ class SettingsController extends Controller
         Setting::set('virtual_number_enabled', $request->boolean('virtual_number_enabled') ? '1' : '0');
         Setting::set('server1_enabled', $request->boolean('server1_enabled') ? '1' : '0');
         Setting::set('server2_enabled', $request->boolean('server2_enabled') ? '1' : '0');
+
+        if ($rateChanged) {
+            // Flush all virtual-number service price caches for both user and admin views
+            \Illuminate\Support\Facades\Cache::flush();
+        }
 
         return back()->with('success', 'Settings saved successfully.');
     }
