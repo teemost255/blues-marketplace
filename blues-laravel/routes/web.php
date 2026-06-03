@@ -46,6 +46,9 @@ use App\Http\Controllers\Admin\VirtualNumberSettingsController;
 // Paystack webhook (no CSRF)
 Route::post('/paystack/webhook', [WalletController::class, 'webhook'])->name('paystack.webhook')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
+// HeroSMS push webhook (no CSRF, secured via ?token=)
+Route::post('/herosms/webhook', [VirtualNumberController::class, 'webhook'])->name('herosms.webhook')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 Route::get('/',          [HomeController::class,        'index'])->name('home');
 Route::get('/r/{code}',  [ReferralController::class,    'handle'])->name('referral');
 Route::get('/terms',     [PagesController::class,       'terms'])->name('terms');

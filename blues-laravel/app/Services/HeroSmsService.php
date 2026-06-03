@@ -100,9 +100,17 @@ class HeroSmsService
 
     /**
      * Normalize the price response into [ 'service_code' => float_price ]
-     * Handles two known response shapes:
-     *   A) { "tg": { "cost": 0.25, "count": 100 }, ... }   ← country-based query
-     *   B) { "7":  { "cost": 0.25, "count": 100 }, ... }   ← service-based query (keys = country IDs)
+     *
+     * Known response shapes from HeroSMS getPrices:
+     *
+     *   Shape A — country-specific query (country > 0):
+     *     { "tg": { "cost": 0.25, "count": 100 }, "wa": { ... }, ... }
+     *
+     *   Shape B — all-countries query (country = 0), service keys → country map:
+     *     { "tg": { "0": { "cost": 0.25, "count": 100 }, "7": { "cost": 0.30 } }, ... }
+     *
+     *   Shape C — service-specific query, keys are country IDs:
+     *     { "0": { "cost": 0.25, "count": 100 }, "7": { ... }, ... }
      */
     private function normalizePrices(array $data, int $country): array
     {
@@ -111,7 +119,7 @@ class HeroSmsService
         $firstKey   = array_key_first($data);
         $firstValue = $data[$firstKey] ?? null;
 
-        // Shape A: keys are service codes (non-numeric), values have 'cost'
+        // Shape A: keys are service codes (non-numeric), values have 'cost' directly
         if (!is_numeric($firstKey) && is_array($firstValue) && isset($firstValue['cost'])) {
             $result = [];
             foreach ($data as $code => $info) {
@@ -123,8 +131,32 @@ class HeroSmsService
             return $result;
         }
 
-        // Shape B: keys are country IDs, values have 'cost'
-        // We want the entry for the requested country (or country 0 = global)
+        // Shape B: keys are service codes (non-numeric), values are country-keyed maps
+        // e.g. { "tg": { "0": {"cost":0.25}, "7": {"cost":0.30} } }
+        if (!is_numeric($firstKey) && is_array($firstValue) && !isset($firstValue['cost'])) {
+            $result = [];
+            foreach ($data as $code => $countryMap) {
+                if (!is_array($countryMap)) continue;
+                // Prefer the requested country, fall back to global (0), then take min
+                if (isset($countryMap[$country]['cost'])) {
+                    $result[(string) $code] = (float) $countryMap[$country]['cost'];
+                } elseif (isset($countryMap[0]['cost'])) {
+                    $result[(string) $code] = (float) $countryMap[0]['cost'];
+                } else {
+                    // Pick the minimum price across all countries
+                    $costs = array_filter(array_map(
+                        fn($v) => is_array($v) ? ($v['cost'] ?? null) : null,
+                        $countryMap
+                    ), fn($c) => $c !== null);
+                    if (!empty($costs)) {
+                        $result[(string) $code] = (float) min($costs);
+                    }
+                }
+            }
+            return $result;
+        }
+
+        // Shape C: keys are country IDs (numeric), values have 'cost'
         if (is_numeric($firstKey) && is_array($firstValue) && isset($firstValue['cost'])) {
             $target = $data[$country] ?? $data[0] ?? null;
             if ($target && isset($target['cost'])) {

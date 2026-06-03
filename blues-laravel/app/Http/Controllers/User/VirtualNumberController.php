@@ -217,6 +217,57 @@ class VirtualNumberController extends Controller
         ]);
     }
 
+    /**
+     * HeroSMS push webhook — called by HeroSMS when an SMS code arrives.
+     * No CSRF, no auth. Secured by a secret token in the URL query string.
+     * Expected params: activation_id, code  (or sms_code / message)
+     */
+    public function webhook(Request $request)
+    {
+        // Verify secret token to reject spoofed requests
+        $secret  = Setting::get('herosms_webhook_secret', '');
+        $tokenIn = $request->query('token', '');
+
+        if ($secret && !hash_equals($secret, $tokenIn)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $activationId = $request->input('activation_id') ?? $request->input('id');
+        $smsCode      = $request->input('code')
+                     ?? $request->input('sms_code')
+                     ?? $request->input('message');
+
+        if (!$activationId || !$smsCode) {
+            return response()->json(['error' => 'Missing parameters'], 422);
+        }
+
+        $order = VirtualNumberOrder::where('activation_id', $activationId)
+            ->whereIn('status', ['waiting', 'received'])
+            ->first();
+
+        if (!$order) {
+            // Unknown or already closed — acknowledge silently
+            return response()->json(['ok' => true]);
+        }
+
+        $order->update(['status' => 'received', 'sms_code' => $smsCode]);
+
+        // Notify the user
+        Notification::create([
+            'user_id' => $order->user_id,
+            'title'   => 'SMS Code Received',
+            'message' => "Your {$order->service_name} verification code: {$smsCode}",
+            'type'    => 'success',
+        ]);
+
+        Log::info('HeroSMS webhook: code received', [
+            'activation_id' => $activationId,
+            'order_id'      => $order->id,
+        ]);
+
+        return response()->json(['ok' => true]);
+    }
+
     public function checkStatus(Request $request, VirtualNumberOrder $order)
     {
         if ($order->user_id !== Auth::id()) {

@@ -10,6 +10,11 @@ class VirtualNumberSettingsController extends Controller
 {
     public function index()
     {
+        // Auto-generate a webhook secret if none exists yet
+        if (!Setting::get('herosms_webhook_secret', '')) {
+            Setting::set('herosms_webhook_secret', bin2hex(random_bytes(20)));
+        }
+
         $settings = [
             'herosms_enabled'            => Setting::get('herosms_enabled', '0'),
             'herosms_api_key'            => Setting::get('herosms_api_key', ''),
@@ -19,6 +24,7 @@ class VirtualNumberSettingsController extends Controller
             'herosms_cancel_refund_pct'  => Setting::get('herosms_cancel_refund_pct', '50'),
             'herosms_expiry_minutes'     => Setting::get('herosms_expiry_minutes', '20'),
             'herosms_max_active'         => Setting::get('herosms_max_active', '3'),
+            'herosms_webhook_secret'     => Setting::get('herosms_webhook_secret', ''),
         ];
 
         $sms     = new HeroSmsService();
@@ -47,7 +53,7 @@ class VirtualNumberSettingsController extends Controller
         $keys = [
             'herosms_api_key', 'herosms_exchange_rate', 'herosms_commission_type',
             'herosms_number_price', 'herosms_cancel_refund_pct',
-            'herosms_expiry_minutes', 'herosms_max_active',
+            'herosms_expiry_minutes', 'herosms_max_active', 'herosms_webhook_secret',
         ];
         foreach ($keys as $key) {
             if ($request->filled($key) || $request->has($key)) {

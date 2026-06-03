@@ -342,6 +342,63 @@
 
 
     {{-- ════════════════════════════════════════════
+         CARD — SMS Push Webhook
+    ════════════════════════════════════════════ --}}
+    <div class="vn-card">
+        <div class="vn-card-header">
+            <div class="vn-icon-badge" style="background:linear-gradient(135deg,#1e3a5f,#3b82f6)">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-white">SMS Push Webhook</p>
+                <p class="text-xs text-slate-400 mt-0.5">HeroSMS calls this URL instantly when a code arrives — no polling needed.</p>
+            </div>
+        </div>
+
+        <div class="vn-divider"></div>
+        <div class="vn-card-body pt-4 space-y-4">
+
+            {{-- Webhook URL display --}}
+            <div class="vn-field">
+                <label>Webhook URL <span class="text-slate-600">(copy and paste into HeroSMS settings)</span></label>
+                @php
+                    $webhookUrl = url('/herosms/webhook') . '?token=' . $settings['herosms_webhook_secret'];
+                @endphp
+                <div class="flex gap-2">
+                    <input type="text" id="webhook-url-input"
+                           value="{{ $webhookUrl }}"
+                           readonly
+                           style="font-size:.72rem; font-family:monospace; color:#94a3b8; cursor:default;">
+                    <button type="button" onclick="copyWebhookUrl()"
+                            id="copy-webhook-btn"
+                            style="flex-shrink:0; padding:.625rem .875rem; background:#1e3a5f; border:1px solid rgba(59,130,246,.35); border-radius:.5rem; color:#60a5fa; font-size:.75rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:background .15s;"
+                            onmouseover="this.style.background='#1e40af'" onmouseout="this.style.background='#1e3a5f'">
+                        Copy
+                    </button>
+                </div>
+                <p class="field-hint">Paste this into your HeroSMS account under <strong style="color:#f1f5f9;">Account → Webhooks / Callbacks</strong>. When HeroSMS receives a code it will POST to this URL and the code will appear in the user's order instantly.</p>
+            </div>
+
+            {{-- Webhook secret --}}
+            <div class="vn-field">
+                <label>Webhook Secret Token</label>
+                <div class="pw-wrap">
+                    <input type="text" name="herosms_webhook_secret" id="webhook-secret-input"
+                           value="{{ $settings['herosms_webhook_secret'] }}"
+                           placeholder="auto-generated"
+                           style="font-family:monospace; font-size:.78rem;">
+                </div>
+                <p class="field-hint">Embedded in the webhook URL as <code style="color:#94a3b8;">?token=</code>. Change it to regenerate a new URL (and update it in HeroSMS). Leave as-is to keep the current URL.</p>
+            </div>
+
+        </div>
+    </div>
+
+
+    {{-- ════════════════════════════════════════════
          Save button
     ════════════════════════════════════════════ --}}
     <div class="flex items-center gap-4 pt-1">
@@ -497,6 +554,27 @@ async function testConnection() {
 
 /* Init commission label */
 updateCommissionLabel();
+
+/* ── Copy webhook URL ── */
+function copyWebhookUrl() {
+    const inp = document.getElementById('webhook-url-input');
+    const btn = document.getElementById('copy-webhook-btn');
+    inp.select();
+    inp.setSelectionRange(0, 99999);
+    try {
+        navigator.clipboard.writeText(inp.value).catch(() => document.execCommand('copy'));
+    } catch(e) {
+        document.execCommand('copy');
+    }
+    btn.textContent = 'Copied!';
+    btn.style.color = '#4ade80';
+    btn.style.borderColor = 'rgba(74,222,128,.4)';
+    setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.style.color = '#60a5fa';
+        btn.style.borderColor = 'rgba(59,130,246,.35)';
+    }, 2000);
+}
 </script>
 
 @endsection
