@@ -537,9 +537,9 @@
 
         {{-- Country select --}}
         <div class="mb-4">
-            <label class="block text-xs text-slate-400 mb-1.5">Select Country</label>
+            <label class="block text-xs text-slate-400 mb-1.5">Select Country <span class="text-red-400">*</span></label>
             <div class="relative">
-                <select id="modal-country" class="vn-select w-full pr-8">
+                <select id="modal-country" class="vn-select w-full pr-8" onchange="fetchModalPrice()">
                     <option value="">Loading countries…</option>
                 </select>
                 <svg class="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -643,13 +643,19 @@ function populateModalCountries() {
     const sel = document.getElementById('modal-country');
     if (!window._countries?.length) { sel.innerHTML = '<option value="">No countries available</option>'; return; }
     const current = document.getElementById('country-filter').value;
-    sel.innerHTML = '<option value="">Any available country</option>';
+    sel.innerHTML = '<option value="" disabled selected>— Select a country —</option>';
     window._countries.forEach(c => {
-        const sel2 = document.createElement('option');
-        sel2.value = c.id; sel2.textContent = c.name;
-        if (String(c.id) === current && current !== '0') sel2.selected = true;
-        sel.appendChild(sel2);
+        const opt = document.createElement('option');
+        opt.value = c.id; opt.textContent = c.name;
+        if (String(c.id) === current && current !== '0') opt.selected = true;
+        sel.appendChild(opt);
     });
+    // Auto-select first country if none pre-selected
+    if (sel.value === '' && window._countries.length) {
+        sel.value = window._countries[0].id;
+    }
+    // Fetch accurate price for selected country
+    fetchModalPrice();
 }
 
 /* ══════ Service loading ══════ */
@@ -757,25 +763,53 @@ function openBuyModal(code, name, count, priceNgn, usdCost) {
     document.body.style.overflow = 'hidden';
 }
 
-function updateModalPrice() {
-    if (!selectedService) return;
+function updateModalPrice(priceNgn, usdCost) {
     const priceEl     = document.getElementById('modal-price-display');
     const breakdownEl = document.getElementById('modal-price-breakdown');
     const btnLabel    = document.getElementById('confirm-buy-label');
+    const price       = priceNgn ?? selectedService?.price;
 
-    const price = selectedService.price;
     if (price && price > 0) {
         const fmt = '₦' + Math.ceil(price).toLocaleString();
-        if (priceEl)     priceEl.textContent = fmt;
-        if (btnLabel)    btnLabel.textContent = `Buy — ${fmt}`;
-        if (breakdownEl && selectedService.usd_cost) {
-            breakdownEl.textContent = `API cost: $${parseFloat(selectedService.usd_cost).toFixed(2)} → NGN + commission`;
+        if (priceEl)  priceEl.textContent = fmt;
+        if (btnLabel) btnLabel.textContent = `Buy — ${fmt}`;
+        const usd = usdCost ?? selectedService?.usd_cost;
+        if (breakdownEl && usd) {
+            breakdownEl.textContent = `Provider cost: $${parseFloat(usd).toFixed(3)} + commission`;
         } else if (breakdownEl) {
             breakdownEl.textContent = '';
         }
     } else {
         if (priceEl)  priceEl.textContent = '—';
-        if (btnLabel) btnLabel.textContent = 'Buy (price loading…)';
+        if (btnLabel) btnLabel.textContent = 'Buy';
+    }
+}
+
+/* Fetch live price for the service+country currently selected in the modal */
+async function fetchModalPrice() {
+    if (!selectedService) return;
+    const countryId = document.getElementById('modal-country')?.value;
+    if (!countryId) return;
+
+    const priceEl  = document.getElementById('modal-price-display');
+    const btnLabel = document.getElementById('confirm-buy-label');
+    if (priceEl)  priceEl.textContent = '…';
+    if (btnLabel) btnLabel.textContent = 'Loading price…';
+
+    try {
+        const r = await fetch(`{{ route('dashboard.virtual-numbers.services') }}?country=${countryId}`, {
+            headers: { Accept: 'application/json' }
+        });
+        const d   = await r.json();
+        const svc = (d.services ?? []).find(s => s.code === selectedService.code);
+        if (svc) {
+            updateModalPrice(svc.price, svc.usd_cost);
+        } else {
+            if (priceEl)  priceEl.textContent = '—';
+            if (btnLabel) btnLabel.textContent = 'Buy';
+        }
+    } catch (e) {
+        updateModalPrice(selectedService.price, selectedService.usd_cost);
     }
 }
 
@@ -787,20 +821,28 @@ function closeBuyModal() {
 
 async function confirmBuy() {
     if (!selectedService) return;
-    const btn     = document.getElementById('confirm-buy-btn');
-    const errBox  = document.getElementById('modal-error');
-    const errTxt  = document.getElementById('modal-error-text');
-    const country = document.getElementById('modal-country').value || '0';
-    const countryName = document.getElementById('modal-country').options[document.getElementById('modal-country').selectedIndex]?.text ?? '';
+    const btn         = document.getElementById('confirm-buy-btn');
+    const errBox      = document.getElementById('modal-error');
+    const errTxt      = document.getElementById('modal-error-text');
+    const countrySel  = document.getElementById('modal-country');
+    const country     = countrySel.value;
+    const countryName = countrySel.options[countrySel.selectedIndex]?.text ?? '';
+
+    errBox.classList.add('hidden');
+
+    // Require a specific country to be selected
+    if (!country || country === '0') {
+        errTxt.textContent = 'Please select a country before purchasing.';
+        errBox.classList.remove('hidden');
+        countrySel.focus();
+        return;
+    }
 
     btn.disabled = true;
     btn.innerHTML = '<span class="pulse-dot"></span> Processing…';
-    errBox.classList.add('hidden');
 
-    const priceFmt = selectedService.price
-        ? '₦' + Math.ceil(selectedService.price).toLocaleString()
-        : '';
-    const resetLabel = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> <span>Buy${priceFmt ? ' — ' + priceFmt : ''}</span>`;
+    const priceFmt   = document.getElementById('modal-price-display')?.textContent ?? '';
+    const resetLabel = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> <span>Buy${priceFmt && priceFmt !== '—' ? ' — ' + priceFmt : ''}</span>`;
 
     try {
         const r = await fetch('{{ route("dashboard.virtual-numbers.order") }}', {
@@ -813,15 +855,16 @@ async function confirmBuy() {
         if (data.success) {
             closeBuyModal();
             showToast(`✓ Number assigned: +${data.order.phone_number}`, 'success');
-            setTimeout(() => location.reload(), 1500);
+            // Reload and switch to Active Rentals tab
+            setTimeout(() => { location.href = location.pathname + '?tab=active'; }, 1200);
         } else {
-            errTxt.textContent = data.error ?? 'Something went wrong.';
+            errTxt.textContent = data.error ?? 'Something went wrong. Please try again.';
             errBox.classList.remove('hidden');
             btn.disabled = false;
             btn.innerHTML = resetLabel;
         }
     } catch (e) {
-        errTxt.textContent = 'Network error. Please try again.';
+        errTxt.textContent = 'Network error. Please check your connection and try again.';
         errBox.classList.remove('hidden');
         btn.disabled = false;
         btn.innerHTML = resetLabel;
@@ -840,18 +883,57 @@ async function checkStatus(orderId) {
         const data = await r.json();
 
         if (data.status === 'received' && data.code) {
-            document.getElementById(`sms-code-${orderId}`)?.classList.remove('hidden');
-            const ct = document.getElementById(`code-text-${orderId}`);
-            if (ct) ct.textContent = data.code;
+            applyReceivedState(orderId, data.code);
             showToast(`✓ SMS code received: ${data.code}`, 'success');
-            setTimeout(() => location.reload(), 2000);
+        } else if (data.status === 'cancelled' || data.status === 'expired') {
+            showToast(`This rental has been ${data.status}.`, 'error');
+            setTimeout(() => location.reload(), 1500);
         } else {
-            showToast('No SMS yet. Keep waiting…', 'info');
-            if (btn) { btn.disabled = false; btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Check SMS`; }
+            showToast('No SMS yet — still waiting. Try again in a moment.', 'info');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Check SMS`;
+            }
         }
     } catch (e) {
-        showToast('Error checking status.', 'error');
+        showToast('Error checking status. Please try again.', 'error');
         if (btn) { btn.disabled = false; btn.innerHTML = 'Check SMS'; }
+    }
+}
+
+/* Update the order card UI when an SMS code has arrived */
+function applyReceivedState(orderId, code) {
+    // Show code box
+    const codeBox = document.getElementById(`sms-code-${orderId}`);
+    if (codeBox) codeBox.classList.remove('hidden');
+    const codeText = document.getElementById(`code-text-${orderId}`);
+    if (codeText) codeText.textContent = code;
+
+    // Swap status badge from "Waiting for SMS" to "✓ SMS Received"
+    const card = document.getElementById(`active-order-${orderId}`);
+    if (card) {
+        const waitBadge = card.querySelector('.status-waiting');
+        if (waitBadge) {
+            const received = document.createElement('span');
+            received.className = 'status-received';
+            received.textContent = '✓ SMS Received';
+            waitBadge.replaceWith(received);
+        }
+        // Hide "Check SMS" button and "Cancel" button; show "Mark Complete"
+        const checkBtn  = document.getElementById(`check-btn-${orderId}`);
+        const cancelBtn = document.getElementById(`cancel-btn-${orderId}`);
+        if (checkBtn)  checkBtn.remove();
+        if (cancelBtn) cancelBtn.remove();
+
+        const actionsDiv = card.querySelector('.flex.items-center.gap-2.mt-3');
+        if (actionsDiv && !actionsDiv.querySelector(`[onclick="completeOrder(${orderId})"]`)) {
+            const completeBtn = document.createElement('button');
+            completeBtn.setAttribute('onclick', `completeOrder(${orderId})`);
+            completeBtn.className = 'flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-all';
+            completeBtn.style.cssText = 'background:#052e16;color:#4ade80;border:1px solid #14532d;';
+            completeBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Mark Complete`;
+            actionsDiv.prepend(completeBtn);
+        }
     }
 }
 
@@ -923,10 +1005,13 @@ async function checkStatusSilent(orderId) {
         });
         const data = await r.json();
         if (data.status === 'received' && data.code) {
-            document.getElementById(`sms-code-${orderId}`)?.classList.remove('hidden');
-            const ct = document.getElementById(`code-text-${orderId}`);
-            if (ct) ct.textContent = data.code;
+            applyReceivedState(orderId, data.code);
             showToast(`✓ SMS received: ${data.code}`, 'success');
+            // Stop polling this order once code is received
+            if (autoRefreshTimers[orderId]) {
+                clearInterval(autoRefreshTimers[orderId]);
+                delete autoRefreshTimers[orderId];
+            }
         }
     } catch (e) {}
 }
@@ -991,6 +1076,15 @@ document.addEventListener('DOMContentLoaded', () => {
     loadServices();
     @endif
     startCountdownTimers();
+
+    // Auto-switch to Active Rentals tab if redirected after a purchase
+    const params = new URLSearchParams(location.search);
+    if (params.get('tab') === 'active') {
+        const activeTabBtn = document.querySelector('.vn-tab:nth-child(2)');
+        if (activeTabBtn) switchTab('active', activeTabBtn);
+        // Clean the URL without reloading
+        history.replaceState(null, '', location.pathname);
+    }
 });
 </script>
 @endpush

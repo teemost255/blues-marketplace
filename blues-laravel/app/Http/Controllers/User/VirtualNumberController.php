@@ -113,7 +113,7 @@ class VirtualNumberController extends Controller
     {
         $request->validate([
             'service' => 'required|string|max:10',
-            'country' => 'required|integer',
+            'country' => 'required|integer|min:1',
         ]);
 
         if (Setting::get('herosms_enabled', '0') !== '1') {
