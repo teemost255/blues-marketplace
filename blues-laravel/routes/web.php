@@ -193,7 +193,9 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::delete('/reviews/{review}', [AdminReviewsController::class,   'destroy'])->name('reviews.destroy');
 
     // Virtual Numbers
-    Route::get('/virtual-numbers', [VirtualNumbersController::class, 'index'])->name('virtual-numbers');
+    Route::get('/virtual-numbers',                          [VirtualNumbersController::class, 'index'])->name('virtual-numbers');
+    Route::post('/virtual-numbers/{order}/refund',          [VirtualNumbersController::class, 'refund'])->name('virtual-numbers.refund');
+    Route::post('/virtual-numbers/{order}/status',          [VirtualNumbersController::class, 'updateStatus'])->name('virtual-numbers.status');
     Route::get('/virtual-number-settings',        [VirtualNumberSettingsController::class, 'index'])->name('virtual-number-settings');
     Route::post('/virtual-number-settings',       [VirtualNumberSettingsController::class, 'update'])->name('virtual-number-settings.update');
     Route::get('/virtual-number-settings/test',        [VirtualNumberSettingsController::class, 'testConnection'])->name('virtual-number-settings.test');

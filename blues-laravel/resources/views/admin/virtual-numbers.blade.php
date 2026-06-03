@@ -95,11 +95,12 @@
                     <th class="px-5 py-3 text-left font-medium">Cost</th>
                     <th class="px-5 py-3 text-left font-medium">Status</th>
                     <th class="px-5 py-3 text-left font-medium">Date</th>
+                    <th class="px-5 py-3 text-left font-medium">Actions</th>
                 </tr>
             </thead>
             <tbody>
             @forelse($orders as $order)
-                <tr class="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
+                <tr class="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors" id="order-row-{{ $order->id }}">
                     <td class="px-5 py-3">
                         <p class="text-white text-sm font-medium">{{ $order->user?->name }}</p>
                         <p class="text-xs text-slate-500">{{ $order->user?->email }}</p>
@@ -138,17 +139,40 @@
                                 default     => '',
                             };
                         @endphp
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border {{ $badge }}">
+                        <span class="order-status-badge-{{ $order->id }} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border {{ $badge }}">
                             {{ $icon }} {{ ucfirst($order->status) }}
                         </span>
                     </td>
                     <td class="px-5 py-3 text-slate-400 whitespace-nowrap text-xs">
                         {{ $order->created_at->format('M j, Y g:ia') }}
                     </td>
+                    <td class="px-5 py-3">
+                        <div class="flex flex-col gap-1.5 min-w-[120px]">
+                            {{-- Refund button — only for non-terminal states --}}
+                            @if(!in_array($order->status, ['completed','cancelled']))
+                            <button onclick="vnAction({{ $order->id }}, 'refund')"
+                                    class="text-xs px-2.5 py-1 rounded bg-amber-700/40 hover:bg-amber-600/60 text-amber-300 border border-amber-700/50 transition-colors">
+                                ↩ Refund
+                            </button>
+                            @endif
+                            {{-- Status dropdown --}}
+                            @if(!in_array($order->status, ['cancelled']))
+                            <select onchange="vnSetStatus({{ $order->id }}, this.value, this)"
+                                    class="text-xs bg-slate-700 border border-slate-600 text-slate-300 rounded px-1.5 py-1 focus:outline-none">
+                                <option value="">Change status…</option>
+                                <option value="waiting"   {{ $order->status==='waiting'  ?'selected':'' }}>⏳ Waiting</option>
+                                <option value="received"  {{ $order->status==='received' ?'selected':'' }}>📨 Received</option>
+                                <option value="completed" {{ $order->status==='completed'?'selected':'' }}>✓ Completed</option>
+                                <option value="cancelled" {{ $order->status==='cancelled'?'selected':'' }}>✕ Cancelled</option>
+                                <option value="expired"   {{ $order->status==='expired'  ?'selected':'' }}>⌛ Expired</option>
+                            </select>
+                            @endif
+                        </div>
+                    </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-5 py-14 text-center text-slate-500">
+                    <td colspan="8" class="px-5 py-14 text-center text-slate-500">
                         <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                 d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
@@ -164,4 +188,67 @@
     <div class="px-5 py-4 border-t border-slate-700">{{ $orders->links() }}</div>
     @endif
 </div>
+
+{{-- Toast notification --}}
+<div id="vn-toast" class="hidden fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl text-sm font-medium shadow-lg border max-w-sm"></div>
+
+<script>
+const CSRF = '{{ csrf_token() }}';
+
+function showToast(msg, type = 'success') {
+    const t = document.getElementById('vn-toast');
+    t.className = `fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl text-sm font-medium shadow-lg border max-w-sm
+        ${type === 'success' ? 'bg-green-900 border-green-700 text-green-200' : 'bg-red-900 border-red-700 text-red-200'}`;
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    setTimeout(() => t.classList.add('hidden'), 4000);
+}
+
+async function vnAction(orderId, action) {
+    if (!confirm(action === 'refund' ? 'Refund this order and credit the user\'s wallet?' : 'Confirm this action?')) return;
+
+    try {
+        const res  = await fetch(`/admin/virtual-numbers/${orderId}/${action}`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast(data.error || 'Action failed.', 'error');
+        }
+    } catch (e) {
+        showToast('Request failed: ' + e.message, 'error');
+    }
+}
+
+async function vnSetStatus(orderId, newStatus, selectEl) {
+    if (!newStatus) return;
+    if (!confirm(`Change order #${orderId} status to "${newStatus}"?`)) {
+        selectEl.value = '';
+        return;
+    }
+
+    try {
+        const res  = await fetch(`/admin/virtual-numbers/${orderId}/status`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(data.error || 'Status update failed.', 'error');
+            selectEl.value = '';
+        }
+    } catch (e) {
+        showToast('Request failed: ' + e.message, 'error');
+        selectEl.value = '';
+    }
+}
+</script>
 @endsection

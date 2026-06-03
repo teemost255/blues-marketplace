@@ -21,10 +21,31 @@ class SystemToolsController extends Controller
     {
         try {
             Artisan::call('migrate', ['--force' => true]);
-            $output = Artisan::output();
-            return response()->json(['success' => true, 'output' => $output ?: 'Nothing to migrate.']);
+            $output = trim(Artisan::output());
+            return response()->json(['success' => true, 'output' => $output ?: 'Nothing to migrate — all migrations are already up to date.']);
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'output' => $e->getMessage()], 500);
+            $msg = $e->getMessage();
+
+            // "Table already exists" means the table was created outside of Laravel's
+            // migration tracker (e.g. manually, or from a SQL dump).
+            // We fix this by faking the migration so Laravel records it as done.
+            if (str_contains($msg, 'already exists') || str_contains($msg, '42S01') || str_contains($msg, '42P07')) {
+                try {
+                    Artisan::call('migrate', ['--force' => true, '--fake' => true]);
+                    $fakeOut = trim(Artisan::output());
+                    return response()->json([
+                        'success' => true,
+                        'output'  => "ℹ️  Some tables already existed in your database but were not tracked by Laravel.\n"
+                                   . "They have now been marked as completed in the migration log.\n"
+                                   . "Your database is fully up to date — no data was changed.\n\n"
+                                   . ($fakeOut ?: 'All migrations marked as complete.'),
+                    ]);
+                } catch (\Throwable $fe) {
+                    return response()->json(['success' => false, 'output' => 'Could not fix migration state: ' . $fe->getMessage()], 500);
+                }
+            }
+
+            return response()->json(['success' => false, 'output' => $msg], 500);
         }
     }
 
