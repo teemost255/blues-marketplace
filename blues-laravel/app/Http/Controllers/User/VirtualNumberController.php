@@ -5,7 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{Wallet, WalletTransaction, Notification, Setting, VirtualNumberOrder};
 use App\Services\HeroSmsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\{Auth, Log};
+use Illuminate\Support\Facades\{Auth, DB, Log};
 
 class VirtualNumberController extends Controller
 {
@@ -172,38 +172,58 @@ class VirtualNumberController extends Controller
 
         $sms->setStatusReady($result['activation_id']);
 
-        $wallet->decrement('balance', $price);
-
         $serviceName = $this->serviceNames[$request->service] ?? strtoupper($request->service);
         $expiryMins  = (int) Setting::get('herosms_expiry_minutes', '20');
 
-        WalletTransaction::create([
-            'user_id'     => $user->id,
-            'amount'      => -$price,
-            'type'        => 'virtual_number',
-            'reference'   => 'VN-' . strtoupper(uniqid()),
-            'description' => "Virtual number: {$serviceName}" . ($apiUsdPrice !== null ? " (\${$apiUsdPrice})" : ''),
-        ]);
+        try {
+            $order = DB::transaction(function () use (
+                $user, $wallet, $price, $result, $request,
+                $serviceName, $expiryMins, $country, $apiUsdPrice
+            ) {
+                $wallet->decrement('balance', $price);
 
-        $order = VirtualNumberOrder::create([
-            'user_id'       => $user->id,
-            'activation_id' => $result['activation_id'],
-            'phone_number'  => $result['phone_number'],
-            'service'       => $request->service,
-            'service_name'  => $serviceName,
-            'country'       => $country,
-            'country_name'  => $request->input('country_name', ''),
-            'cost'          => $price,
-            'status'        => 'waiting',
-            'expires_at'    => now()->addMinutes($expiryMins),
-        ]);
+                WalletTransaction::create([
+                    'user_id'     => $user->id,
+                    'amount'      => -$price,
+                    'type'        => 'purchase',
+                    'reference'   => 'VN-' . strtoupper(uniqid()),
+                    'description' => "Virtual number: {$serviceName}" . ($apiUsdPrice !== null ? " (\${$apiUsdPrice})" : ''),
+                ]);
 
-        Notification::create([
-            'user_id' => $user->id,
-            'title'   => 'Virtual Number Assigned',
-            'message' => "Your {$serviceName} number is ready: {$result['phone_number']}",
-            'type'    => 'info',
-        ]);
+                $order = VirtualNumberOrder::create([
+                    'user_id'       => $user->id,
+                    'activation_id' => $result['activation_id'],
+                    'phone_number'  => $result['phone_number'],
+                    'service'       => $request->service,
+                    'service_name'  => $serviceName,
+                    'country'       => $country,
+                    'country_name'  => $request->input('country_name', ''),
+                    'cost'          => $price,
+                    'status'        => 'waiting',
+                    'expires_at'    => now()->addMinutes($expiryMins),
+                ]);
+
+                Notification::create([
+                    'user_id' => $user->id,
+                    'title'   => 'Virtual Number Assigned',
+                    'message' => "Your {$serviceName} number is ready: {$result['phone_number']}",
+                    'type'    => 'info',
+                ]);
+
+                return $order;
+            });
+        } catch (\Throwable $e) {
+            // DB transaction rolled back — cancel the number with HeroSMS so they don't charge us
+            try { $sms->setStatusCancel($result['activation_id']); } catch (\Throwable) {}
+            Log::error('VirtualNumber order DB failure', [
+                'user_id'       => $user->id,
+                'activation_id' => $result['activation_id'] ?? null,
+                'error'         => $e->getMessage(),
+            ]);
+            return response()->json([
+                'error' => 'Order could not be saved. Your balance has not been charged. Please try again.',
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,

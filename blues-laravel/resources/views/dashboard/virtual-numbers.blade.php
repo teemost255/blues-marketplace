@@ -858,7 +858,9 @@ async function confirmBuy() {
             // Reload and switch to Active Rentals tab
             setTimeout(() => { location.href = location.pathname + '?tab=active'; }, 1200);
         } else {
-            errTxt.textContent = data.error ?? 'Something went wrong. Please try again.';
+            // data.error = our custom message; data.message = Laravel's validation/server message
+            const msg = data.error || data.message || 'Something went wrong. Please try again.';
+            errTxt.textContent = msg;
             errBox.classList.remove('hidden');
             btn.disabled = false;
             btn.innerHTML = resetLabel;
