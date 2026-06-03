@@ -351,54 +351,25 @@
         <p class="text-xs text-slate-500 mt-3">Users will see these details when they choose bank transfer at checkout. You must confirm each payment manually in the <a href="{{ route('admin.bank-transfers') }}" class="text-brand hover:underline">Bank Transfers</a> panel.</p>
     </div>
 
-    {{-- HeroSMS Virtual Numbers --}}
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
-        <div class="flex items-center gap-3 mb-5">
-            <div class="w-9 h-9 rounded-lg bg-emerald-900/50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-            </div>
-            <div>
-                <h2 class="font-semibold text-white">HeroSMS — Virtual Numbers</h2>
-                <p class="text-xs text-slate-400">Allow users to rent temporary phone numbers for SMS verification</p>
-            </div>
+    {{-- Virtual Numbers moved to dedicated page --}}
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center gap-4">
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(59,130,246,.15)">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+            </svg>
         </div>
-        <div class="space-y-4">
-            <div class="flex items-center justify-between py-3 border border-slate-700 rounded-lg px-4">
-                <div>
-                    <p class="text-sm text-white font-medium">Enable Virtual Numbers</p>
-                    <p class="text-xs text-slate-400 mt-0.5">Show the Virtual Numbers section in the user dashboard</p>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" name="herosms_enabled" id="herosms-toggle" value="1" class="sr-only peer" {{ $settings['herosms_enabled'] == '1' ? 'checked' : '' }}>
-                    <div id="herosms-toggle-bg" class="w-11 h-6 rounded-full transition-colors peer-focus:outline-none" style="background:{{ $settings['herosms_enabled']=='1'?'#10b981':'#475569' }}">
-                        <div id="herosms-toggle-dot" class="w-5 h-5 bg-white rounded-full shadow transition-transform mt-0.5 ml-0.5" style="transform:{{ $settings['herosms_enabled']=='1'?'translateX(1.25rem)':'translateX(0)' }}"></div>
-                    </div>
-                </label>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1.5">HeroSMS API Key</label>
-                    <div class="relative">
-                        <input type="password" name="herosms_api_key" id="herosms-key-input" value="{{ $settings['herosms_api_key'] }}"
-                            placeholder="Your HeroSMS API key" class="font-mono text-xs pr-10">
-                        <button type="button" onclick="document.getElementById('herosms-key-input').type=document.getElementById('herosms-key-input').type==='password'?'text':'password'" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                        </button>
-                    </div>
-                    <p class="text-xs text-slate-500 mt-1">Get your key from <a href="https://hero-sms.com" target="_blank" class="text-brand hover:underline">hero-sms.com</a></p>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1.5">Price Per Number (₦)</label>
-                    <input type="number" name="herosms_number_price" value="{{ $settings['herosms_number_price'] }}" min="0" step="0.01" placeholder="200">
-                    <p class="text-xs text-slate-500 mt-1">Amount deducted from user wallet per number request</p>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1.5">Cancellation Refund (%)</label>
-                    <input type="number" name="herosms_cancel_refund_pct" value="{{ $settings['herosms_cancel_refund_pct'] }}" min="0" max="100" placeholder="50">
-                    <p class="text-xs text-slate-500 mt-1">% of cost refunded if user cancels before SMS arrives</p>
-                </div>
-            </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-white">Virtual Numbers (HeroSMS)</p>
+            <p class="text-xs text-slate-400 mt-0.5">API key, pricing, limits and more are managed in the dedicated settings page</p>
         </div>
+        <a href="{{ route('admin.virtual-number-settings') }}"
+           class="shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg text-white transition-all hover:opacity-90"
+           style="background:#3b82f6;">
+            Configure
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </a>
     </div>
 
     <button type="submit" class="btn-primary px-8 py-3 text-base">Save All Settings</button>
@@ -455,10 +426,6 @@ function toggleMailPassword() {
 document.getElementById('bt-toggle').addEventListener('change', function() {
     document.getElementById('bt-toggle-bg').style.background = this.checked ? '#10b981' : '#475569';
     document.getElementById('bt-toggle-dot').style.transform = this.checked ? 'translateX(1.25rem)' : 'translateX(0)';
-});
-document.getElementById('herosms-toggle').addEventListener('change', function() {
-    document.getElementById('herosms-toggle-bg').style.background = this.checked ? '#10b981' : '#475569';
-    document.getElementById('herosms-toggle-dot').style.transform = this.checked ? 'translateX(1.25rem)' : 'translateX(0)';
 });
 </script>
 @endsection

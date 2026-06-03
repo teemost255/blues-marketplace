@@ -40,6 +40,7 @@ use App\Http\Controllers\User\ProfileController;
 use App\Http\Controllers\User\ReferralPageController;
 use App\Http\Controllers\User\VirtualNumberController;
 use App\Http\Controllers\Admin\VirtualNumbersController;
+use App\Http\Controllers\Admin\VirtualNumberSettingsController;
 
 // ── Public ────────────────────────────────────────────────────────────────────
 // Paystack webhook (no CSRF)
@@ -189,6 +190,9 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
 
     // Virtual Numbers
     Route::get('/virtual-numbers', [VirtualNumbersController::class, 'index'])->name('virtual-numbers');
+    Route::get('/virtual-number-settings',        [VirtualNumberSettingsController::class, 'index'])->name('virtual-number-settings');
+    Route::post('/virtual-number-settings',       [VirtualNumberSettingsController::class, 'update'])->name('virtual-number-settings.update');
+    Route::get('/virtual-number-settings/test',   [VirtualNumberSettingsController::class, 'testConnection'])->name('virtual-number-settings.test');
 
     // Bank Transfers
     Route::get('/bank-transfers',                [AdminBankTransferController::class, 'index'])->name('bank-transfers');

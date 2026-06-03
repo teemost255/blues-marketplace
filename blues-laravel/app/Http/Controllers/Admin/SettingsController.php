@@ -41,10 +41,6 @@ class SettingsController extends Controller
             'bank_name'                => Setting::get('bank_name', ''),
             'bank_account_number'      => Setting::get('bank_account_number', ''),
             'bank_account_name'        => Setting::get('bank_account_name', ''),
-            'herosms_api_key'          => Setting::get('herosms_api_key', ''),
-            'herosms_enabled'          => Setting::get('herosms_enabled', '0'),
-            'herosms_number_price'     => Setting::get('herosms_number_price', '200'),
-            'herosms_cancel_refund_pct'=> Setting::get('herosms_cancel_refund_pct', '50'),
         ];
         return view('admin.settings', compact('settings'));
     }
@@ -80,9 +76,6 @@ class SettingsController extends Controller
             'bank_name'               => 'nullable|string|max:100',
             'bank_account_number'     => 'nullable|string|max:50',
             'bank_account_name'       => 'nullable|string|max:100',
-            'herosms_api_key'         => 'nullable|string|max:255',
-            'herosms_number_price'    => 'nullable|numeric|min:0',
-            'herosms_cancel_refund_pct' => 'nullable|integer|min:0|max:100',
         ]);
 
         $keys = [
@@ -95,9 +88,7 @@ class SettingsController extends Controller
             'referral_bonus_tier2_threshold', 'referral_bonus_tier3_threshold',
             'promo_banner_text', 'promo_banner_color', 'low_balance_threshold',
             'bank_name', 'bank_account_number', 'bank_account_name',
-            'herosms_api_key', 'herosms_number_price', 'herosms_cancel_refund_pct',
         ];
-        Setting::set('herosms_enabled', $request->boolean('herosms_enabled') ? '1' : '0');
         Setting::set('bank_transfer_enabled', $request->boolean('bank_transfer_enabled') ? '1' : '0');
         Setting::set('promo_banner_enabled', $request->boolean('promo_banner_enabled') ? '1' : '0');
 
