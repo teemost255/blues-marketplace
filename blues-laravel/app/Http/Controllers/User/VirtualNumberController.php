@@ -309,17 +309,27 @@ class VirtualNumberController extends Controller
         }
 
         $sms    = new HeroSmsService();
-        $result = $sms->getStatus($order->activation_id);
+        $result = $sms->getStatus((string) $order->activation_id);
 
-        if ($result['status'] === 'received' && $result['code']) {
+        Log::info('VirtualNumber checkStatus', [
+            'order_id'      => $order->id,
+            'activation_id' => $order->activation_id,
+            'api_result'    => $result,
+        ]);
+
+        if ($result['status'] === 'received' && !empty($result['code'])) {
             $order->update(['status' => 'received', 'sms_code' => $result['code']]);
         } elseif ($result['status'] === 'cancelled') {
             $order->update(['status' => 'cancelled']);
         }
 
+        $order->refresh();
+
         return response()->json([
-            'status' => $order->fresh()->status,
-            'code'   => $order->fresh()->sms_code,
+            'status'     => $order->status,
+            'code'       => $order->sms_code,
+            'api_status' => $result['status'],
+            'api_raw'    => $result['raw'] ?? null,
         ]);
     }
 

@@ -315,15 +315,40 @@ class HeroSmsService
             'id'     => $activationId,
         ]);
 
+        Log::info('HeroSMS getStatus raw response', [
+            'activation_id' => $activationId,
+            'raw'           => $raw,
+        ]);
+
         if (str_starts_with($raw, 'STATUS_OK:')) {
-            return ['status' => 'received', 'code' => substr($raw, strlen('STATUS_OK:'))];
+            $code = trim(substr($raw, strlen('STATUS_OK:')));
+            return ['status' => 'received', 'code' => $code];
         }
-        if ($raw === 'STATUS_WAIT_CODE') {
+
+        // Some HeroSMS deployments send "STATUS_OK" with the code appended after a space
+        if (str_starts_with($raw, 'STATUS_OK ')) {
+            $code = trim(substr($raw, strlen('STATUS_OK ')));
+            if ($code !== '') {
+                return ['status' => 'received', 'code' => $code];
+            }
+        }
+
+        // Handle bare numeric code responses (some API clones return just the code)
+        if (is_numeric(trim($raw)) && strlen(trim($raw)) >= 4) {
+            return ['status' => 'received', 'code' => trim($raw)];
+        }
+
+        if ($raw === 'STATUS_WAIT_CODE' || $raw === 'STATUS_WAIT_RESEND') {
             return ['status' => 'waiting', 'code' => null];
         }
-        if ($raw === 'STATUS_CANCEL') {
+        if ($raw === 'STATUS_CANCEL' || $raw === 'WRONG_ACTIVATION_ID' || $raw === 'NO_ACTIVATION') {
             return ['status' => 'cancelled', 'code' => null];
         }
+
+        Log::warning('HeroSMS getStatus: unrecognised response', [
+            'activation_id' => $activationId,
+            'raw'           => $raw,
+        ]);
         return ['status' => 'unknown', 'code' => null, 'raw' => $raw];
     }
 
