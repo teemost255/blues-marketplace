@@ -104,7 +104,6 @@
         <div>
             <div class="flex items-center gap-2">
                 <h1 class="text-lg font-bold text-white">Virtual Numbers</h1>
-                <span class="provider-badge">HeroSMS</span>
             </div>
             <p class="text-xs text-slate-400 mt-0.5">Receive SMS codes for any service worldwide</p>
         </div>

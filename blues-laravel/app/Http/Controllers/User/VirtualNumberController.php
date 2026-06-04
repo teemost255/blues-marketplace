@@ -251,7 +251,6 @@ class VirtualNumberController extends Controller
             ]);
             return response()->json([
                 'error' => 'Order could not be saved. Your balance has not been charged. Please try again.',
-                'debug' => $e->getMessage(),
             ], 500);
         }
 
