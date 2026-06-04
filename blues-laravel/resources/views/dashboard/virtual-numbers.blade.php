@@ -289,7 +289,7 @@
                         <div>
                             <div class="flex items-center gap-2">
                                 <p class="font-bold text-white font-mono tracking-wide text-sm">+{{ $order->phone_number }}</p>
-                                <button onclick="copyCode('+{{ $order->phone_number }}')"
+                                <button onclick="copyCode('+{{ $order->phone_number }}', this)"
                                         class="copy-btn" title="Copy number">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -346,7 +346,7 @@
                         <p class="text-xs mb-0.5" style="color:#4ade80;">Verification Code</p>
                         <p class="text-2xl font-bold text-white tracking-widest font-mono" id="code-text-{{ $order->id }}">{{ $order->sms_code ?? '' }}</p>
                     </div>
-                    <button onclick="copyCode('{{ $order->sms_code ?? '' }}')"
+                    <button onclick="copyCode('{{ $order->sms_code ?? '' }}', this)"
                             class="copy-btn flex-shrink-0" title="Copy code">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -466,7 +466,7 @@
                         <div class="flex items-center gap-2">
                             <span class="font-mono text-white text-sm">+{{ $order->phone_number ?? '—' }}</span>
                             @if($order->phone_number)
-                            <button onclick="copyCode('+{{ $order->phone_number }}')" class="copy-btn" title="Copy">
+                            <button onclick="copyCode('+{{ $order->phone_number }}', this)" class="copy-btn" title="Copy">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                 </svg>
@@ -482,7 +482,7 @@
                         @if($order->sms_code)
                         <div class="flex items-center gap-2">
                             <span class="font-mono font-bold tracking-widest" style="color:#4ade80;">{{ $order->sms_code }}</span>
-                            <button onclick="copyCode('{{ $order->sms_code }}')" class="copy-btn">
+                            <button onclick="copyCode('{{ $order->sms_code }}', this)" class="copy-btn">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                 </svg>
@@ -940,7 +940,7 @@ function applyReceivedState(orderId, code) {
         codeBox.classList.remove('hidden');
         // Update copy button to use the new code
         const copyBtn = codeBox.querySelector('button');
-        if (copyBtn) copyBtn.setAttribute('onclick', `copyCode('${code}')`);
+        if (copyBtn) copyBtn.setAttribute('onclick', `copyCode('${code}', this)`);
     }
     const codeText = document.getElementById(`code-text-${orderId}`);
     if (codeText) codeText.textContent = code;
@@ -979,16 +979,8 @@ function applyReceivedState(orderId, code) {
     playSmsSound();
     sendPushNotification('SMS Code Received!', `Your verification code: ${code}`);
 
-    // 📋 Auto-copy to clipboard
-    try {
-        navigator.clipboard?.writeText(code).then(() => {
-            showToast(`✓ Code ${code} received & copied to clipboard!`, 'success');
-        }).catch(() => {
-            showToast(`✓ SMS code received: ${code}`, 'success');
-        });
-    } catch (_) {
-        showToast(`✓ SMS code received: ${code}`, 'success');
-    }
+    // 📋 Auto-copy to clipboard when code arrives
+    copyCode(code, null, true);
 }
 
 /* ══════ Complete order ══════ */
@@ -1171,14 +1163,87 @@ function startCountdownTimers() {
     });
 }
 
-/* ══════ Copy to clipboard ══════ */
-function copyCode(text) {
-    navigator.clipboard?.writeText(text).then(() => showToast(`Copied: ${text}`, 'success')).catch(() => {
-        const ta = document.createElement('textarea');
-        ta.value = text; document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); document.body.removeChild(ta);
-        showToast(`Copied: ${text}`, 'success');
-    });
+/* ══════ Copy to clipboard — 3-layer bulletproof ══════ */
+function copyCode(text, btn, silent) {
+    if (!text) return;
+
+    function markCopied(success) {
+        if (btn) {
+            const orig = btn.innerHTML;
+            btn.innerHTML = success
+                ? '<svg class="w-4 h-4" fill="none" stroke="#4ade80" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+                : '<svg class="w-4 h-4" fill="none" stroke="#f87171" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
+            btn.classList.add(success ? 'copied' : '');
+            setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+        }
+    }
+
+    function fallbackExecCopy() {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+            document.body.appendChild(ta);
+            ta.focus(); ta.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (ok) {
+                markCopied(true);
+                if (!silent) showToast(`Copied: ${text}`, 'success');
+                else showToast(`✓ Code ${text} received & copied!`, 'success');
+                return true;
+            }
+        } catch (_) {}
+        return false;
+    }
+
+    function showManualCopy() {
+        markCopied(false);
+        // Show inline modal so user can tap the pre-selected text
+        const existing = document.getElementById('copy-fallback-modal');
+        if (existing) existing.remove();
+        const modal = document.createElement('div');
+        modal.id = 'copy-fallback-modal';
+        modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6)';
+        modal.innerHTML = `
+            <div style="background:#0f1f3d;border:1px solid #1e3a5f;border-radius:1rem;padding:1.5rem;width:min(90vw,380px);text-align:center">
+                <p style="color:#e2e8f0;font-weight:600;margin-bottom:.75rem;">Tap below and copy</p>
+                <input id="copy-fallback-input" value="${text.replace(/"/g,'&quot;')}" readonly
+                       style="width:100%;background:#131f35;border:1px solid #1e3a5f;border-radius:.5rem;
+                              padding:.6rem 1rem;color:#fff;font-family:monospace;font-size:1.25rem;
+                              letter-spacing:.15em;text-align:center;outline:none;">
+                <p style="color:#64748b;font-size:.75rem;margin-top:.5rem;">Select all → Copy (Ctrl+C / ⌘C)</p>
+                <button onclick="document.getElementById('copy-fallback-modal').remove()"
+                        style="margin-top:1rem;padding:.4rem 1.2rem;border-radius:.4rem;
+                               background:#1e3a5f;color:#94a3b8;font-size:.8rem;border:none;cursor:pointer;">
+                    Close
+                </button>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        setTimeout(() => {
+            const inp = document.getElementById('copy-fallback-input');
+            if (inp) { inp.focus(); inp.select(); }
+        }, 50);
+    }
+
+    // Layer 1: Modern Clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+            markCopied(true);
+            if (!silent) showToast(`Copied: ${text}`, 'success');
+            else showToast(`✓ Code ${text} received & copied!`, 'success');
+        }).catch(() => {
+            if (!fallbackExecCopy()) showManualCopy();
+        });
+        return;
+    }
+
+    // Layer 2: execCommand fallback
+    if (!fallbackExecCopy()) {
+        // Layer 3: manual selection modal
+        showManualCopy();
+    }
 }
 
 /* ══════ Toast notifications ══════ */
