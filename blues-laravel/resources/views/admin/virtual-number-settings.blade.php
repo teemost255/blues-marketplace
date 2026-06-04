@@ -313,6 +313,32 @@
 
         <div class="vn-divider"></div>
 
+        {{-- Supplemental WhatsApp country --}}
+        <p class="section-label">Supplemental Services</p>
+        <div class="vn-card-body space-y-4 pt-0">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="vn-field">
+                    <label>WhatsApp — Extra Country ID</label>
+                    <input type="number" name="herosms_supplemental_wa_country_id"
+                           value="{{ $settings['herosms_supplemental_wa_country_id'] ?? '' }}"
+                           min="0" placeholder="e.g. 36 for Canada">
+                    <p class="field-hint">HeroSMS country ID to append as a second WhatsApp option. Leave blank to disable. (Canada = 36 on most deployments)</p>
+                </div>
+                <div class="vn-field">
+                    <label>WhatsApp — Extra Country Label</label>
+                    <input type="text" name="herosms_supplemental_wa_country_name"
+                           value="{{ $settings['herosms_supplemental_wa_country_name'] ?? '' }}"
+                           placeholder="e.g. Canada">
+                    <p class="field-hint">Display name shown on the service card and buy modal (e.g. "Canada").</p>
+                </div>
+            </div>
+            <p class="field-hint" style="margin-top:-.5rem;">
+                This appends the selected country's WhatsApp numbers alongside your main WhatsApp listing — useful when one country's pool is exhausted.
+            </p>
+        </div>
+
+        <div class="vn-divider"></div>
+
         {{-- Enable virtual numbers toggle --}}
         <div class="vn-row">
             <div class="vn-row-label">

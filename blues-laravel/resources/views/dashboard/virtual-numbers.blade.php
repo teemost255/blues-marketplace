@@ -554,6 +554,9 @@
         {{-- Country select --}}
         <div class="mb-4">
             <label class="block text-xs text-slate-400 mb-1.5">Select Country <span class="text-red-400">*</span></label>
+            {{-- Supplemental pin note --}}
+            <p id="modal-pin-note" class="hidden text-xs font-semibold mb-1.5 px-2 py-1 rounded"
+               style="background:#0f2d1a;color:#4ade80;border:1px solid #14532d;"></p>
             <div class="relative">
                 <select id="modal-country" class="vn-select w-full pr-8" onchange="fetchModalPrice()">
                     <option value="">Loading countries…</option>
@@ -697,7 +700,7 @@ async function loadCountries() {
     } catch (e) { console.error(e); }
 }
 
-function populateModalCountries() {
+function populateModalCountries(pinCountryId) {
     const sel = document.getElementById('modal-country');
     if (!window._countries?.length) { sel.innerHTML = '<option value="">No countries available</option>'; return; }
     const current = document.getElementById('country-filter').value;
@@ -705,14 +708,25 @@ function populateModalCountries() {
     window._countries.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id; opt.textContent = c.name;
-        if (String(c.id) === current && current !== '0') opt.selected = true;
+        // If pinCountryId is provided (supplemental service), lock to that country
+        if (pinCountryId != null) {
+            if (String(c.id) === String(pinCountryId)) opt.selected = true;
+        } else if (String(c.id) === current && current !== '0') {
+            opt.selected = true;
+        }
         sel.appendChild(opt);
     });
-    // Auto-select first country if none pre-selected
-    if (sel.value === '' && window._countries.length) {
-        sel.value = window._countries[0].id;
+    // If pinCountryId is set, make the select read-only (disable other options visually)
+    if (pinCountryId != null) {
+        // If the pinned country wasn't found in list, auto-select first
+        if (sel.value === '' && window._countries.length) sel.value = window._countries[0].id;
+        sel.style.opacity = '.75';
+        sel.style.pointerEvents = 'none';
+    } else {
+        sel.style.opacity = '';
+        sel.style.pointerEvents = '';
+        if (sel.value === '' && window._countries.length) sel.value = window._countries[0].id;
     }
-    // Fetch accurate price for selected country
     fetchModalPrice();
 }
 
@@ -773,7 +787,6 @@ function renderServices(services) {
             ? `<span class="text-sm font-bold" style="color:#60a5fa;">₦${Math.ceil(priceNgn).toLocaleString()}</span>`
             : `<span class="text-xs text-slate-500">—</span>`;
 
-        // USD hint shown below price
         const usdHint = svc.usd_cost !== null && svc.usd_cost !== undefined
             ? `<span class="text-xs text-slate-600">$${parseFloat(svc.usd_cost).toFixed(2)}</span>`
             : '';
@@ -782,17 +795,36 @@ function renderServices(services) {
         const usdJson    = svc.usd_cost !== null && svc.usd_cost !== undefined ? svc.usd_cost : null;
         const nameEsc    = svc.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
+        // Supplemental service — different country source
+        const pinId      = svc.supplemental ? (svc.supplemental_country_id ?? null) : null;
+        const pinName    = svc.supplemental ? (svc.supplemental_country_name ?? '') : '';
+        const suppBadge  = svc.supplemental
+            ? `<span class="text-xs font-semibold px-1.5 py-0.5 rounded" style="background:#0f2d1a;color:#4ade80;border:1px solid #14532d;">${pinName}</span>`
+            : '';
+        const cardStyle  = svc.supplemental
+            ? 'border-color:#14532d;background:#0a1a10;'
+            : '';
+        const badgeSyle  = svc.supplemental
+            ? 'background:linear-gradient(135deg,#065f46,#10b981);'
+            : '';
+
+        const openCall = `openBuyModal('${svc.code}', '${nameEsc}', ${svc.count}, ${priceJson}, ${JSON.stringify(usdJson)}, ${JSON.stringify(pinId)}, '${pinName}')`;
+
         return `
-        <div class="svc-card" onclick="openBuyModal('${svc.code}', '${nameEsc}', ${svc.count}, ${priceJson}, ${JSON.stringify(usdJson)})">
-            <div class="svc-badge">${initial}</div>
+        <div class="svc-card" style="${cardStyle}" onclick="${openCall}">
+            <div class="svc-badge" style="${badgeSyle}">${initial}</div>
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-white truncate">${svc.name}</p>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <p class="text-sm font-semibold text-white truncate">${svc.name}</p>
+                    ${suppBadge}
+                </div>
                 <p class="text-xs text-slate-500 mt-0.5">${countTxt} available</p>
             </div>
             <div class="flex flex-col items-end gap-1 flex-shrink-0">
                 ${priceTag}
                 ${usdHint}
-                <button class="buy-btn" onclick="event.stopPropagation(); openBuyModal('${svc.code}', '${nameEsc}', ${svc.count}, ${priceJson}, ${JSON.stringify(usdJson)})">
+                <button class="buy-btn" style="${svc.supplemental ? 'background:#10b981;' : ''}"
+                        onclick="event.stopPropagation(); ${openCall}">
                     Buy
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -810,13 +842,25 @@ function filterServices() {
 }
 
 /* ══════ Buy Modal ══════ */
-function openBuyModal(code, name, count, priceNgn, usdCost) {
+function openBuyModal(code, name, count, priceNgn, usdCost, pinCountryId, pinCountryName) {
     selectedService = { code, name, count, price: priceNgn, usd_cost: usdCost };
     document.getElementById('modal-service-name').textContent = name;
     document.getElementById('modal-service-count').textContent = `${count.toLocaleString()} numbers available`;
     document.getElementById('modal-error').classList.add('hidden');
-    populateModalCountries();
-    updateModalPrice();
+
+    // Show country pin note if this is a supplemental service
+    const pinNote = document.getElementById('modal-pin-note');
+    if (pinNote) {
+        if (pinCountryId && pinCountryName) {
+            pinNote.textContent = `Numbers sourced from ${pinCountryName}`;
+            pinNote.classList.remove('hidden');
+        } else {
+            pinNote.classList.add('hidden');
+        }
+    }
+
+    populateModalCountries(pinCountryId);
+    updateModalPrice(priceNgn, usdCost);
     document.getElementById('buy-modal').classList.add('open');
     document.body.style.overflow = 'hidden';
 }

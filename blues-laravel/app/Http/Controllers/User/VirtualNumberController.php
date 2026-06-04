@@ -106,6 +106,39 @@ class VirtualNumberController extends Controller
             usort($services, fn($a, $b) => ($b['price'] ?? 0) <=> ($a['price'] ?? 0));
         }
 
+        // ── Supplemental WhatsApp country ─────────────────────────────────────
+        $suppCountryId   = (int) Setting::get('herosms_supplemental_wa_country_id', '0');
+        $suppCountryName = trim(Setting::get('herosms_supplemental_wa_country_name', ''));
+
+        if ($suppCountryId > 0 && $suppCountryName !== '' && $suppCountryId !== $country) {
+            try {
+                $suppCounts = $sms->getServicesForCountry($suppCountryId);
+                $suppPrices = $sms->getPricesForCountry($suppCountryId);
+                $waCount    = isset($suppCounts['wa']) ? (int) $suppCounts['wa'] : 0;
+
+                if ($waCount > 0) {
+                    $apiUsd    = $suppPrices['wa'] ?? null;
+                    $priceNgn  = $apiUsd !== null
+                        ? HeroSmsService::calculateNgnPrice((float) $apiUsd)
+                        : (float) Setting::get('herosms_number_price', '200');
+
+                    $services[] = [
+                        'code'                  => 'wa',
+                        'name'                  => 'WhatsApp',
+                        'count'                 => $waCount,
+                        'price'                 => $priceNgn,
+                        'usd_cost'              => $apiUsd,
+                        'supplemental'          => true,
+                        'supplemental_country_id'   => $suppCountryId,
+                        'supplemental_country_name' => $suppCountryName,
+                    ];
+                }
+            } catch (\Throwable $e) {
+                Log::warning('getServices: supplemental WA fetch failed', ['error' => $e->getMessage()]);
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         return response()->json(['services' => $services]);
     }
 
