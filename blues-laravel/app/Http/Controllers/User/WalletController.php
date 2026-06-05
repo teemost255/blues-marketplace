@@ -85,28 +85,52 @@ class WalletController extends Controller
             return redirect()->route('dashboard.wallet')->with('error', 'Invalid payment reference.');
         }
 
-        if (WalletTransaction::where('reference', $reference)->exists()) {
-            return redirect()->route('dashboard.wallet')->with('info', 'This payment has already been processed.');
+        $secretKey = Setting::get('paystack_secret_key', '');
+        if (!$secretKey) {
+            return redirect()->route('dashboard.wallet')->with('error', 'Payment gateway not configured.');
         }
 
-        $secretKey = Setting::get('paystack_secret_key', '');
-        $response  = Http::withToken($secretKey)
+        // Verify the transaction with Paystack regardless of whether we already processed it
+        $response = Http::withToken($secretKey)
             ->get("https://api.paystack.co/transaction/verify/{$reference}");
 
         if (!$response->successful()) {
-            return redirect()->route('dashboard.wallet')->with('error', 'Payment verification failed.');
+            return redirect()->route('dashboard.wallet')->with('error', 'Payment verification failed. Please contact support.');
         }
 
         $data   = $response->json('data');
         $status = $data['status'] ?? '';
+        $amount = isset($data['amount']) ? $data['amount'] / 100 : 0;
 
         if ($status !== 'success') {
             return redirect()->route('dashboard.wallet')
-                ->with('error', 'Payment was not completed. Status: ' . $status);
+                ->with('error', 'Payment was not completed. Please try again.');
         }
 
-        $user   = Auth::user();
-        $amount = $data['amount'] / 100;
+        // If webhook already credited this reference, show success without double-crediting
+        if (WalletTransaction::where('reference', $reference)->exists()) {
+            return redirect()->route('dashboard.wallet')
+                ->with('success', '₦' . number_format($amount, 2) . ' has been added to your wallet!');
+        }
+
+        // Resolve user — prefer Auth session, fall back to metadata or email from Paystack response
+        $user = Auth::user();
+        if (!$user) {
+            $metaUserId = $data['metadata']['user_id'] ?? null;
+            if ($metaUserId) {
+                $user = \App\Models\User::find($metaUserId);
+            }
+            if (!$user) {
+                $email = $data['customer']['email'] ?? null;
+                $user  = $email ? \App\Models\User::where('email', $email)->first() : null;
+            }
+        }
+
+        if (!$user) {
+            Log::error('Paystack callback: could not resolve user', ['reference' => $reference, 'data' => $data]);
+            return redirect()->route('login')
+                ->with('error', 'Session expired. Your payment was received — please log in and check your wallet, or contact support with reference: ' . $reference);
+        }
 
         $this->creditWallet($user->id, $amount, $reference, 'Wallet top-up via Paystack');
 
@@ -151,22 +175,32 @@ class WalletController extends Controller
 
     public function creditWallet(int $userId, float $amount, string $reference, string $description): void
     {
-        $wallet = Wallet::firstOrCreate(['user_id' => $userId], ['balance' => 0]);
-        $wallet->increment('balance', $amount);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($userId, $amount, $reference, $description) {
+            // Guard against race conditions: check again inside the transaction with a lock
+            $alreadyProcessed = WalletTransaction::where('reference', $reference)->lockForUpdate()->exists();
+            if ($alreadyProcessed) {
+                return;
+            }
 
-        WalletTransaction::create([
-            'user_id'     => $userId,
-            'amount'      => $amount,
-            'type'        => 'deposit',
-            'reference'   => $reference,
-            'description' => $description,
-        ]);
+            $wallet = Wallet::firstOrCreate(['user_id' => $userId], ['balance' => 0]);
+            // Lock the wallet row to prevent concurrent balance updates
+            Wallet::where('id', $wallet->id)->lockForUpdate()->first();
+            $wallet->increment('balance', round($amount, 2));
 
-        Notification::create([
-            'user_id' => $userId,
-            'title'   => 'Wallet Funded',
-            'message' => '₦' . number_format($amount, 2) . ' has been added to your wallet successfully.',
-            'type'    => 'success',
-        ]);
+            WalletTransaction::create([
+                'user_id'     => $userId,
+                'amount'      => round($amount, 2),
+                'type'        => 'deposit',
+                'reference'   => $reference,
+                'description' => $description,
+            ]);
+
+            Notification::create([
+                'user_id' => $userId,
+                'title'   => 'Wallet Funded',
+                'message' => '₦' . number_format($amount, 2) . ' has been added to your wallet successfully.',
+                'type'    => 'success',
+            ]);
+        });
     }
 }

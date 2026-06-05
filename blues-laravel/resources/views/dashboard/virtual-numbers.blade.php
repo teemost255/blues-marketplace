@@ -295,7 +295,7 @@
                                     </svg>
                                 </button>
                             </div>
-                            <p class="text-xs text-slate-400 mt-0.5">{{ $order->service_name }} · {{ $order->country_name ?: 'Country #'.$order->country }}</p>
+                            <p class="text-xs text-slate-400 mt-0.5">{{ $order->service_name }}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap justify-end">
@@ -475,7 +475,6 @@
                     </td>
                     <td class="px-5 py-3">
                         <p class="text-white">{{ $order->service_name }}</p>
-                        <p class="text-xs text-slate-500">{{ $order->country_name ?: 'Country #'.$order->country }}</p>
                     </td>
                     <td class="px-5 py-3">
                         @if($order->sms_code)
