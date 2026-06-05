@@ -527,64 +527,84 @@
      BUY MODAL
 ══════════════════════════════════════════════════════ --}}
 <div id="buy-modal" class="modal-backdrop" onclick="if(event.target===this)closeBuyModal()">
-    <div class="modal-box">
+    <div class="modal-box" style="max-width:23rem;padding:0;overflow:hidden;">
+
         {{-- Header --}}
-        <div class="flex items-start justify-between mb-5">
+        <div class="flex items-center justify-between px-5 py-4" style="background:#0f1e36;border-bottom:1px solid #1e3a5f;">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                      style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        <path stroke-linecap="round" stroke-linejoin="stroke-width:2"
                             d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-base font-bold text-white" id="modal-service-name">Buy Number</h3>
-                    <p class="text-xs text-slate-400 mt-0.5" id="modal-service-count"></p>
+                    <h3 class="text-base font-bold text-white">Rent a Number</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Virtual SMS number rental</p>
                 </div>
             </div>
-            <button onclick="closeBuyModal()" class="text-slate-400 hover:text-white transition-colors p-1">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onclick="closeBuyModal()"
+                    class="text-slate-400 hover:text-white transition-colors p-1 rounded-lg"
+                    style="background:#1a2d4a;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
         </div>
 
-        {{-- Country select --}}
-        <div class="mb-4">
-            <label class="block text-xs text-slate-400 mb-1.5">Select Country <span class="text-red-400">*</span></label>
-            {{-- Supplemental pin note --}}
-            <p id="modal-pin-note" class="hidden text-xs font-semibold mb-1.5 px-2 py-1 rounded"
-               style="background:#0f2d1a;color:#4ade80;border:1px solid #14532d;"></p>
-            <div class="relative">
-                <select id="modal-country" class="vn-select w-full pr-8" onchange="fetchModalPrice()">
-                    <option value="">Loading countries…</option>
-                </select>
-                <svg class="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-            </div>
-        </div>
+        {{-- Supplemental pin note --}}
+        <p id="modal-pin-note" class="hidden text-xs font-semibold px-5 py-2"
+           style="background:#0a1f0e;color:#4ade80;border-bottom:1px solid #14532d;"></p>
 
-        {{-- Cost summary --}}
-        <div class="rounded-xl px-4 py-3 mb-2 flex items-center justify-between"
-             style="background:#0a1628;border:1px solid #1e3a5f;">
-            <div>
-                <span class="text-xs text-slate-400">Wallet deduction</span>
-                <p class="text-xs text-slate-500 mt-0.5" id="modal-price-breakdown"></p>
+        {{-- Info table --}}
+        <div class="px-5 pt-4 pb-2">
+            <div class="rounded-xl overflow-hidden" style="border:1px solid #1e3a5f;">
+
+                {{-- Service row --}}
+                <div class="flex items-center justify-between px-4 py-3" style="border-bottom:1px solid #1e3a5f;background:#0a1628;">
+                    <span class="text-sm text-slate-400">Service</span>
+                    <span class="text-sm font-bold text-white" id="modal-row-service">—</span>
+                </div>
+
+                {{-- Country row --}}
+                <div class="flex items-center justify-between px-4 py-2.5" style="border-bottom:1px solid #1e3a5f;background:#0a1628;">
+                    <span class="text-sm text-slate-400">Country</span>
+                    <div class="relative">
+                        <select id="modal-country"
+                                class="text-sm font-bold text-white appearance-none pr-5 pl-1 py-0.5 rounded cursor-pointer outline-none"
+                                style="background:transparent;border:none;"
+                                onchange="fetchModalPrice()">
+                            <option value="">Loading…</option>
+                        </select>
+                        <svg class="w-3.5 h-3.5 absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                </div>
+
+                {{-- Cost row --}}
+                <div class="flex items-center justify-between px-4 py-3" style="border-bottom:1px solid #1e3a5f;background:#0a1628;">
+                    <span class="text-sm text-slate-400">Cost</span>
+                    <span class="text-sm font-bold" id="modal-price-display" style="color:#60a5fa;">—</span>
+                </div>
+
+                {{-- Balance row --}}
+                <div class="flex items-center justify-between px-4 py-3" style="background:#0a1628;">
+                    <span class="text-sm text-slate-400">Your balance</span>
+                    <span class="text-sm font-bold" id="modal-row-balance"
+                          style="color:#{{ $wallet->balance > 0 ? '4ade80' : 'f87171' }};">
+                        ₦{{ number_format($wallet->balance, 2) }}
+                    </span>
+                </div>
             </div>
-            <span class="text-lg font-bold" id="modal-price-display" style="color:#60a5fa;">—</span>
-        </div>
-        <div class="rounded-xl px-4 py-2.5 mb-5 flex items-center gap-2"
-             style="background:#0a1e3a;border:1px solid #1e3a5f;">
-            <svg class="w-3.5 h-3.5 flex-shrink-0" style="color:#60a5fa;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <p class="text-xs text-slate-400">Price is fetched live from the provider. Number expires if no SMS received. Partial refund may apply on cancellation.</p>
+
+            {{-- Hidden breakdown (used internally) --}}
+            <p class="hidden" id="modal-price-breakdown"></p>
         </div>
 
         {{-- Error message --}}
-        <div id="modal-error" class="hidden text-xs rounded-lg px-3 py-2.5 mb-4 flex items-center gap-2"
+        <div id="modal-error" class="hidden text-xs mx-5 mt-3 rounded-lg px-3 py-2.5 flex items-center gap-2"
              style="background:#1e0a0a;color:#f87171;border:1px solid #7f1d1d;">
             <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -592,23 +612,22 @@
             <span id="modal-error-text"></span>
         </div>
 
-        {{-- Actions --}}
-        <div class="flex gap-3">
-            <button onclick="closeBuyModal()"
-                    class="flex-1 py-2.5 text-sm font-semibold rounded-xl text-slate-400 transition-all"
-                    style="background:#131f35;border:1px solid #1e3a5f;"
-                    onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#1e3a5f'">
-                Cancel
-            </button>
+        {{-- Rent button --}}
+        <div class="px-5 pt-4 pb-2">
             <button id="confirm-buy-btn" onclick="confirmBuy()"
-                    class="flex-1 py-2.5 text-sm font-semibold rounded-xl text-white flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                    style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);">
+                    class="w-full py-3 text-sm font-bold rounded-xl text-white flex items-center justify-center gap-2 transition-all"
+                    style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);"
+                    onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
-                <span id="confirm-buy-label">Buy</span>
+                <span id="confirm-buy-label">Rent Number</span>
             </button>
         </div>
+
+        {{-- Footer note --}}
+        <p class="text-center text-xs text-slate-500 pb-4 px-5">Valid for ~20 min to receive one SMS code</p>
     </div>
 </div>
 
@@ -843,8 +862,8 @@ function filterServices() {
 /* ══════ Buy Modal ══════ */
 function openBuyModal(code, name, count, priceNgn, usdCost, pinCountryId, pinCountryName) {
     selectedService = { code, name, count, price: priceNgn, usd_cost: usdCost };
-    document.getElementById('modal-service-name').textContent = name;
-    document.getElementById('modal-service-count').textContent = `${count.toLocaleString()} numbers available`;
+    const rowSvc = document.getElementById('modal-row-service');
+    if (rowSvc) rowSvc.textContent = name;
     document.getElementById('modal-error').classList.add('hidden');
 
     // Show country pin note if this is a supplemental service
@@ -865,24 +884,17 @@ function openBuyModal(code, name, count, priceNgn, usdCost, pinCountryId, pinCou
 }
 
 function updateModalPrice(priceNgn, usdCost) {
-    const priceEl     = document.getElementById('modal-price-display');
-    const breakdownEl = document.getElementById('modal-price-breakdown');
-    const btnLabel    = document.getElementById('confirm-buy-label');
-    const price       = priceNgn ?? selectedService?.price;
+    const priceEl  = document.getElementById('modal-price-display');
+    const btnLabel = document.getElementById('confirm-buy-label');
+    const price    = priceNgn ?? selectedService?.price;
 
     if (price && price > 0) {
         const fmt = '₦' + Math.ceil(price).toLocaleString();
         if (priceEl)  priceEl.textContent = fmt;
-        if (btnLabel) btnLabel.textContent = `Buy — ${fmt}`;
-        const usd = usdCost ?? selectedService?.usd_cost;
-        if (breakdownEl && usd) {
-            breakdownEl.textContent = `Provider cost: $${parseFloat(usd).toFixed(3)} + commission`;
-        } else if (breakdownEl) {
-            breakdownEl.textContent = '';
-        }
+        if (btnLabel) btnLabel.textContent = `Rent Number — ${fmt}`;
     } else {
         if (priceEl)  priceEl.textContent = '—';
-        if (btnLabel) btnLabel.textContent = 'Buy';
+        if (btnLabel) btnLabel.textContent = 'Rent Number';
     }
 }
 

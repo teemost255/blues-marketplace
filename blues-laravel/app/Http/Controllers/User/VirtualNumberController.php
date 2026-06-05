@@ -20,6 +20,7 @@ class VirtualNumberController extends Controller
         'ds'  => 'Discord',
         'vi'  => 'Viber',
         'si'  => 'Signal',
+        'sg'  => 'Signal',
         'vk'  => 'VKontakte',
         'ok'  => 'Odnoklassniki',
         'mm'  => 'Mail.ru',
