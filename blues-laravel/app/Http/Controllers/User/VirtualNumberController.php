@@ -10,13 +10,165 @@ use Illuminate\Support\Facades\{Auth, DB, Log};
 class VirtualNumberController extends Controller
 {
     private array $serviceNames = [
-        'tg' => 'Telegram',  'wa' => 'WhatsApp',  'go' => 'Google',
-        'fb' => 'Facebook',  'ig' => 'Instagram',  'tw' => 'Twitter / X',
-        'tk' => 'TikTok',    'ds' => 'Discord',    'am' => 'Amazon',
-        'ma' => 'Microsoft', 'ap' => 'Apple',      'ya' => 'Yahoo',
-        'li' => 'LinkedIn',  'ub' => 'Uber',       'nf' => 'Netflix',
-        'vi' => 'Viber',     'si' => 'Signal',     'mm' => 'Mail.ru',
-        'vk' => 'VKontakte', 'ok' => 'OK.ru',
+        // Messaging & Social
+        'tg'  => 'Telegram',
+        'wa'  => 'WhatsApp',
+        'fb'  => 'Facebook',
+        'ig'  => 'Instagram',
+        'tw'  => 'Twitter / X',
+        'tk'  => 'TikTok',
+        'ds'  => 'Discord',
+        'vi'  => 'Viber',
+        'si'  => 'Signal',
+        'vk'  => 'VKontakte',
+        'ok'  => 'Odnoklassniki',
+        'mm'  => 'Mail.ru',
+        'ln'  => 'LINE',
+        'kk'  => 'KakaoTalk',
+        'ws'  => 'WeChat',
+        'sk'  => 'Skype',
+        'sc'  => 'Snapchat',
+        'br'  => 'BeReal',
+        'tm'  => 'Tumblr',
+        'tt'  => 'Twitch',
+        'rd'  => 'Reddit',
+        'pt'  => 'Pinterest',
+        'yt'  => 'YouTube',
+        'sp'  => 'Spotify',
+        'wc'  => 'WeChat',
+        'zl'  => 'Zalo',
+        'im'  => 'ICQ',
+        'ic'  => 'ICQ New',
+        'bc'  => 'BChat',
+        'mt'  => 'MeWe',
+        'tx'  => 'TextNow',
+        'ch'  => 'Clubhouse',
+
+        // Tech & Productivity
+        'go'  => 'Google',
+        'ap'  => 'Apple',
+        'ma'  => 'Microsoft',
+        'ya'  => 'Yahoo',
+        'gi'  => 'GitHub',
+        'dr'  => 'Dropbox',
+        'zm'  => 'Zoom',
+        'sl'  => 'Slack',
+        'do'  => 'DigitalOcean',
+        'gd'  => 'GoDaddy',
+        'wp'  => 'WordPress',
+        'sf'  => 'Salesforce',
+        'hb'  => 'HubSpot',
+        'at'  => 'Atlassian',
+
+        // Shopping & Marketplaces
+        'am'  => 'Amazon',
+        'eb'  => 'eBay',
+        'et'  => 'Etsy',
+        'sh'  => 'Shopify',
+        'al'  => 'AliExpress',
+        'oz'  => 'Ozon',
+        'wb'  => 'Wildberries',
+        'av'  => 'Avito',
+        'ol'  => 'OLX',
+        'lz'  => 'Lazada',
+        'wm'  => 'Walmart',
+        'nk'  => 'Nike',
+        'za'  => 'Zara',
+
+        // Finance & Crypto
+        'pp'  => 'PayPal',
+        'bn'  => 'Binance',
+        'by'  => 'Bybit',
+        'cb'  => 'Coinbase',
+        'kc'  => 'KuCoin',
+        'ok2' => 'OKX',
+        'ft'  => 'FTX',
+        'wx'  => 'Wise',
+        'rv'  => 'Revolut',
+        'ck'  => 'Cash App',
+        'vn'  => 'Venmo',
+        'zl2' => 'Zelle',
+        'sy'  => 'Stripe',
+        'wr'  => 'Wirex',
+        'kr'  => 'Kraken',
+        'gm'  => 'Gemini',
+        'nx'  => 'Nexo',
+
+        // Ride & Food Delivery
+        'ub'  => 'Uber',
+        'lf'  => 'Lyft',
+        'gp'  => 'Grab',
+        'bl'  => 'Bolt',
+        'dd'  => 'DoorDash',
+        'ue'  => 'Uber Eats',
+        'jt'  => 'Just Eat',
+        'dk'  => 'Deliveroo',
+        'rf'  => 'Rappi',
+
+        // Travel & Accommodation
+        'af'  => 'Airbnb',
+        'bk'  => 'Booking.com',
+        'ex'  => 'Expedia',
+        'ag'  => 'Agoda',
+        'tr'  => 'TripAdvisor',
+
+        // Streaming & Entertainment
+        'nf'  => 'Netflix',
+        'di'  => 'Disney+',
+        'hx'  => 'HBO Max',
+        'hu'  => 'Hulu',
+        'pr'  => 'Paramount+',
+        'ae'  => 'Apple TV+',
+        'az'  => 'Amazon Prime',
+        'dz'  => 'Deezer',
+        'td'  => 'TIDAL',
+        'pw'  => 'Peacock',
+        'fu'  => 'Fubo',
+        'cr'  => 'Crunchyroll',
+
+        // Dating
+        'tn'  => 'Tinder',
+        'bm'  => 'Bumble',
+        'bt'  => 'Badoo',
+        'gr'  => 'Grindr',
+        'hg'  => 'Hinge',
+        'mo'  => 'MocoSpace',
+        'zk'  => 'Zoosk',
+
+        // Gaming
+        'st'  => 'Steam',
+        'ep'  => 'Epic Games',
+        'rk'  => 'Rockstar Games',
+        'ac'  => 'Activision',
+        'ea'  => 'EA Games',
+        'nx2' => 'Nintendo',
+        'ps'  => 'PlayStation',
+        'xb'  => 'Xbox',
+        'rz'  => 'Razer',
+
+        // Security & VPN
+        'ks'  => 'Kaspersky',
+        'nt'  => 'Norton',
+        'bt2' => 'Bitdefender',
+        'mc'  => 'McAfee',
+        'nr'  => 'NordVPN',
+        'ev'  => 'ExpressVPN',
+        'sn'  => 'Surfshark',
+
+        // Other common services
+        'li2' => 'LinkedIn',
+        'ld'  => 'Letgo',
+        'cv'  => 'Careem',
+        'sw'  => 'Swiggy',
+        'zp'  => 'Zomato',
+        'pm'  => 'ProtonMail',
+        'tu'  => 'Tutanota',
+        'gv'  => 'Google Voice',
+        'tw2' => 'Twilio',
+        'ta'  => 'Tango',
+        'ft2' => 'Footprint',
+        'ot'  => 'Other / Any',
+        'any' => 'Any Service',
     ];
 
     public function index()
@@ -86,7 +238,7 @@ class VirtualNumberController extends Controller
 
             $services[] = [
                 'code'     => $code,
-                'name'     => $this->serviceNames[$code] ?? strtoupper($code),
+                'name'     => $this->serviceNames[$code] ?? ucwords(str_replace(['-','_'], ' ', $code)),
                 'count'    => (int) $count,
                 'price'    => $priceNgn,
                 'usd_cost' => $apiUsdPrice,
@@ -205,7 +357,7 @@ class VirtualNumberController extends Controller
 
         $sms->setStatusReady($result['activation_id']);
 
-        $serviceName = $this->serviceNames[$request->service] ?? strtoupper($request->service);
+        $serviceName = $this->serviceNames[$request->service] ?? ucwords(str_replace(['-','_'], ' ', $request->service));
         $expiryMins  = (int) Setting::get('herosms_expiry_minutes', '20');
 
         try {
