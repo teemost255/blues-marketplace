@@ -567,21 +567,10 @@
                     <span class="text-sm font-bold text-white" id="modal-row-service">—</span>
                 </div>
 
-                {{-- Country row --}}
-                <div class="flex items-center justify-between px-4 py-2.5" style="border-bottom:1px solid #1e3a5f;background:#0a1628;">
-                    <span class="text-sm text-slate-400">Country</span>
-                    <div class="relative">
-                        <select id="modal-country"
-                                class="text-sm font-bold text-white appearance-none pr-5 pl-1 py-0.5 rounded cursor-pointer outline-none"
-                                style="background:transparent;border:none;"
-                                onchange="fetchModalPrice()">
-                            <option value="">Loading…</option>
-                        </select>
-                        <svg class="w-3.5 h-3.5 absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </div>
-                </div>
+                {{-- Country select (hidden — value still used for purchase) --}}
+                <select id="modal-country" class="hidden" onchange="fetchModalPrice()">
+                    <option value="">Loading…</option>
+                </select>
 
                 {{-- Cost row --}}
                 <div class="flex items-center justify-between px-4 py-3" style="border-bottom:1px solid #1e3a5f;background:#0a1628;">
