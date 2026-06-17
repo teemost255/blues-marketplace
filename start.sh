@@ -18,6 +18,11 @@ if [ -n "$PGHOST" ]; then
   sed -i "/^DB_URL=/d" .env
 fi
 
+# Install PHP dependencies if vendor is missing
+if [ ! -f vendor/autoload.php ]; then
+  composer install --no-interaction --prefer-dist
+fi
+
 # Set up storage directories
 mkdir -p storage/framework/sessions
 mkdir -p storage/framework/views
