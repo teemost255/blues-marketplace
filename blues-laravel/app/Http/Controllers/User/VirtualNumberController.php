@@ -259,10 +259,24 @@ class VirtualNumberController extends Controller
     {
         $request->validate(['country' => 'nullable|integer']);
 
-        // Prefer server1; fall back to server2
-        $sms = new GrizzlySmsService();
-        if (!$sms->isConfigured() || Setting::get('grizzly_enabled', '0') !== '1') {
+        $serverPref = (int) $request->input('server', 0); // 1 = force server1, 2 = force server2, 0 = auto
+
+        if ($serverPref === 2) {
             $sms = new HeroSmsService();
+            if (!$sms->isConfigured() || Setting::get('herosms_enabled', '0') !== '1') {
+                return response()->json(['error' => 'Service not available.'], 503);
+            }
+        } elseif ($serverPref === 1) {
+            $sms = new GrizzlySmsService();
+            if (!$sms->isConfigured() || Setting::get('grizzly_enabled', '0') !== '1') {
+                return response()->json(['error' => 'Service not available.'], 503);
+            }
+        } else {
+            // Auto: prefer server1, fall back to server2
+            $sms = new GrizzlySmsService();
+            if (!$sms->isConfigured() || Setting::get('grizzly_enabled', '0') !== '1') {
+                $sms = new HeroSmsService();
+            }
         }
 
         if (!$sms->isConfigured()) {
@@ -348,8 +362,9 @@ class VirtualNumberController extends Controller
     public function order(Request $request)
     {
         $request->validate([
-            'service' => 'required|string|max:10',
-            'country' => 'required|integer|min:1',
+            'service'    => 'required|string|max:10',
+            'country'    => 'required|integer|min:1',
+            'server_pref' => 'nullable|integer|in:1,2',
         ]);
 
         $server1Enabled = Setting::get('grizzly_enabled', '0') === '1';
@@ -359,7 +374,8 @@ class VirtualNumberController extends Controller
             return response()->json(['error' => 'Virtual numbers are not available right now.'], 503);
         }
 
-        $country = (int) $request->country;
+        $serverPref = (int) $request->input('server_pref', 0); // 1 = prefer s1, 2 = prefer s2, 0 = auto
+        $country    = (int) $request->country;
 
         // Determine price from whichever provider is active
         $priceSms = $this->getPriceFromActiveProvider($request->service, $country);
@@ -385,36 +401,59 @@ class VirtualNumberController extends Controller
             ], 422);
         }
 
-        // Try Server 1 (GrizzlySMS) first, then fall back to Server 2 (HeroSMS)
         $result   = null;
         $provider = null;
 
-        if ($server1Enabled) {
-            $s1 = new GrizzlySmsService();
-            if ($s1->isConfigured()) {
-                $result = $s1->getNumber($request->service, $country);
-                if ($result['success']) {
-                    $provider = 'server1';
-                    $s1->setStatusReady($result['activation_id']);
-                } else {
-                    Log::info('VN order: Server1 failed, trying Server2', [
-                        'service' => $request->service,
-                        'error'   => $result['error'] ?? 'unknown',
-                    ]);
+        // If user explicitly chose Server 2, try it first (then fallback to Server 1)
+        if ($serverPref === 2) {
+            if ($server2Enabled) {
+                $s2 = new HeroSmsService();
+                if ($s2->isConfigured()) {
+                    $result = $s2->getNumber($request->service, $country);
+                    if ($result['success']) {
+                        $provider = 'server2';
+                    }
                 }
             }
-        }
+            if (!$provider && $server1Enabled) {
+                $s1 = new GrizzlySmsService();
+                if ($s1->isConfigured()) {
+                    $result = $s1->getNumber($request->service, $country);
+                    if ($result['success']) {
+                        $provider = 'server1';
+                        $s1->setStatusReady($result['activation_id']);
+                    }
+                }
+            }
+        } else {
+            // Default / Server 1 preferred: try Server 1 first, then Server 2
+            if ($server1Enabled) {
+                $s1 = new GrizzlySmsService();
+                if ($s1->isConfigured()) {
+                    $result = $s1->getNumber($request->service, $country);
+                    if ($result['success']) {
+                        $provider = 'server1';
+                        $s1->setStatusReady($result['activation_id']);
+                    } else {
+                        Log::info('VN order: Server1 failed, trying Server2', [
+                            'service' => $request->service,
+                            'error'   => $result['error'] ?? 'unknown',
+                        ]);
+                    }
+                }
+            }
 
-        if (!$provider && $server2Enabled) {
-            $s2 = new HeroSmsService();
-            if ($s2->isConfigured()) {
-                $result = $s2->getNumber($request->service, $country);
-                if ($result['success']) {
-                    $provider = 'server2';
+            if (!$provider && $server2Enabled) {
+                $s2 = new HeroSmsService();
+                if ($s2->isConfigured()) {
+                    $result = $s2->getNumber($request->service, $country);
+                    if ($result['success']) {
+                        $provider = 'server2';
+                    }
                     $s2->setStatusReady($result['activation_id']);
                 }
             }
-        }
+        } // end else (serverPref !== 2)
 
         if (!$provider || !$result || !$result['success']) {
             $apiError = $result['error'] ?? 'UNAVAILABLE';

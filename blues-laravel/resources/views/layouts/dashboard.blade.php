@@ -39,6 +39,23 @@
         .sidebar-link { display:flex; align-items:center; gap:0.75rem; padding:0.625rem 1rem; border-radius:0.5rem; color:#cbd5e1; font-size:0.875rem; font-weight:500; transition:all .15s; }
         .sidebar-link:hover { background:#334155; color:#fff; }
         .sidebar-link.active { background:#334155; color:#fff; }
+        /* Sidebar dropdown sub-menu */
+        .sidebar-dropdown-btn { display:flex; align-items:center; gap:0.75rem; width:100%; padding:0.625rem 1rem; border-radius:0.5rem; color:#cbd5e1; font-size:0.875rem; font-weight:500; background:none; border:none; cursor:pointer; transition:all .15s; text-align:left; }
+        .sidebar-dropdown-btn:hover { background:#334155; color:#fff; }
+        .sidebar-dropdown-btn.active { background:#334155; color:#fff; }
+        .sidebar-dropdown-chevron { margin-left:auto; width:1rem; height:1rem; transition:transform .2s; flex-shrink:0; }
+        .sidebar-dropdown-chevron.open { transform:rotate(180deg); }
+        .sidebar-submenu { overflow:hidden; max-height:0; transition:max-height .25s ease; }
+        .sidebar-submenu.open { max-height:200px; }
+        .sidebar-sub-link { display:flex; align-items:center; gap:0.6rem; padding:0.45rem 1rem 0.45rem 2.6rem; border-radius:0.5rem; color:#94a3b8; font-size:0.8rem; font-weight:500; transition:all .15s; }
+        .sidebar-sub-link:hover { background:#334155; color:#fff; }
+        .sidebar-sub-link.active { background:#334155; color:#e2e8f0; }
+        [data-theme="light"] .sidebar-dropdown-btn { color:#475569 !important; }
+        [data-theme="light"] .sidebar-dropdown-btn:hover { background:#e2e8f0 !important; color:#0f172a !important; }
+        [data-theme="light"] .sidebar-dropdown-btn.active { background:#e2e8f0 !important; color:#0f172a !important; }
+        [data-theme="light"] .sidebar-sub-link { color:#64748b !important; }
+        [data-theme="light"] .sidebar-sub-link:hover { background:#e2e8f0 !important; color:#0f172a !important; }
+        [data-theme="light"] .sidebar-sub-link.active { background:#e2e8f0 !important; color:#0f172a !important; }
 
         /* Mobile sidebar transition */
         #dash-sidebar {
@@ -147,6 +164,39 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Marketplace
         </a>
+
+        {{-- Virtual Numbers dropdown (nested under Marketplace) --}}
+        @php $vnActive = request()->routeIs('dashboard.virtual-numbers*'); @endphp
+        <div>
+            <button onclick="toggleVnDropdown()"
+                    id="vn-dropdown-btn"
+                    class="sidebar-dropdown-btn {{ $vnActive ? 'active' : '' }}">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                </svg>
+                <span>Virtual Numbers</span>
+                <svg id="vn-dropdown-chevron" class="sidebar-dropdown-chevron {{ $vnActive ? 'open' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div id="vn-submenu" class="sidebar-submenu {{ $vnActive ? 'open' : '' }}">
+                @php
+                    $currentServer = request()->query('server', '');
+                @endphp
+                <a href="{{ route('dashboard.virtual-numbers') }}?server=1"
+                   class="sidebar-sub-link {{ $vnActive && $currentServer === '1' ? 'active' : '' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                    Server 1
+                </a>
+                <a href="{{ route('dashboard.virtual-numbers') }}?server=2"
+                   class="sidebar-sub-link {{ $vnActive && $currentServer === '2' ? 'active' : '' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0"></span>
+                    Server 2
+                </a>
+            </div>
+        </div>
+
         <a href="{{ route('dashboard.wishlist') }}" class="sidebar-link {{ request()->routeIs('dashboard.wishlist') ? 'active' : '' }}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
             Wishlist
@@ -154,10 +204,6 @@
         <a href="{{ route('dashboard.notifications') }}" class="sidebar-link {{ request()->routeIs('dashboard.notifications') ? 'active' : '' }}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
             Notifications
-        </a>
-        <a href="{{ route('dashboard.virtual-numbers') }}" class="sidebar-link {{ request()->routeIs('dashboard.virtual-numbers*') ? 'active' : '' }}">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-            Virtual Numbers
         </a>
         <a href="{{ route('dashboard.referrals') }}" class="sidebar-link {{ request()->routeIs('dashboard.referrals') ? 'active' : '' }}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -252,6 +298,18 @@ function closeMobileSidebar() {
     document.getElementById('dash-sidebar').classList.remove('sidebar-open');
     document.getElementById('dash-overlay').classList.add('hidden');
     document.body.style.overflow = '';
+}
+
+// ── Virtual Numbers sidebar dropdown ──
+function toggleVnDropdown() {
+    var submenu  = document.getElementById('vn-submenu');
+    var chevron  = document.getElementById('vn-dropdown-chevron');
+    var btn      = document.getElementById('vn-dropdown-btn');
+    if (!submenu) return;
+    var isOpen = submenu.classList.contains('open');
+    submenu.classList.toggle('open', !isOpen);
+    if (chevron) chevron.classList.toggle('open', !isOpen);
+    if (btn)     btn.classList.toggle('active', !isOpen);
 }
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeMobileSidebar();

@@ -816,6 +816,9 @@ function populateModalCountries(pinCountryId) {
 }
 
 /* ══════ Service loading ══════ */
+/* ── Detect server preference from URL (?server=1 or ?server=2) ── */
+const _vnServerPref = new URLSearchParams(window.location.search).get('server') || '';
+
 async function loadServices() {
     const country = document.getElementById('country-filter').value;
     const sort    = document.getElementById('sort-filter').value;
@@ -823,7 +826,8 @@ async function loadServices() {
     loading?.classList.remove('hidden');
 
     try {
-        const url = `{{ route('dashboard.virtual-numbers.services') }}?country=${country}&sort=${sort}`;
+        let url = `{{ route('dashboard.virtual-numbers.services') }}?country=${country}&sort=${sort}`;
+        if (_vnServerPref) url += `&server=${_vnServerPref}`;
         const r   = await fetch(url, { headers: { Accept: 'application/json' } });
         const d   = await r.json();
         allServices = d.services ?? [];
@@ -1025,10 +1029,12 @@ async function confirmBuy() {
     const resetLabel = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> <span>Buy${priceFmt && priceFmt !== '—' ? ' — ' + priceFmt : ''}</span>`;
 
     try {
+        const orderBody = { service: selectedService.code, country: parseInt(country), country_name: countryName };
+        if (_vnServerPref) orderBody.server_pref = parseInt(_vnServerPref);
         const r = await fetch('{{ route("dashboard.virtual-numbers.order") }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, Accept: 'application/json' },
-            body: JSON.stringify({ service: selectedService.code, country: parseInt(country), country_name: countryName }),
+            body: JSON.stringify(orderBody),
         });
         const data = await r.json();
 
