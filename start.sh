@@ -10,6 +10,7 @@ fi
 
 # Inject PostgreSQL connection from Replit environment into .env
 if [ -n "$PGHOST" ]; then
+  grep -q "^DB_CONNECTION=" .env && sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=pgsql|" .env || echo "DB_CONNECTION=pgsql" >> .env
   grep -q "^DB_HOST=" .env && sed -i "s|^DB_HOST=.*|DB_HOST=${PGHOST}|" .env || echo "DB_HOST=${PGHOST}" >> .env
   grep -q "^DB_PORT=" .env && sed -i "s|^DB_PORT=.*|DB_PORT=${PGPORT:-5432}|" .env || echo "DB_PORT=${PGPORT:-5432}" >> .env
   grep -q "^DB_DATABASE=" .env && sed -i "s|^DB_DATABASE=.*|DB_DATABASE=${PGDATABASE}|" .env || echo "DB_DATABASE=${PGDATABASE}" >> .env
@@ -21,6 +22,12 @@ fi
 # Install PHP dependencies if vendor is missing
 if [ ! -f vendor/autoload.php ]; then
   composer install --no-interaction --prefer-dist
+fi
+
+# Build frontend assets if not present
+if [ ! -f public/build/manifest.json ]; then
+  npm install
+  npm run build
 fi
 
 # Ensure APP_KEY exists and is set

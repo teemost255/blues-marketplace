@@ -1,0 +1,12 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "Blues Marketplace is a Laravel 12 digital accounts marketplace with wallet, Paystack checkout, LogsPlug virtual numbers, admin panel, user dashboards, support tickets, notifications, and announcements.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
