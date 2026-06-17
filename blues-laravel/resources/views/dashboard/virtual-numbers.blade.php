@@ -272,6 +272,75 @@
                     style="background:#3b82f6;color:#fff;">Browse Services</button>
         </div>
         @else
+        {{-- ── How-to Guide ── --}}
+        <div class="mx-4 mt-4 rounded-xl overflow-hidden" style="background:#0c1a2e;border:1px solid #1e3a5f;">
+            <button onclick="toggleGuide()" class="w-full flex items-center justify-between px-4 py-3 text-left" style="background:none;border:none;cursor:pointer;">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(59,130,246,.15);">
+                        <svg class="w-3.5 h-3.5" style="color:#60a5fa;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-semibold text-white">How to use your rented number</span>
+                </div>
+                <svg id="guide-chevron" class="w-4 h-4 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div id="guide-content" class="hidden px-4 pb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5" style="background:#1d4ed8;color:#bfdbfe;">1</div>
+                        <div>
+                            <p class="text-sm font-semibold text-white">Copy the phone number</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Click the copy icon next to the number shown in your active rental card below.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5" style="background:#1d4ed8;color:#bfdbfe;">2</div>
+                        <div>
+                            <p class="text-sm font-semibold text-white">Enter it on the app / website</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Paste the number into the service's phone number field and request a verification code.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5" style="background:#1d4ed8;color:#bfdbfe;">3</div>
+                        <div>
+                            <p class="text-sm font-semibold text-white">Wait for the code to arrive</p>
+                            <p class="text-xs text-slate-400 mt-0.5">This page auto-refreshes every 10 seconds. Your code will appear in the green box automatically — no manual refresh needed.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5" style="background:#1d4ed8;color:#bfdbfe;">4</div>
+                        <div>
+                            <p class="text-sm font-semibold text-white">Copy and enter your code</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Once the code appears, copy it and enter it on the app/website to complete verification.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5" style="background:#1d4ed8;color:#bfdbfe;">5</div>
+                        <div>
+                            <p class="text-sm font-semibold text-white">Click "Mark Complete"</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Once you have your code, hit <strong style="color:#4ade80;">Mark Complete</strong> to close the session and release the number.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5" style="background:#92400e;color:#fcd34d;">!</div>
+                        <div>
+                            <p class="text-sm font-semibold text-white">No code? Try "Resend SMS"</p>
+                            <p class="text-xs text-slate-400 mt-0.5">If no code arrives within 2 minutes, tap <strong style="color:#93c5fd;">Resend SMS</strong> to request a new one, or <strong style="color:#f87171;">Cancel</strong> for a partial refund.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 rounded-lg px-3 py-2.5 flex items-start gap-2" style="background:#1e3a8a20;border:1px solid #1d4ed8;">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" style="color:#60a5fa;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-xs" style="color:#93c5fd;">Numbers expire after the time shown on the timer. If the timer runs out before a code arrives, the rental is automatically closed and a partial refund is issued.</p>
+                </div>
+            </div>
+        </div>
+
         <div class="p-4 space-y-4" id="active-orders-list">
             @foreach($activeOrders as $order)
             <div class="active-card" id="active-order-{{ $order->id }}">
@@ -634,6 +703,16 @@ let selectedService   = null;   // { code, name, count, price, usd_cost }
 let autoRefreshTimers = {};
 
 /* ══════ Browser Push Notifications ══════ */
+/* ── How-to Guide toggle ── */
+function toggleGuide() {
+    const content  = document.getElementById('guide-content');
+    const chevron  = document.getElementById('guide-chevron');
+    if (!content) return;
+    const isHidden = content.classList.contains('hidden');
+    content.classList.toggle('hidden', !isHidden);
+    if (chevron) chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
+}
+
 function requestNotificationPermission() {
     if (!('Notification' in window)) return;
     if (Notification.permission === 'default') {

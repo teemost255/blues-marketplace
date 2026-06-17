@@ -8,7 +8,7 @@ class VirtualNumberOrder extends Model
     protected $fillable = [
         'user_id', 'activation_id', 'phone_number',
         'service', 'service_name', 'country', 'country_name',
-        'cost', 'sms_code', 'status', 'expires_at',
+        'cost', 'sms_code', 'status', 'provider', 'expires_at',
     ];
 
     protected $casts = [

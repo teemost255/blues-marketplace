@@ -2,14 +2,14 @@
 namespace App\Console\Commands;
 
 use App\Models\{VirtualNumberOrder, Notification};
-use App\Services\HeroSmsService;
+use App\Services\{HeroSmsService, GrizzlySmsService};
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class PollVirtualNumbers extends Command
 {
     protected $signature   = 'vn:poll';
-    protected $description = 'Poll HeroSMS API for SMS codes on all waiting virtual number orders';
+    protected $description = 'Poll SMS providers for codes on all waiting virtual number orders';
 
     public function handle(): void
     {
@@ -19,11 +19,18 @@ class PollVirtualNumbers extends Command
 
         if ($orders->isEmpty()) return;
 
-        $sms     = new HeroSmsService();
+        $services = [
+            'server1' => new GrizzlySmsService(),
+            'server2' => new HeroSmsService(),
+        ];
+
         $updated = 0;
 
         foreach ($orders as $order) {
             try {
+                $providerKey = $order->provider ?? 'server2';
+                $sms         = $services[$providerKey] ?? $services['server2'];
+
                 $result = $sms->getStatus((string) $order->activation_id);
 
                 if ($result['status'] === 'received' && !empty($result['code'])) {
@@ -41,12 +48,12 @@ class PollVirtualNumbers extends Command
                     Log::info('vn:poll — code received', [
                         'order_id'      => $order->id,
                         'activation_id' => $order->activation_id,
-                        'code'          => $result['code'],
+                        'provider'      => $providerKey,
                     ]);
                     $updated++;
                 } elseif ($result['status'] === 'cancelled') {
                     $order->update(['status' => 'cancelled']);
-                    Log::info('vn:poll — order cancelled by API', ['order_id' => $order->id]);
+                    Log::info('vn:poll — order cancelled by provider', ['order_id' => $order->id]);
                 }
             } catch (\Throwable $e) {
                 Log::error('vn:poll — error polling order', [

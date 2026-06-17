@@ -131,20 +131,84 @@
     @csrf
 
     {{-- ════════════════════════════════════════════
-         CARD 1 — Server / API Credentials
+         CARD 0 — Server 1 (GrizzlySMS)
+    ════════════════════════════════════════════ --}}
+    <div class="vn-card">
+        <div class="vn-card-header">
+            <div class="vn-icon-badge" style="background:linear-gradient(135deg,#065f46,#10b981)">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-white">Server 1 — Primary Provider</p>
+                <p class="text-xs text-slate-400 mt-0.5">Tried first for every order. If unavailable, orders fall back to Server 2 automatically.</p>
+            </div>
+        </div>
+
+        <div class="vn-divider"></div>
+
+        <div class="vn-card-body pt-4 space-y-4">
+            <div class="vn-field">
+                <label>API Key</label>
+                <div class="pw-wrap">
+                    <input type="password" name="grizzly_api_key" id="grizzly-key-input"
+                           value="{{ $settings['grizzly_api_key'] }}"
+                           placeholder="••••••••••••••••••••••••••••••">
+                    <button type="button" class="pw-reveal" onclick="togglePw('grizzly-key-input', this)" title="Show / hide">
+                        <svg id="eye-grizzly-key-input" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </button>
+                </div>
+                <p class="field-hint">Obtain from your GrizzlySMS provider account settings. Used exclusively by Server 1.</p>
+            </div>
+
+            <div class="flex items-center flex-wrap gap-3">
+                <button type="button" id="test-s1-btn" onclick="testConnectionS1()"
+                        style="display:inline-flex;align-items:center;gap:.5rem;font-size:.8rem;font-weight:600;padding:.5rem 1rem;border-radius:.5rem;background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);cursor:pointer;transition:all .15s;"
+                        onmouseover="this.style.background='rgba(16,185,129,.25)'" onmouseout="this.style.background='rgba(16,185,129,.15)'">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    Test Server 1
+                </button>
+                <span id="test-s1-result" class="text-xs hidden"></span>
+            </div>
+        </div>
+
+        <div class="vn-divider"></div>
+
+        <div class="vn-row">
+            <div class="vn-row-label">
+                <p>Enable Server 1</p>
+                <span>Enable Server 1 as the primary provider. Disable to route all orders to Server 2 only.</span>
+            </div>
+            <label class="vn-toggle-wrap" for="grizzly-enabled-toggle">
+                <input type="checkbox" name="grizzly_enabled" id="grizzly-enabled-toggle"
+                       value="1" {{ $settings['grizzly_enabled'] === '1' ? 'checked' : '' }}>
+                <div class="vn-track"></div>
+            </label>
+        </div>
+    </div>
+
+
+    {{-- ════════════════════════════════════════════
+         CARD 1 — Server 2 (HeroSMS) / Fallback
     ════════════════════════════════════════════ --}}
     <div class="vn-card">
         <div class="vn-card-header">
             <div class="vn-icon-badge" style="background:linear-gradient(135deg,#c2410c,#f97316)">
-                {{-- Phone icon --}}
                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                 </svg>
             </div>
             <div>
-                <p class="text-sm font-semibold text-white">Virtual Numbers — HeroSMS</p>
-                <p class="text-xs text-slate-400 mt-0.5">API credentials for the virtual number provider. Prices in USD, auto-converted to NGN.</p>
+                <p class="text-sm font-semibold text-white">Server 2 — Fallback Provider</p>
+                <p class="text-xs text-slate-400 mt-0.5">Used as fallback when Server 1 is disabled or has no numbers. Prices in USD, auto-converted to NGN.</p>
             </div>
         </div>
 
@@ -167,7 +231,7 @@
                         </svg>
                     </button>
                 </div>
-                <p class="field-hint">Obtain from your <a href="https://hero-sms.com" target="_blank" class="field-link">HeroSMS</a> provider account settings.</p>
+                <p class="field-hint">Your HeroSMS account API key. Used exclusively by Server 2.</p>
             </div>
 
             {{-- Exchange Rate --}}
@@ -185,7 +249,7 @@
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
-                    Test Connection
+                    Test Server 2
                 </button>
                 <button type="button" id="debug-btn" onclick="debugPrices()"
                         style="display:inline-flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:600;padding:.5rem 1rem;border-radius:.5rem;background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);cursor:pointer;transition:all .15s;"
@@ -209,8 +273,8 @@
         {{-- Enable toggle row --}}
         <div class="vn-row">
             <div class="vn-row-label">
-                <p>Enable HeroSMS</p>
-                <span>Turn the provider on or off independently without removing the API key</span>
+                <p>Enable Server 2</p>
+                <span>Turn Server 2 on or off independently without removing the API key</span>
             </div>
             <label class="vn-toggle-wrap" for="herosms-enabled-toggle">
                 <input type="checkbox" name="herosms_enabled" id="herosms-enabled-toggle"
@@ -356,9 +420,9 @@
 
 
     {{-- ════════════════════════════════════════════
-         CARD 3 — Balance info (if configured)
+         CARD 3 — Provider Balances
     ════════════════════════════════════════════ --}}
-    @if($balance !== null)
+    @if($server1Balance !== null || $server2Balance !== null)
     <div class="vn-card">
         <div class="vn-card-header">
             <div class="vn-icon-badge" style="background:linear-gradient(135deg,#065f46,#10b981)">
@@ -367,13 +431,26 @@
                 </svg>
             </div>
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-white">Provider Wallet</p>
-                <p class="text-xs text-slate-400 mt-0.5">Your live HeroSMS provider balance</p>
+                <p class="text-sm font-semibold text-white">Provider Balances</p>
+                <p class="text-xs text-slate-400 mt-0.5">Live API wallet balances for each server</p>
             </div>
-            <div class="text-right">
-                <p class="text-xl font-bold text-emerald-400">${{ number_format($balance, 4) }}</p>
-                <a href="https://hero-sms.com" target="_blank"
-                   class="text-xs text-sky-400 hover:underline">Top up →</a>
+        </div>
+        <div class="grid grid-cols-2 gap-px" style="background:rgba(255,255,255,.06);">
+            <div class="stat-chip text-left">
+                <p class="text-xs text-slate-500 mb-1">Server 1</p>
+                @if($server1Balance !== null)
+                <p class="text-lg font-bold text-emerald-400">${{ number_format($server1Balance, 4) }}</p>
+                @else
+                <p class="text-sm text-slate-600">Not configured</p>
+                @endif
+            </div>
+            <div class="stat-chip text-left">
+                <p class="text-xs text-slate-500 mb-1">Server 2</p>
+                @if($server2Balance !== null)
+                <p class="text-lg font-bold text-emerald-400">${{ number_format($server2Balance, 4) }}</p>
+                @else
+                <p class="text-sm text-slate-600">Not configured</p>
+                @endif
             </div>
         </div>
     </div>
@@ -381,7 +458,7 @@
 
 
     {{-- ════════════════════════════════════════════
-         CARD — SMS Push Webhook
+         CARD — SMS Push Webhooks
     ════════════════════════════════════════════ --}}
     <div class="vn-card">
         <div class="vn-card-header">
@@ -392,45 +469,83 @@
                 </svg>
             </div>
             <div>
-                <p class="text-sm font-semibold text-white">SMS Push Webhook</p>
-                <p class="text-xs text-slate-400 mt-0.5">HeroSMS calls this URL instantly when a code arrives — no polling needed.</p>
+                <p class="text-sm font-semibold text-white">SMS Push Webhooks</p>
+                <p class="text-xs text-slate-400 mt-0.5">Providers call these URLs instantly when a code arrives — no polling needed.</p>
             </div>
         </div>
 
         <div class="vn-divider"></div>
-        <div class="vn-card-body pt-4 space-y-4">
+        <div class="vn-card-body pt-4 space-y-5">
 
-            {{-- Webhook URL display --}}
-            <div class="vn-field">
-                <label>Webhook URL <span class="text-slate-600">(copy and paste into HeroSMS settings)</span></label>
-                @php
-                    $webhookUrl = url('/herosms/webhook') . '?token=' . $settings['herosms_webhook_secret'];
-                @endphp
-                <div class="flex gap-2">
-                    <input type="text" id="webhook-url-input"
-                           value="{{ $webhookUrl }}"
-                           readonly
-                           style="font-size:.72rem; font-family:monospace; color:#94a3b8; cursor:default;">
-                    <button type="button" onclick="copyWebhookUrl()"
-                            id="copy-webhook-btn"
-                            style="flex-shrink:0; padding:.625rem .875rem; background:#1e3a5f; border:1px solid rgba(59,130,246,.35); border-radius:.5rem; color:#60a5fa; font-size:.75rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:background .15s;"
-                            onmouseover="this.style.background='#1e40af'" onmouseout="this.style.background='#1e3a5f'">
-                        Copy
-                    </button>
+            {{-- Server 1 Webhook --}}
+            <div>
+                <p class="text-xs font-semibold text-emerald-400 mb-3 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                    Server 1 Webhook
+                </p>
+                <div class="vn-field">
+                    <label>Webhook URL <span class="text-slate-600">(copy into Server 1 provider settings)</span></label>
+                    @php
+                        $webhookS1Url = url('/vn/webhook/s1') . '?token=' . $settings['grizzly_webhook_secret'];
+                    @endphp
+                    <div class="flex gap-2">
+                        <input type="text" id="webhook-s1-url-input"
+                               value="{{ $webhookS1Url }}"
+                               readonly
+                               style="font-size:.72rem; font-family:monospace; color:#94a3b8; cursor:default;">
+                        <button type="button" onclick="copyWebhookUrl('webhook-s1-url-input','copy-wh-s1-btn')"
+                                id="copy-wh-s1-btn"
+                                style="flex-shrink:0; padding:.625rem .875rem; background:#065f46; border:1px solid rgba(16,185,129,.35); border-radius:.5rem; color:#6ee7b7; font-size:.75rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:background .15s;">
+                            Copy
+                        </button>
+                    </div>
+                    <p class="field-hint">Paste into GrizzlySMS account → <strong style="color:#f1f5f9;">Account → Webhooks / Callbacks</strong>.</p>
                 </div>
-                <p class="field-hint">Paste this into your HeroSMS account under <strong style="color:#f1f5f9;">Account → Webhooks / Callbacks</strong>. When HeroSMS receives a code it will POST to this URL and the code will appear in the user's order instantly.</p>
+                <div class="vn-field mt-3">
+                    <label>Server 1 Webhook Secret</label>
+                    <input type="text" name="grizzly_webhook_secret"
+                           value="{{ $settings['grizzly_webhook_secret'] }}"
+                           placeholder="auto-generated"
+                           style="font-family:monospace; font-size:.78rem;">
+                    <p class="field-hint">Embedded as <code style="color:#94a3b8;">?token=</code> in the URL above. Update in GrizzlySMS after any change.</p>
+                </div>
             </div>
 
-            {{-- Webhook secret --}}
-            <div class="vn-field">
-                <label>Webhook Secret Token</label>
-                <div class="pw-wrap">
+            <div style="height:1px;background:rgba(255,255,255,.06);"></div>
+
+            {{-- Server 2 Webhook --}}
+            <div>
+                <p class="text-xs font-semibold text-orange-400 mb-3 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>
+                    Server 2 Webhook
+                </p>
+                <div class="vn-field">
+                    <label>Webhook URL <span class="text-slate-600">(copy into Server 2 provider settings)</span></label>
+                    @php
+                        $webhookUrl = url('/herosms/webhook') . '?token=' . $settings['herosms_webhook_secret'];
+                    @endphp
+                    <div class="flex gap-2">
+                        <input type="text" id="webhook-url-input"
+                               value="{{ $webhookUrl }}"
+                               readonly
+                               style="font-size:.72rem; font-family:monospace; color:#94a3b8; cursor:default;">
+                        <button type="button" onclick="copyWebhookUrl('webhook-url-input','copy-webhook-btn')"
+                                id="copy-webhook-btn"
+                                style="flex-shrink:0; padding:.625rem .875rem; background:#1e3a5f; border:1px solid rgba(59,130,246,.35); border-radius:.5rem; color:#60a5fa; font-size:.75rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:background .15s;"
+                                onmouseover="this.style.background='#1e40af'" onmouseout="this.style.background='#1e3a5f'">
+                            Copy
+                        </button>
+                    </div>
+                    <p class="field-hint">Paste into your HeroSMS account → <strong style="color:#f1f5f9;">Account → Webhooks / Callbacks</strong>.</p>
+                </div>
+                <div class="vn-field mt-3">
+                    <label>Server 2 Webhook Secret</label>
                     <input type="text" name="herosms_webhook_secret" id="webhook-secret-input"
                            value="{{ $settings['herosms_webhook_secret'] }}"
                            placeholder="auto-generated"
                            style="font-family:monospace; font-size:.78rem;">
+                    <p class="field-hint">Embedded as <code style="color:#94a3b8;">?token=</code> in the URL above. Update in HeroSMS after any change.</p>
                 </div>
-                <p class="field-hint">Embedded in the webhook URL as <code style="color:#94a3b8;">?token=</code>. Change it to regenerate a new URL (and update it in HeroSMS). Leave as-is to keep the current URL.</p>
             </div>
 
         </div>
@@ -565,7 +680,7 @@ function updatePricePreview() {
 document.querySelector('[name=herosms_exchange_rate]')?.addEventListener('input', updatePricePreview);
 document.getElementById('commission-amount')?.addEventListener('input', updatePricePreview);
 
-/* ── Test connection ── */
+/* ── Test connection (Server 2) ── */
 async function testConnection() {
     const btn    = document.getElementById('test-btn');
     const result = document.getElementById('test-result');
@@ -588,7 +703,33 @@ async function testConnection() {
     }
 
     btn.disabled = false;
-    btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Test Connection`;
+    btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Test Server 2`;
+}
+
+/* ── Test connection (Server 1) ── */
+async function testConnectionS1() {
+    const btn    = document.getElementById('test-s1-btn');
+    const result = document.getElementById('test-s1-result');
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Testing…`;
+    result.classList.remove('hidden');
+    result.textContent = 'Connecting…';
+    result.style.color = '#94a3b8';
+
+    try {
+        const r = await fetch('{{ route("admin.virtual-number-settings.test-s1") }}', {
+            headers: { Accept: 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+        });
+        const d = await r.json();
+        result.textContent = d.message;
+        result.style.color = d.success ? '#4ade80' : '#f87171';
+    } catch (e) {
+        result.textContent = 'Request failed. Check network or API key.';
+        result.style.color = '#f87171';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Test Server 1`;
 }
 
 /* Init commission label */
@@ -629,9 +770,12 @@ async function debugPrices() {
 }
 
 /* ── Copy webhook URL ── */
-function copyWebhookUrl() {
-    const inp = document.getElementById('webhook-url-input');
-    const btn = document.getElementById('copy-webhook-btn');
+function copyWebhookUrl(inputId, btnId) {
+    inputId = inputId || 'webhook-url-input';
+    btnId   = btnId   || 'copy-webhook-btn';
+    const inp = document.getElementById(inputId);
+    const btn = document.getElementById(btnId);
+    if (!inp || !btn) return;
     inp.select();
     inp.setSelectionRange(0, 99999);
     try {
@@ -641,12 +785,7 @@ function copyWebhookUrl() {
     }
     btn.textContent = 'Copied!';
     btn.style.color = '#4ade80';
-    btn.style.borderColor = 'rgba(74,222,128,.4)';
-    setTimeout(() => {
-        btn.textContent = 'Copy';
-        btn.style.color = '#60a5fa';
-        btn.style.borderColor = 'rgba(59,130,246,.35)';
-    }, 2000);
+    setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 2000);
 }
 </script>
 

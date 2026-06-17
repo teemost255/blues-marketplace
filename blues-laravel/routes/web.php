@@ -47,8 +47,9 @@ use App\Http\Controllers\Admin\SystemToolsController;
 // Paystack webhook (no CSRF)
 Route::post('/paystack/webhook', [WalletController::class, 'webhook'])->name('paystack.webhook')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
-// HeroSMS push webhook (no CSRF, secured via ?token=)
+// Virtual number webhooks (no CSRF, secured via ?token=)
 Route::post('/herosms/webhook', [VirtualNumberController::class, 'webhook'])->name('herosms.webhook')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+Route::post('/vn/webhook/s1',   [VirtualNumberController::class, 'webhookServer1'])->name('vn.webhook.s1')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::get('/',          [HomeController::class,        'index'])->name('home');
 Route::get('/r/{code}',  [ReferralController::class,    'handle'])->name('referral');
@@ -200,6 +201,7 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::get('/virtual-number-settings',        [VirtualNumberSettingsController::class, 'index'])->name('virtual-number-settings');
     Route::post('/virtual-number-settings',       [VirtualNumberSettingsController::class, 'update'])->name('virtual-number-settings.update');
     Route::get('/virtual-number-settings/test',        [VirtualNumberSettingsController::class, 'testConnection'])->name('virtual-number-settings.test');
+    Route::get('/virtual-number-settings/test-s1',     [VirtualNumberSettingsController::class, 'testConnectionServer1'])->name('virtual-number-settings.test-s1');
     Route::get('/virtual-number-settings/debug-prices', [VirtualNumberSettingsController::class, 'debugPrices'])->name('virtual-number-settings.debug-prices');
     Route::get('/herosms-log',        [\App\Http\Controllers\Admin\HeroSmsLogController::class, 'index'])->name('herosms-log');
     Route::get('/herosms-log/stream', [\App\Http\Controllers\Admin\HeroSmsLogController::class, 'stream'])->name('herosms-log.stream');
