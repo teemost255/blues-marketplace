@@ -449,8 +449,8 @@ class VirtualNumberController extends Controller
                     $result = $s2->getNumber($request->service, $country);
                     if ($result['success']) {
                         $provider = 'server2';
+                        $s2->setStatusReady($result['activation_id']);
                     }
-                    $s2->setStatusReady($result['activation_id']);
                 }
             }
         } // end else (serverPref !== 2)
@@ -677,9 +677,8 @@ class VirtualNumberController extends Controller
         $order->refresh();
 
         return response()->json([
-            'status'     => $order->status,
-            'code'       => $order->sms_code,
-            'api_status' => $result['status'],
+            'status' => $order->status,
+            'code'   => $order->sms_code,
         ]);
     }
 

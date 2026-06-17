@@ -39,7 +39,7 @@ class GrizzlySmsService
             if (!is_array($data)) return [];
             return $data;
         } catch (\Exception $e) {
-            Log::error('Server1 getCountries error', ['error' => $e->getMessage()]);
+            Log::error('SMS service getCountries error', ['error' => $e->getMessage()]);
             return [];
         }
     }
@@ -54,9 +54,24 @@ class GrizzlySmsService
             ]);
             $data = $response->json();
             if (!is_array($data)) return [];
-            return $data;
+
+            // Normalize response shapes into { code => count }:
+            //   Shape A (flat):   { "tg": 150, "wa": 200 }
+            //   Shape B (object): { "tg": {"count": 150, ...}, ... }
+            $normalized = [];
+            foreach ($data as $code => $value) {
+                if (is_array($value)) {
+                    $count = (int) ($value['count'] ?? $value['qty'] ?? 0);
+                } else {
+                    $count = (int) $value;
+                }
+                if ($count > 0) {
+                    $normalized[(string) $code] = $count;
+                }
+            }
+            return $normalized;
         } catch (\Exception $e) {
-            Log::error('Server1 getNumbersStatus error', ['error' => $e->getMessage()]);
+            Log::error('SMS service getNumbersStatus error', ['error' => $e->getMessage()]);
             return [];
         }
     }
@@ -87,7 +102,7 @@ class GrizzlySmsService
 
             return [];
         } catch (\Exception $e) {
-            Log::error('Server1 getPrices error', ['country' => $country, 'error' => $e->getMessage()]);
+            Log::error('SMS service getPrices error', ['country' => $country, 'error' => $e->getMessage()]);
             return [];
         }
     }
@@ -205,7 +220,7 @@ class GrizzlySmsService
             'id'     => $activationId,
         ]);
 
-        Log::info('Server1 getStatus raw response', [
+        Log::info('SMS service getStatus raw response', [
             'activation_id' => $activationId,
             'raw'           => $raw,
         ]);
@@ -267,7 +282,7 @@ class GrizzlySmsService
             $response = Http::timeout(20)->get($this->baseUrl, $params);
             return trim($response->body());
         } catch (\Exception $e) {
-            Log::error('Server1 API error', ['params' => array_diff_key($params, ['api_key' => '']), 'error' => $e->getMessage()]);
+            Log::error('SMS provider API error', ['params' => array_diff_key($params, ['api_key' => '']), 'error' => $e->getMessage()]);
             return 'ERROR';
         }
     }

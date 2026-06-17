@@ -39,7 +39,7 @@ class HeroSmsService
             if (!is_array($data)) return [];
             return $data;
         } catch (\Exception $e) {
-            Log::error('HeroSMS getCountries error', ['error' => $e->getMessage()]);
+            Log::error('SMS service getCountries error', ['error' => $e->getMessage()]);
             return [];
         }
     }
@@ -54,9 +54,24 @@ class HeroSmsService
             ]);
             $data = $response->json();
             if (!is_array($data)) return [];
-            return $data;
+
+            // Normalize response shapes into { code => count }:
+            //   Shape A (flat):   { "tg": 150, "wa": 200 }
+            //   Shape B (object): { "tg": {"count": 150, ...}, ... }
+            $normalized = [];
+            foreach ($data as $code => $value) {
+                if (is_array($value)) {
+                    $count = (int) ($value['count'] ?? $value['qty'] ?? 0);
+                } else {
+                    $count = (int) $value;
+                }
+                if ($count > 0) {
+                    $normalized[(string) $code] = $count;
+                }
+            }
+            return $normalized;
         } catch (\Exception $e) {
-            Log::error('HeroSMS getNumbersStatus error', ['error' => $e->getMessage()]);
+            Log::error('SMS service getNumbersStatus error', ['error' => $e->getMessage()]);
             return [];
         }
     }
@@ -82,7 +97,7 @@ class HeroSmsService
             $status   = $response->status();
 
             // Log the raw response for debugging
-            Log::debug('HeroSMS getPrices raw response', [
+            Log::debug('SMS service getPrices raw response', [
                 'country'      => $country,
                 'http_status'  => $status,
                 'body_length'  => strlen($body),
@@ -90,7 +105,7 @@ class HeroSmsService
             ]);
 
             if ($status !== 200 || empty($body)) {
-                Log::warning('HeroSMS getPrices: bad HTTP status or empty body', [
+                Log::warning('SMS service getPrices: bad HTTP status or empty body', [
                     'country' => $country, 'status' => $status,
                 ]);
                 return [];
@@ -100,7 +115,7 @@ class HeroSmsService
             $data = $response->json();
             if (is_array($data) && !empty($data)) {
                 $normalized = $this->normalizePrices($data, $country);
-                Log::debug('HeroSMS getPrices normalized', [
+                Log::debug('SMS service getPrices normalized', [
                     'country' => $country,
                     'shape_count' => count($normalized),
                     'sample' => array_slice($normalized, 0, 3, true),
@@ -109,13 +124,13 @@ class HeroSmsService
             }
 
             // Non-JSON response (e.g. "BAD_ACTION", "ERROR_KEY", plain number)
-            Log::warning('HeroSMS getPrices: non-JSON or empty JSON response', [
+            Log::warning('SMS service getPrices: non-JSON or empty JSON response', [
                 'country' => $country,
                 'body'    => $body,
             ]);
             return [];
         } catch (\Exception $e) {
-            Log::error('HeroSMS getPrices error', ['country' => $country, 'error' => $e->getMessage()]);
+            Log::error('SMS service getPrices error', ['country' => $country, 'error' => $e->getMessage()]);
             return [];
         }
     }
@@ -260,7 +275,7 @@ class HeroSmsService
             }
         }
 
-        Log::warning('HeroSMS getPrices: unrecognized response shape', [
+        Log::warning('SMS service getPrices: unrecognized response shape', [
             'first_key'   => $firstKey,
             'first_value' => json_encode(array_slice((array) $firstValue, 0, 2, true)),
         ]);
@@ -315,7 +330,7 @@ class HeroSmsService
             'id'     => $activationId,
         ]);
 
-        Log::info('HeroSMS getStatus raw response', [
+        Log::info('SMS service getStatus raw response', [
             'activation_id' => $activationId,
             'raw'           => $raw,
         ]);
@@ -345,7 +360,7 @@ class HeroSmsService
             return ['status' => 'cancelled', 'code' => null];
         }
 
-        Log::warning('HeroSMS getStatus: unrecognised response', [
+        Log::warning('SMS service getStatus: unrecognised response', [
             'activation_id' => $activationId,
             'raw'           => $raw,
         ]);
@@ -383,7 +398,7 @@ class HeroSmsService
             $response = Http::timeout(20)->get($this->baseUrl, $params);
             return trim($response->body());
         } catch (\Exception $e) {
-            Log::error('HeroSMS API error', ['params' => $params, 'error' => $e->getMessage()]);
+            Log::error('SMS provider API error', ['params' => $params, 'error' => $e->getMessage()]);
             return 'ERROR';
         }
     }
