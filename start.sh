@@ -23,6 +23,10 @@ if [ ! -f vendor/autoload.php ]; then
   composer install --no-interaction --prefer-dist
 fi
 
+# Ensure APP_KEY exists and is set
+grep -q "^APP_KEY=" .env || echo "APP_KEY=" >> .env
+php artisan key:generate --force 2>/dev/null || true
+
 # Set up storage directories
 mkdir -p storage/framework/sessions
 mkdir -p storage/framework/views
