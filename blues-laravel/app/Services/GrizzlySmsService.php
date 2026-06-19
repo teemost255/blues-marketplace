@@ -55,18 +55,25 @@ class GrizzlySmsService
             $data = $response->json();
             if (!is_array($data)) return [];
 
-            // Normalize response shapes into { code => count }:
-            //   Shape A (flat):   { "tg": 150, "wa": 200 }
-            //   Shape B (object): { "tg": {"count": 150, ...}, ... }
+            // Normalize response shapes into { code => count }.
+            // GrizzlySMS appends a country suffix to service codes:
+            //   "tg_0" => 150  (country 0)   Strip "_N" to get "tg".
+            // Shape A (flat):   { "tg_0": 150, "wa_0": 200 }
+            // Shape B (object): { "tg_0": {"count": 150, ...}, ... }
             $normalized = [];
-            foreach ($data as $code => $value) {
+            foreach ($data as $rawCode => $value) {
+                // Strip trailing _<digits> country suffix (e.g. "tg_0" → "tg")
+                $code = preg_replace('/_\d+$/', '', (string) $rawCode);
+
                 if (is_array($value)) {
                     $count = (int) ($value['count'] ?? $value['qty'] ?? 0);
                 } else {
                     $count = (int) $value;
                 }
                 if ($count > 0) {
-                    $normalized[(string) $code] = $count;
+                    // Keep the highest count if the same service appears twice
+                    $existing = $normalized[$code] ?? 0;
+                    $normalized[$code] = max($existing, $count);
                 }
             }
             return $normalized;
