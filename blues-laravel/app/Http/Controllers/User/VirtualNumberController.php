@@ -474,8 +474,9 @@ class VirtualNumberController extends Controller
                 $user, $wallet, $price, $result, $request,
                 $serviceName, $expiryMins, $country, $provider
             ) {
-                Wallet::where('id', $wallet->id)->lockForUpdate()->first();
-                $wallet->decrement('balance', round((float) $price, 2));
+                // Acquire row lock and use the freshly-locked instance for the decrement
+                $lockedWallet = Wallet::where('id', $wallet->id)->lockForUpdate()->firstOrFail();
+                $lockedWallet->decrement('balance', round((float) $price, 2));
 
                 WalletTransaction::create([
                     'user_id'     => $user->id,
@@ -515,6 +516,7 @@ class VirtualNumberController extends Controller
             ]);
             return response()->json([
                 'error' => 'Order could not be saved. Your balance has not been charged. Please try again.',
+                'debug' => $e->getMessage(),
             ], 500);
         }
 
