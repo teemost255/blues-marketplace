@@ -47,16 +47,16 @@
         </div>
     </div>
 
-    {{-- Paystack Top-up --}}
+    {{-- Kora Top-up --}}
     <div class="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-2xl p-6">
         <div class="flex items-center gap-2 mb-5">
             <div class="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
                 <svg class="w-4 h-4 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             </div>
-            <h2 class="font-semibold text-white">Fund Wallet via Paystack</h2>
+            <h2 class="font-semibold text-white">Fund Wallet via Kora</h2>
         </div>
 
-        @if($paystackPublicKey)
+        @if($koraPublicKey)
         <form method="POST" action="{{ route('dashboard.wallet.initiate') }}" id="topup-form">
             @csrf
             <div class="flex flex-col sm:flex-row gap-3">
@@ -77,7 +77,7 @@
                 <div class="flex items-end">
                     <button type="submit" class="bg-brand hover:bg-brand-dark text-white font-semibold px-6 py-3 rounded-lg text-sm transition-colors whitespace-nowrap flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                        Pay with Paystack
+                        Pay with Kora
                     </button>
                 </div>
             </div>
@@ -94,7 +94,7 @@
 
         <div class="mt-4 pt-4 border-t border-slate-700 flex items-center gap-2 text-xs text-slate-500">
             <svg class="w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            Secured by Paystack · Card, Bank Transfer, USSD accepted · Balance credited instantly
+            Secured by Kora · Card, Bank Transfer, USSD accepted · Balance credited instantly
         </div>
         @else
         <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-xl px-4 py-4 text-sm flex items-start gap-2">

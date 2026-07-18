@@ -11,9 +11,9 @@ class SettingsController extends Controller
     public function index()
     {
         $settings = [
-            'paystack_public_key'      => Setting::get('paystack_public_key', ''),
-            'paystack_secret_key'      => Setting::get('paystack_secret_key', ''),
-            'paystack_webhook_secret'  => Setting::get('paystack_webhook_secret', ''),
+            'kora_public_key'      => Setting::get('kora_public_key', ''),
+            'kora_secret_key'      => Setting::get('kora_secret_key', ''),
+            'kora_encryption_key'  => Setting::get('kora_encryption_key', ''),
             'site_name'                => Setting::get('site_name', 'Blues Marketplace'),
             'support_email'            => Setting::get('support_email', ''),
             'min_deposit'              => Setting::get('min_deposit', '500'),
@@ -48,9 +48,9 @@ class SettingsController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'paystack_public_key'     => 'nullable|string',
-            'paystack_secret_key'     => 'nullable|string',
-            'paystack_webhook_secret' => 'nullable|string',
+            'kora_public_key'     => 'nullable|string',
+            'kora_secret_key'     => 'nullable|string',
+            'kora_encryption_key' => 'nullable|string',
             'site_name'               => 'nullable|string|max:100',
             'support_email'           => 'nullable|email',
             'min_deposit'             => 'nullable|numeric|min:1',
@@ -79,7 +79,7 @@ class SettingsController extends Controller
         ]);
 
         $keys = [
-            'paystack_public_key', 'paystack_secret_key', 'paystack_webhook_secret',
+            'kora_public_key', 'kora_secret_key', 'kora_encryption_key',
             'site_name', 'support_email', 'min_deposit', 'max_deposit',
             'whatsapp_number',
             'mail_mailer', 'mail_host', 'mail_port', 'mail_username',

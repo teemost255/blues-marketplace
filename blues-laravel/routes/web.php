@@ -44,8 +44,8 @@ use App\Http\Controllers\Admin\VirtualNumberSettingsController;
 use App\Http\Controllers\Admin\SystemToolsController;
 
 // ── Public ────────────────────────────────────────────────────────────────────
-// Paystack webhook (no CSRF)
-Route::post('/paystack/webhook', [WalletController::class, 'webhook'])->name('paystack.webhook')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+// Kora webhook (no CSRF)
+Route::post('/kora/webhook', [WalletController::class, 'webhook'])->name('kora.webhook')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 // Virtual number webhooks (no CSRF, secured via ?token=)
 Route::post('/herosms/webhook', [VirtualNumberController::class, 'webhook'])->name('herosms.webhook')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);

@@ -12,28 +12,28 @@
 <form method="POST" action="{{ route('admin.settings.update') }}" class="space-y-6 max-w-2xl">
     @csrf
 
-    {{-- Paystack --}}
+    {{-- Kora --}}
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
         <div class="flex items-center gap-3 mb-5">
             <div class="w-9 h-9 rounded-lg bg-green-900/50 flex items-center justify-center">
                 <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
             </div>
             <div>
-                <h2 class="font-semibold text-white">Paystack Integration</h2>
+                <h2 class="font-semibold text-white">Kora Integration</h2>
                 <p class="text-xs text-slate-400">API keys for payment processing</p>
             </div>
         </div>
         <div class="space-y-4">
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">Public Key</label>
-                <input type="text" name="paystack_public_key" value="{{ $settings['paystack_public_key'] }}"
+                <input type="text" name="kora_public_key" value="{{ $settings['kora_public_key'] }}"
                     placeholder="pk_live_… or pk_test_…" class="font-mono text-xs">
                 <p class="text-xs text-slate-500 mt-1">Starts with pk_live_ (production) or pk_test_ (sandbox)</p>
             </div>
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">Secret Key</label>
                 <div class="relative">
-                    <input type="password" name="paystack_secret_key" id="secret-key-input" value="{{ $settings['paystack_secret_key'] }}"
+                    <input type="password" name="kora_secret_key" id="secret-key-input" value="{{ $settings['kora_secret_key'] }}"
                         placeholder="sk_live_… or sk_test_…" class="font-mono text-xs pr-10">
                     <button type="button" onclick="toggleSecret()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
                         <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -42,11 +42,13 @@
                 <p class="text-xs text-slate-500 mt-1">Keep this secret. Never expose it to the client.</p>
             </div>
             <div>
-                <label class="block text-xs text-slate-400 mb-1.5">Webhook Secret</label>
-                <input type="text" name="paystack_webhook_secret" value="{{ $settings['paystack_webhook_secret'] }}"
-                    placeholder="Your webhook signature secret" class="font-mono text-xs">
+                <label class="block text-xs text-slate-400 mb-1.5">Encryption Key</label>
+                <input type="text" name="kora_encryption_key" value="{{ $settings['kora_encryption_key'] }}"
+                    placeholder="Your Kora encryption key (for webhook verification)" class="font-mono text-xs">
+                <p class="text-xs text-slate-500 mt-1">Used to verify incoming webhook signatures. Found in your Kora dashboard.</p>
             </div>
         </div>
+        <p class="text-xs text-slate-500 mt-4">Webhook URL to set in your Kora dashboard: <span class="font-mono text-slate-300">{{ url('/kora/webhook') }}</span></p>
     </div>
 
     {{-- General --}}

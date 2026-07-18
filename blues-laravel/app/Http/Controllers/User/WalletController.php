@@ -11,11 +11,11 @@ class WalletController extends Controller
 {
     public function index(Request $request)
     {
-        $user              = Auth::user();
-        $wallet            = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
-        $paystackPublicKey = Setting::get('paystack_public_key', '');
-        $minDeposit        = (float) Setting::get('min_deposit', '500');
-        $maxDeposit        = (float) Setting::get('max_deposit', '1000000');
+        $user           = Auth::user();
+        $wallet         = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+        $koraPublicKey  = Setting::get('kora_public_key', '');
+        $minDeposit     = (float) Setting::get('min_deposit', '500');
+        $maxDeposit     = (float) Setting::get('max_deposit', '1000000');
 
         $txQuery = WalletTransaction::where('user_id', $user->id)->latest();
         if ($request->filled('type') && $request->type !== 'all') {
@@ -30,7 +30,7 @@ class WalletController extends Controller
 
         $activeType = $request->get('type', 'all');
 
-        return view('dashboard.wallet', compact('wallet', 'transactions', 'paystackPublicKey', 'minDeposit', 'maxDeposit', 'summary', 'activeType'));
+        return view('dashboard.wallet', compact('wallet', 'transactions', 'koraPublicKey', 'minDeposit', 'maxDeposit', 'summary', 'activeType'));
     }
 
     public function initiate(Request $request)
@@ -45,37 +45,43 @@ class WalletController extends Controller
             'amount.max' => 'Maximum deposit is ₦' . number_format($maxDeposit, 2),
         ]);
 
-        $secretKey = Setting::get('paystack_secret_key', '');
+        $secretKey = Setting::get('kora_secret_key', '');
         if (!$secretKey) {
             return back()->with('error', 'Payment gateway is not configured. Please contact support.');
         }
 
-        $user       = Auth::user();
-        $amountKobo = (int) round((float) $request->amount * 100);
-        $reference  = 'WALLET-' . strtoupper(uniqid());
+        $user      = Auth::user();
+        $amount    = (float) $request->amount; // Kora uses Naira, not kobo
+        $reference = 'WALLET-' . strtoupper(uniqid());
 
         $response = Http::withToken($secretKey)
-            ->post('https://api.paystack.co/transaction/initialize', [
-                'email'        => $user->email,
-                'amount'       => $amountKobo,
+            ->post('https://api.korapay.com/merchant/api/v1/charges/initialize', [
                 'reference'    => $reference,
-                'callback_url' => route('dashboard.wallet.callback'),
+                'amount'       => $amount,
+                'currency'     => 'NGN',
+                'redirect_url' => route('dashboard.wallet.callback'),
+                'customer'     => [
+                    'email' => $user->email,
+                    'name'  => $user->name,
+                ],
                 'metadata'     => [
-                    'user_id'       => $user->id,
-                    'custom_fields' => [[
-                        'display_name'  => 'Purpose',
-                        'variable_name' => 'purpose',
-                        'value'         => 'Wallet Top-up',
-                    ]],
+                    'user_id' => $user->id,
+                    'purpose' => 'Wallet Top-up',
                 ],
             ]);
 
         if (!$response->successful() || !$response->json('status')) {
-            Log::error('Paystack init error', $response->json() ?? []);
+            Log::error('Kora init error', $response->json() ?? []);
             return back()->with('error', 'Could not initiate payment. Please try again.');
         }
 
-        return redirect($response->json('data.authorization_url'));
+        $checkoutUrl = $response->json('data.checkout_url');
+        if (!$checkoutUrl) {
+            Log::error('Kora init: missing checkout_url', $response->json() ?? []);
+            return back()->with('error', 'Could not initiate payment. Please try again.');
+        }
+
+        return redirect($checkoutUrl);
     }
 
     public function callback(Request $request)
@@ -85,14 +91,14 @@ class WalletController extends Controller
             return redirect()->route('dashboard.wallet')->with('error', 'Invalid payment reference.');
         }
 
-        $secretKey = Setting::get('paystack_secret_key', '');
+        $secretKey = Setting::get('kora_secret_key', '');
         if (!$secretKey) {
             return redirect()->route('dashboard.wallet')->with('error', 'Payment gateway not configured.');
         }
 
-        // Verify the transaction with Paystack regardless of whether we already processed it
+        // Verify the transaction with Kora
         $response = Http::withToken($secretKey)
-            ->get("https://api.paystack.co/transaction/verify/{$reference}");
+            ->get("https://api.korapay.com/merchant/api/v1/charges/{$reference}");
 
         if (!$response->successful()) {
             return redirect()->route('dashboard.wallet')->with('error', 'Payment verification failed. Please contact support.');
@@ -100,7 +106,7 @@ class WalletController extends Controller
 
         $data   = $response->json('data');
         $status = $data['status'] ?? '';
-        $amount = isset($data['amount']) ? $data['amount'] / 100 : 0;
+        $amount = isset($data['amount']) ? (float) $data['amount'] : 0; // Kora returns Naira
 
         if ($status !== 'success') {
             return redirect()->route('dashboard.wallet')
@@ -113,7 +119,7 @@ class WalletController extends Controller
                 ->with('success', '₦' . number_format($amount, 2) . ' has been added to your wallet!');
         }
 
-        // Resolve user — prefer Auth session, fall back to metadata or email from Paystack response
+        // Resolve user — prefer Auth session, fall back to metadata or email from Kora response
         $user = Auth::user();
         if (!$user) {
             $metaUserId = $data['metadata']['user_id'] ?? null;
@@ -127,12 +133,12 @@ class WalletController extends Controller
         }
 
         if (!$user) {
-            Log::error('Paystack callback: could not resolve user', ['reference' => $reference, 'data' => $data]);
+            Log::error('Kora callback: could not resolve user', ['reference' => $reference, 'data' => $data]);
             return redirect()->route('login')
                 ->with('error', 'Session expired. Your payment was received — please log in and check your wallet, or contact support with reference: ' . $reference);
         }
 
-        $this->creditWallet($user->id, $amount, $reference, 'Wallet top-up via Paystack');
+        $this->creditWallet($user->id, $amount, $reference, 'Wallet top-up via Kora');
 
         ReferralService::markDeposited($user->fresh());
 
@@ -142,11 +148,11 @@ class WalletController extends Controller
 
     public function webhook(Request $request)
     {
-        $secret    = Setting::get('paystack_webhook_secret', '');
-        $signature = $request->header('x-paystack-signature');
+        $encryptionKey = Setting::get('kora_encryption_key', '');
+        $signature     = $request->header('x-korapay-signature');
 
-        if ($secret && $signature !== hash_hmac('sha512', $request->getContent(), $secret)) {
-            Log::warning('Paystack webhook signature mismatch');
+        if ($encryptionKey && $signature !== hash_hmac('sha256', $request->getContent(), $encryptionKey)) {
+            Log::warning('Kora webhook signature mismatch');
             return response('Unauthorized', 401);
         }
 
@@ -162,8 +168,8 @@ class WalletController extends Controller
                     $userId = $email ? \App\Models\User::where('email', $email)->value('id') : null;
                 }
                 if ($userId) {
-                    $amount = $data['amount'] / 100;
-                    $this->creditWallet($userId, $amount, $reference, 'Wallet top-up via Paystack (webhook)');
+                    $amount = (float) ($data['amount'] ?? 0); // Kora sends Naira
+                    $this->creditWallet($userId, $amount, $reference, 'Wallet top-up via Kora (webhook)');
                     $user = \App\Models\User::find($userId);
                     if ($user) ReferralService::markDeposited($user);
                 }
