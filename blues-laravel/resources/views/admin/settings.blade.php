@@ -353,6 +353,32 @@
         <p class="text-xs text-slate-500 mt-3">Users will see these details when they choose bank transfer at checkout. You must confirm each payment manually in the <a href="{{ route('admin.bank-transfers') }}" class="text-brand hover:underline">Bank Transfers</a> panel.</p>
     </div>
 
+    {{-- Sujan Department API Catalog --}}
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-lg bg-sky-900/50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-white">API Catalog (Sujan Department)</h2>
+                <p class="text-xs text-slate-400">Reseller API — products appear live in the marketplace</p>
+            </div>
+        </div>
+        <div>
+            <label class="block text-xs text-slate-400 mb-1.5">API Secret Key</label>
+            <div class="relative">
+                <input type="password" name="sujan_api_key" id="sujan-api-key-input"
+                    value="{{ $settings['sujan_api_key'] }}"
+                    placeholder="rs_your_secret_key"
+                    class="font-mono text-xs pr-10 w-full">
+                <button type="button" onclick="toggleSujanKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 mt-1.5">Bearer token used to authenticate requests to <span class="font-mono text-slate-300">api.sujandepartment.com</span>. Products are cached for 5 minutes and shown in the <strong class="text-slate-300">API Catalog</strong> section of the marketplace.</p>
+        </div>
+    </div>
+
     {{-- Virtual Numbers moved to dedicated page --}}
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 flex items-center gap-4">
         <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(59,130,246,.15)">
@@ -418,6 +444,10 @@ document.getElementById('promo-banner-toggle').addEventListener('change', functi
 });
 function toggleSecret() {
     const inp = document.getElementById('secret-key-input');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+function toggleSujanKey() {
+    const inp = document.getElementById('sujan-api-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 

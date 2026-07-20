@@ -2,9 +2,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Listing, ListingCategory, ListingCredential, Purchase, Wallet, WalletTransaction, Wishlist, Notification};
-use App\Services\ReferralService;
+use App\Services\{ReferralService, SujanDepartmentService};
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\{Auth, DB, Log};
 
 class MarketplaceController extends Controller
 {
@@ -43,7 +43,24 @@ class MarketplaceController extends Controller
             ? Wishlist::where('user_id', Auth::id())->pluck('listing_id')->toArray()
             : [];
 
-        return view('marketplace.index', compact('listings', 'categories', 'wishlistIds'));
+        // Fetch API catalog products (cached 5 min)
+        $apiProducts = [];
+        if (!\Illuminate\Support\Facades\Request::filled('category')) {
+            $sujan = app(SujanDepartmentService::class);
+            $apiProducts = $sujan->getProducts();
+
+            // Apply search filter client-side on the API results
+            if ($request->filled('search')) {
+                $search = strtolower($request->search);
+                $apiProducts = array_filter($apiProducts, fn($p) =>
+                    str_contains(strtolower($p['name'] ?? ''), $search) ||
+                    str_contains(strtolower($p['description'] ?? ''), $search)
+                );
+                $apiProducts = array_values($apiProducts);
+            }
+        }
+
+        return view('marketplace.index', compact('listings', 'categories', 'wishlistIds', 'apiProducts'));
     }
 
     public function show(int $id)
@@ -183,6 +200,121 @@ class MarketplaceController extends Controller
             $hasDetails
                 ? 'Purchase successful! Your login details are shown below.'
                 : 'Purchase successful! Check your orders for details.'
+        );
+    }
+
+    /**
+     * Buy a product from the Sujan Department API catalog.
+     */
+    public function buyApi(Request $request, int $productId)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Please log in to purchase.');
+        }
+
+        $sujan = app(SujanDepartmentService::class);
+        if (!$sujan->isConfigured()) {
+            return back()->with('error', 'Catalog API is not configured. Please contact support.');
+        }
+
+        // Find product info from the cached product list
+        $products   = $sujan->getProducts();
+        $product    = collect($products)->firstWhere('id', $productId);
+
+        if (!$product) {
+            return back()->with('error', 'Product not found in catalog.');
+        }
+
+        $price       = (float) ($product['price'] ?? 0);
+        $productName = $product['name'] ?? 'Catalog Product';
+        $stock       = (int) ($product['stock'] ?? 0);
+
+        if ($stock <= 0) {
+            return back()->with('error', 'This product is currently out of stock.');
+        }
+
+        $user   = Auth::user();
+        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+
+        if ($wallet->balance < $price) {
+            return back()->with('error', 'Insufficient wallet balance. Please top up your wallet.');
+        }
+
+        // Deduct wallet first, then call API — refund on failure
+        DB::transaction(function () use ($user, $wallet, $price, $productId, $productName, $sujan, &$purchase) {
+            $wallet->decrement('balance', $price);
+
+            WalletTransaction::create([
+                'user_id'     => $user->id,
+                'amount'      => -$price,
+                'type'        => 'purchase',
+                'reference'   => 'CAT-' . $productId . '-' . time(),
+                'description' => 'Purchase: ' . $productName,
+            ]);
+        });
+
+        // Call the API to fulfill the order
+        $result = $sujan->createOrder($productId, 1);
+
+        if (!$result['success']) {
+            // Refund wallet
+            DB::transaction(function () use ($user, $wallet, $price, $productName) {
+                $wallet->increment('balance', $price);
+                WalletTransaction::create([
+                    'user_id'     => $user->id,
+                    'amount'      => $price,
+                    'type'        => 'refund',
+                    'reference'   => 'REFUND-CAT-' . time(),
+                    'description' => 'Refund: ' . $productName . ' (API error)',
+                ]);
+            });
+
+            Log::error('Sujan API order failed', ['product_id' => $productId, 'message' => $result['message']]);
+            return back()->with('error', 'Could not complete purchase: ' . $result['message']);
+        }
+
+        $credentials = $result['credentials'];
+        $deliveryData = json_encode([
+            'source'      => 'sujan_api',
+            'product_id'  => $productId,
+            'product'     => $productName,
+            'credentials' => $credentials,
+            'order_id'    => $result['order_id'] ?? null,
+        ]);
+
+        $purchase = Purchase::create([
+            'user_id'          => $user->id,
+            'listing_id'       => null,
+            'amount'           => $price,
+            'status'           => 'completed',
+            'source'           => 'api',
+            'api_product_id'   => $productId,
+            'api_product_name' => $productName,
+            'delivery_data'    => $deliveryData,
+        ]);
+
+        Notification::create([
+            'user_id' => $user->id,
+            'title'   => 'Purchase Successful',
+            'message' => 'Your purchase of "' . $productName . '" was successful. Check My Orders for your credentials.',
+            'type'    => 'success',
+        ]);
+
+        $lowBalanceThreshold = (float) \App\Models\Setting::get('low_balance_threshold', '5');
+        $newBalance = (float) Wallet::where('user_id', $user->id)->value('balance');
+        if ($lowBalanceThreshold > 0 && $newBalance < $lowBalanceThreshold) {
+            Notification::create([
+                'user_id' => $user->id,
+                'title'   => 'Low Wallet Balance',
+                'message' => 'Your wallet balance is ₦' . number_format($newBalance, 2) . '. Top up to keep shopping.',
+                'type'    => 'warning',
+            ]);
+        }
+
+        ReferralService::markPurchased($user->fresh());
+
+        return redirect()->route('dashboard.orders')->with('success',
+            'Purchase successful! Your credentials are shown below.'
         );
     }
 }

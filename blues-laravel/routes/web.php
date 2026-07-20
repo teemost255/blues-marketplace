@@ -133,8 +133,9 @@ Route::middleware(\App\Http\Middleware\UserAuth::class)->prefix('dashboard')->na
     Route::post('/virtual-numbers/{order}/resend',             [VirtualNumberController::class, 'resend'])->name('virtual-numbers.resend');
 
     // Marketplace (dashboard-only)
-    Route::get('/marketplace',           [MarketplaceController::class, 'index'])->name('marketplace');
-    Route::post('/marketplace/{id}/buy', [MarketplaceController::class, 'buy'])->name('marketplace.buy');
+    Route::get('/marketplace',                [MarketplaceController::class, 'index'])->name('marketplace');
+    Route::post('/marketplace/{id}/buy',      [MarketplaceController::class, 'buy'])->name('marketplace.buy');
+    Route::post('/marketplace/api/{productId}/buy', [MarketplaceController::class, 'buyApi'])->name('marketplace.buy-api');
 
 });
 
