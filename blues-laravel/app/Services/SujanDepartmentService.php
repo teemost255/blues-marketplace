@@ -68,23 +68,36 @@ class SujanDepartmentService
      */
     private function normaliseProduct(array $p): array
     {
-        $scalar = static function ($v): string {
-            if (is_null($v))  return '';
-            if (is_array($v)) return json_encode($v, JSON_UNESCAPED_UNICODE);
-            return (string) $v;
-        };
+        // price_minor is in kobo (minor units) → divide by 100 for Naira
+        $priceMinor = (float) ($p['price_minor'] ?? $p['price'] ?? $p['amount'] ?? 0);
+        $price      = $priceMinor > 1000 ? $priceMinor / 100 : $priceMinor; // detect kobo vs naira
+
+        // category and platform come as nested objects {"id":2,"name":"..."}
+        $category = is_array($p['category'] ?? null)
+            ? ($p['category']['name'] ?? '')
+            : (string) ($p['category'] ?? '');
+
+        $platform = is_array($p['platform'] ?? null)
+            ? ($p['platform']['name'] ?? '')
+            : (string) ($p['platform'] ?? '');
+
+        // stock lives under available_stock in this API
+        $stock = (int) ($p['available_stock'] ?? $p['stock'] ?? $p['quantity'] ?? 0);
+
+        // description may be null
+        $description = is_array($p['description'] ?? null)
+            ? json_encode($p['description'], JSON_UNESCAPED_UNICODE)
+            : (string) ($p['description'] ?? '');
 
         return [
-            'id'          => (int)   ($p['id']          ?? 0),
-            'name'        => $scalar($p['name']         ?? $p['title']       ?? ''),
-            'description' => $scalar($p['description']  ?? $p['desc']        ?? null),
-            'category'    => $scalar($p['category']     ?? $p['type']        ?? null),
-            'price'       => (float) ($p['price']       ?? $p['amount']      ?? 0),
-            'stock'       => (int)   ($p['stock']       ?? $p['quantity']    ?? 0),
-            // preserve any other keys the rest of the code might read
-        ] + array_map(static function ($v) use ($scalar) {
-            return is_array($v) ? $scalar($v) : $v;
-        }, $p);
+            'id'          => (int) ($p['id'] ?? 0),
+            'name'        => (string) ($p['name'] ?? $p['title'] ?? ''),
+            'description' => $description,
+            'category'    => $category,
+            'platform'    => $platform,
+            'price'       => $price,
+            'stock'       => $stock,
+        ];
     }
 
     /**
@@ -148,7 +161,6 @@ class SujanDepartmentService
                 ->timeout(10)
                 ->get(self::BASE_URL . "/reseller/v1/products/{$pid}/stock");
 
-            // Always log so you can see the exact shape in storage/logs/laravel.log
             Log::info("SujanDepartment [stock/{$pid}] HTTP {$res->status()}: " . $res->body());
 
             if (!$res->successful()) {
@@ -164,24 +176,16 @@ class SujanDepartmentService
 
             $d = $res->json();
 
-            // ── Shape 2: unwrap common envelope keys ──────────────────────
+            // ── Shape 2: data-wrapped (this API returns {"data":{"product_id":N,"available_stock":N}})
             $payload = $d['data'] ?? $d;
 
-            // ── Shape 3: scan every known stock key name ──────────────────
-            foreach (['stock', 'stock_count', 'quantity', 'qty', 'available', 'count', 'in_stock'] as $key) {
-                if (isset($payload[$key]) && is_numeric($payload[$key])) {
-                    return (int) $payload[$key];
+            // ── Shape 3: scan all known stock key names ────────────────────
+            foreach (['available_stock', 'stock', 'stock_count', 'quantity', 'qty', 'available', 'count', 'in_stock'] as $k) {
+                if (isset($payload[$k]) && is_numeric($payload[$k])) {
+                    return (int) $payload[$k];
                 }
             }
 
-            // ── Shape 4: single-value object — {"stock":5} at top level ──
-            foreach (['stock', 'stock_count', 'quantity', 'qty', 'available', 'count', 'in_stock'] as $key) {
-                if (isset($d[$key]) && is_numeric($d[$key])) {
-                    return (int) $d[$key];
-                }
-            }
-
-            // Response was 200 but we couldn't find a numeric stock field — log the full body
             Log::warning("SujanDepartment [stock/{$pid}] 200 but no stock key found. Body: {$body}");
             return null;
 
@@ -196,22 +200,11 @@ class SujanDepartmentService
      */
     public function getStock(int $productId): ?int
     {
-        if (!$this->isConfigured()) {
-            return null;
+        $stock = $this->fetchStockForProduct($productId);
+        if ($stock !== null) {
+            Cache::put("sujan_stock_{$productId}", $stock, 60);
         }
-
-        try {
-            $response = $this->http()->get(self::BASE_URL . "/reseller/v1/products/{$productId}/stock");
-            if ($response->successful()) {
-                $data  = $response->json();
-                $stock = (int) ($data['stock'] ?? $data['data']['stock'] ?? $data['count'] ?? $data['quantity'] ?? 0);
-                Cache::put("sujan_stock_{$productId}", $stock, 60);
-                return $stock;
-            }
-        } catch (\Throwable $e) {
-            Log::error('SujanDepartment: stock exception', ['product_id' => $productId, 'error' => $e->getMessage()]);
-        }
-        return null;
+        return $stock;
     }
 
     /**
