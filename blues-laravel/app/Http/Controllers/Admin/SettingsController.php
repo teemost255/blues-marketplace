@@ -42,7 +42,7 @@ class SettingsController extends Controller
             'bank_account_number'      => Setting::get('bank_account_number', ''),
             'bank_account_name'        => Setting::get('bank_account_name', ''),
             'sujan_api_key'            => Setting::get('sujan_api_key', ''),
-            'api_commission_percent'   => Setting::get('api_commission_percent', '0'),
+            'api_commission_amount'    => Setting::get('api_commission_amount', '0'),
         ];
         return view('admin.settings', compact('settings'));
     }
@@ -79,7 +79,7 @@ class SettingsController extends Controller
             'bank_account_number'     => 'nullable|string|max:50',
             'bank_account_name'       => 'nullable|string|max:100',
             'sujan_api_key'             => 'nullable|string',
-            'api_commission_percent'    => 'nullable|numeric|min:0|max:200',
+            'api_commission_amount'     => 'nullable|numeric|min:0',
         ]);
 
         $keys = [
@@ -92,7 +92,7 @@ class SettingsController extends Controller
             'referral_bonus_tier2_threshold', 'referral_bonus_tier3_threshold',
             'promo_banner_text', 'promo_banner_color', 'low_balance_threshold',
             'bank_name', 'bank_account_number', 'bank_account_name',
-            'sujan_api_key', 'api_commission_percent',
+            'sujan_api_key', 'api_commission_amount',
         ];
         Setting::set('bank_transfer_enabled', $request->boolean('bank_transfer_enabled') ? '1' : '0');
         Setting::set('promo_banner_enabled', $request->boolean('promo_banner_enabled') ? '1' : '0');

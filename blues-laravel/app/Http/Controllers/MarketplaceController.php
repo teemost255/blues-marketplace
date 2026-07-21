@@ -48,11 +48,10 @@ class MarketplaceController extends Controller
         $allApiProducts = $sujan->getProducts();
 
         // Apply commission markup once on the full list
-        $commission = (float) \App\Models\Setting::get('api_commission_percent', '0');
-        $multiplier = 1 + ($commission / 100);
+        $commission = (float) \App\Models\Setting::get('api_commission_amount', '0');
         foreach ($allApiProducts as &$p) {
             $p['base_price'] = $p['price'];
-            $p['price']      = round($p['price'] * $multiplier, 2);
+            $p['price']      = round($p['price'] + $commission, 2);
         }
         unset($p);
 
@@ -275,8 +274,8 @@ class MarketplaceController extends Controller
         }
 
         // Apply commission markup — user pays sell price, reseller balance covers base cost
-        $commission = (float) \App\Models\Setting::get('api_commission_percent', '0');
-        $price      = round((float) ($product['price'] ?? 0) * (1 + $commission / 100), 2);
+        $commission = (float) \App\Models\Setting::get('api_commission_amount', '0');
+        $price      = round((float) ($product['price'] ?? 0) + $commission, 2);
         $productName = $product['name'] ?? 'Catalog Product';
         $stock       = (int) ($product['stock'] ?? 0);
 

@@ -379,19 +379,19 @@
         </div>
 
         <div class="mt-5 pt-5 border-t border-slate-700">
-            <label class="block text-xs text-slate-400 mb-1.5">Commission / Markup <span class="text-slate-500">(%)</span></label>
+            <label class="block text-xs text-slate-400 mb-1.5">Commission / Markup <span class="text-slate-500">(₦)</span></label>
             <div class="flex items-center gap-3">
                 <div class="relative w-36">
-                    <input type="number" name="api_commission_percent"
-                        value="{{ $settings['api_commission_percent'] }}"
-                        min="0" max="200" step="0.5"
+                    <input type="number" name="api_commission_amount"
+                        value="{{ $settings['api_commission_amount'] }}"
+                        min="0" step="1"
                         placeholder="0"
-                        class="w-full pr-8 text-sm font-semibold">
-                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">%</span>
+                        class="w-full pl-7 text-sm font-semibold">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">₦</span>
                 </div>
                 <p class="text-xs text-slate-500">
-                    Added on top of the base reseller price before showing it to users.<br>
-                    E.g. <span class="text-slate-300 font-semibold">15</span> → a ₦1,200 product shows as <span class="text-slate-300 font-semibold">₦1,380</span>.
+                    Fixed amount added on top of the base reseller price before showing it to users.<br>
+                    E.g. <span class="text-slate-300 font-semibold">200</span> → a ₦1,200 product shows as <span class="text-slate-300 font-semibold">₦1,400</span>.
                     Set to <span class="text-slate-300 font-semibold">0</span> to sell at cost.
                 </p>
             </div>
