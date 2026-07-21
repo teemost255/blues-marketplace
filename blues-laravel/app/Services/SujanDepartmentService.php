@@ -88,7 +88,8 @@ class SujanDepartmentService
     }
 
     /**
-     * Fetch live stock for each product in parallel and merge into the product array.
+     * Fetch live stock for each product sequentially and merge into the product array.
+     * Results are cached per-product for 60 s to avoid hammering the API on every page load.
      */
     private function enrichWithStock(array $products): array
     {
@@ -96,62 +97,87 @@ class SujanDepartmentService
             return $products;
         }
 
-        $key    = $this->apiKey();
-        $ids    = array_column($products, 'id');
-
-        // Build per-product stock cache keys
+        // Separate already-cached products from those that need a fresh call
         $stockMap = [];
         $missing  = [];
-        foreach ($ids as $id) {
-            $cached = Cache::get("sujan_stock_{$id}");
+        foreach ($products as $product) {
+            $pid    = (int) ($product['id'] ?? 0);
+            $cached = Cache::get("sujan_stock_{$pid}");
             if ($cached !== null) {
-                $stockMap[$id] = (int) $cached;
+                $stockMap[$pid] = (int) $cached;
             } else {
-                $missing[] = $id;
+                $missing[] = $pid;
             }
         }
 
-        // Parallel HTTP requests for any IDs not in cache
-        if (!empty($missing)) {
-            try {
-                $responses = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($missing, $key) {
-                    foreach ($missing as $pid) {
-                        $pool->as((string) $pid)
-                             ->withToken($key)
-                             ->timeout(10)
-                             ->acceptJson()
-                             ->get(self::BASE_URL . "/reseller/v1/products/{$pid}/stock");
-                    }
-                });
-
-                foreach ($missing as $pid) {
-                    $res = $responses[(string) $pid] ?? null;
-                    if ($res && $res->successful()) {
-                        $d = $res->json();
-                        $stock = (int) ($d['stock'] ?? $d['data']['stock'] ?? $d['count'] ?? $d['quantity'] ?? 0);
-                    } else {
-                        // Fallback: use stock already on the product object
-                        $stock = null;
-                    }
-
-                    if ($stock !== null) {
-                        Cache::put("sujan_stock_{$pid}", $stock, 60); // 1-minute cache
-                        $stockMap[$pid] = $stock;
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::error('SujanDepartment: parallel stock fetch exception', ['error' => $e->getMessage()]);
+        // Sequential calls for any not in cache
+        foreach ($missing as $pid) {
+            $stock = $this->fetchStockForProduct($pid);
+            if ($stock !== null) {
+                Cache::put("sujan_stock_{$pid}", $stock, 60);
+                $stockMap[$pid] = $stock;
             }
         }
 
-        // Merge live stock into products; keep product's own stock value as fallback
-        return array_map(function ($product) use ($stockMap) {
+        // Merge: if we got a live value, use it; otherwise keep whatever normaliseProduct extracted
+        return array_map(function (array $product) use ($stockMap): array {
             $pid = (int) ($product['id'] ?? 0);
             if (isset($stockMap[$pid])) {
                 $product['stock'] = $stockMap[$pid];
             }
             return $product;
         }, $products);
+    }
+
+    /**
+     * Fetch live stock for a single product ID from the API.
+     * Tries the dedicated stock endpoint first; falls back to re-fetching the product detail.
+     * Returns null if neither succeeds (caller keeps the normalised fallback value).
+     */
+    private function fetchStockForProduct(int $pid): ?int
+    {
+        // ── Attempt 1: dedicated stock endpoint ──────────────────────────────
+        try {
+            $res = $this->http()->get(self::BASE_URL . "/reseller/v1/products/{$pid}/stock");
+            Log::debug("SujanDepartment stock/{$pid}: HTTP {$res->status()} — " . substr($res->body(), 0, 200));
+
+            if ($res->successful()) {
+                $d = $res->json();
+                // Handle both flat {"stock":N} and wrapped {"data":{"stock":N}} responses
+                $stock = $d['stock']
+                    ?? $d['quantity']
+                    ?? $d['available']
+                    ?? $d['count']
+                    ?? ($d['data']['stock']    ?? null)
+                    ?? ($d['data']['quantity'] ?? null);
+
+                if ($stock !== null) {
+                    return (int) $stock;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning("SujanDepartment stock/{$pid} exception: " . $e->getMessage());
+        }
+
+        // ── Attempt 2: re-fetch the individual product (some APIs embed stock here) ──
+        try {
+            $res = $this->http()->get(self::BASE_URL . "/reseller/v1/products/{$pid}");
+            Log::debug("SujanDepartment product/{$pid}: HTTP {$res->status()} — " . substr($res->body(), 0, 200));
+
+            if ($res->successful()) {
+                $d       = $res->json();
+                $payload = $d['data'] ?? $d;
+                $stock   = $payload['stock'] ?? $payload['quantity'] ?? $payload['available'] ?? null;
+
+                if ($stock !== null) {
+                    return (int) $stock;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning("SujanDepartment product/{$pid} exception: " . $e->getMessage());
+        }
+
+        return null;
     }
 
     /**
