@@ -8,6 +8,7 @@
     {{-- ── Search bar ──────────────────────────────────────────────────────── --}}
     <form method="GET" action="{{ route('dashboard.marketplace') }}" class="flex gap-3 mb-6">
         @if(request('category'))<input type="hidden" name="category" value="{{ request('category') }}">@endif
+        @if(request('api_category'))<input type="hidden" name="api_category" value="{{ request('api_category') }}">@endif
         @if(request('sort'))<input type="hidden" name="sort" value="{{ request('sort') }}">@endif
         <div class="relative flex-1">
             <input type="text" name="search" value="{{ request('search') }}"
@@ -23,17 +24,44 @@
         </button>
     </form>
 
-    {{-- ── Category pills ───────────────────────────────────────────────────── --}}
-    @if($categories->count())
+    {{-- ── Category pills (local DB + API categories) ─────────────────────── --}}
+    @if($categories->count() || !empty($apiCategoryNames))
+    @php
+        $searchSuffix = request('search') ? '&search='.urlencode(request('search')) : '';
+        $activeCategory    = request('category');
+        $activeApiCategory = request('api_category');
+        $noneActive        = !$activeCategory && !$activeApiCategory;
+
+        // Which API category names don't already overlap with a local category?
+        $localCatNames = $categories->pluck('name')->map(fn($n) => strtolower($n))->toArray();
+        $apiOnlyCats   = array_filter($apiCategoryNames, function($apiCat) use ($localCatNames) {
+            $lower = strtolower($apiCat);
+            foreach ($localCatNames as $ln) {
+                if (str_contains($lower, $ln) || str_contains($ln, $lower)) return false;
+            }
+            return true;
+        });
+    @endphp
     <div class="flex items-center gap-2 flex-wrap mb-6">
+        {{-- All --}}
         <a href="{{ route('dashboard.marketplace') }}{{ request('search') ? '?search='.urlencode(request('search')) : '' }}"
-            class="px-4 py-1.5 rounded-full text-sm font-semibold border transition-all {{ !request('category') ? 'bg-brand text-white border-brand' : 'bg-white/5 text-slate-300 border-slate-600/60 hover:border-brand/50 hover:text-white' }}">
+            class="px-4 py-1.5 rounded-full text-sm font-semibold border transition-all {{ $noneActive ? 'bg-brand text-white border-brand' : 'bg-white/5 text-slate-300 border-slate-600/60 hover:border-brand/50 hover:text-white' }}">
             All
         </a>
+
+        {{-- Local DB category pills --}}
         @foreach($categories as $cat)
-        <a href="{{ route('dashboard.marketplace') }}?category={{ $cat->slug }}{{ request('search') ? '&search='.urlencode(request('search')) : '' }}"
-            class="px-4 py-1.5 rounded-full text-sm font-semibold border transition-all {{ request('category') === $cat->slug ? 'bg-brand text-white border-brand' : 'bg-white/5 text-slate-300 border-slate-600/60 hover:border-brand/50 hover:text-white' }}">
+        <a href="{{ route('dashboard.marketplace') }}?category={{ $cat->slug }}{{ $searchSuffix }}"
+            class="px-4 py-1.5 rounded-full text-sm font-semibold border transition-all {{ $activeCategory === $cat->slug ? 'bg-brand text-white border-brand' : 'bg-white/5 text-slate-300 border-slate-600/60 hover:border-brand/50 hover:text-white' }}">
             {{ $cat->name }}
+        </a>
+        @endforeach
+
+        {{-- API-only category pills (not covered by any local category) --}}
+        @foreach($apiOnlyCats as $apiCat)
+        <a href="{{ route('dashboard.marketplace') }}?api_category={{ urlencode($apiCat) }}{{ $searchSuffix }}"
+            class="px-4 py-1.5 rounded-full text-sm font-semibold border transition-all {{ $activeApiCategory === $apiCat ? 'bg-brand text-white border-brand' : 'bg-white/5 text-slate-300 border-slate-600/60 hover:border-brand/50 hover:text-white' }}">
+            {{ $apiCat }}
         </a>
         @endforeach
     </div>

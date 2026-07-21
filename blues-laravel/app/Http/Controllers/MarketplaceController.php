@@ -43,12 +43,32 @@ class MarketplaceController extends Controller
             ? Wishlist::where('user_id', Auth::id())->pluck('listing_id')->toArray()
             : [];
 
-        // Fetch API catalog products (cached 5 min) with commission markup
-        $apiProductsByCategory = [];
-        $sujan       = app(SujanDepartmentService::class);
-        $rawProducts = $sujan->getProducts();
+        // Fetch ALL API catalog products (unfiltered — needed for category pills)
+        $sujan          = app(SujanDepartmentService::class);
+        $allApiProducts = $sujan->getProducts();
 
-        // Apply search filter on the API results
+        // Apply commission markup once on the full list
+        $commission = (float) \App\Models\Setting::get('api_commission_percent', '0');
+        $multiplier = 1 + ($commission / 100);
+        foreach ($allApiProducts as &$p) {
+            $p['base_price'] = $p['price'];
+            $p['price']      = round($p['price'] * $multiplier, 2);
+        }
+        unset($p);
+
+        // Extract unique API category names for the pills bar (unfiltered)
+        $apiCategoryNames = collect($allApiProducts)
+            ->pluck('category')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->toArray();
+
+        // Now filter the products for actual display
+        $rawProducts = $allApiProducts;
+
+        // Search filter
         if ($request->filled('search')) {
             $search      = strtolower($request->search);
             $rawProducts = array_values(array_filter($rawProducts, fn($p) =>
@@ -57,7 +77,7 @@ class MarketplaceController extends Controller
             ));
         }
 
-        // Apply category filter on API products to match the local category selection
+        // Local-category filter → fuzzy-match against API category name
         if ($request->filled('category')) {
             $catModel = $categories->firstWhere('slug', $request->category);
             if ($catModel) {
@@ -71,22 +91,25 @@ class MarketplaceController extends Controller
             }
         }
 
-        // Apply commission markup to sell price
-        $commission = (float) \App\Models\Setting::get('api_commission_percent', '0');
-        $multiplier = 1 + ($commission / 100);
-        foreach ($rawProducts as &$p) {
-            $p['base_price'] = $p['price'];
-            $p['price']      = round($p['price'] * $multiplier, 2);
+        // API-specific category filter (from pills for API-only categories)
+        if ($request->filled('api_category')) {
+            $apiCatFilter = $request->api_category;
+            $rawProducts  = array_values(array_filter($rawProducts, fn($p) =>
+                ($p['category'] ?? '') === $apiCatFilter
+            ));
         }
-        unset($p);
 
-        // Group by category name for organised display
+        // Group filtered products by category for display
+        $apiProductsByCategory = [];
         foreach ($rawProducts as $product) {
             $cat = $product['category'] ?: 'Other';
             $apiProductsByCategory[$cat][] = $product;
         }
 
-        return view('marketplace.index', compact('listings', 'categories', 'wishlistIds', 'apiProductsByCategory'));
+        return view('marketplace.index', compact(
+            'listings', 'categories', 'wishlistIds',
+            'apiProductsByCategory', 'apiCategoryNames'
+        ));
     }
 
     public function show(int $id)
