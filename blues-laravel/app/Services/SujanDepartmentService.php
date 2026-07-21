@@ -43,7 +43,9 @@ class SujanDepartmentService
                 $response = $this->http()->get(self::BASE_URL . '/reseller/v1/products');
                 if ($response->successful()) {
                     $data = $response->json();
-                    return is_array($data) ? (isset($data['data']) ? $data['data'] : $data) : [];
+                    $raw  = is_array($data) ? (isset($data['data']) ? $data['data'] : $data) : [];
+                    // Normalise every product so all scalar fields are strings/numbers
+                    return array_values(array_map([$this, 'normaliseProduct'], $raw));
                 }
                 Log::warning('SujanDepartment: products fetch failed', ['status' => $response->status()]);
             } catch (\Throwable $e) {
@@ -58,6 +60,31 @@ class SujanDepartmentService
 
         // Enrich each product with a live stock count (1-min cache per product)
         return $this->enrichWithStock($products);
+    }
+
+    /**
+     * Flatten a raw API product into safe scalar types.
+     * Any field that arrives as an array is JSON-encoded so Blade never sees a non-string.
+     */
+    private function normaliseProduct(array $p): array
+    {
+        $scalar = static function ($v): string {
+            if (is_null($v))  return '';
+            if (is_array($v)) return json_encode($v, JSON_UNESCAPED_UNICODE);
+            return (string) $v;
+        };
+
+        return [
+            'id'          => (int)   ($p['id']          ?? 0),
+            'name'        => $scalar($p['name']         ?? $p['title']       ?? ''),
+            'description' => $scalar($p['description']  ?? $p['desc']        ?? null),
+            'category'    => $scalar($p['category']     ?? $p['type']        ?? null),
+            'price'       => (float) ($p['price']       ?? $p['amount']      ?? 0),
+            'stock'       => (int)   ($p['stock']       ?? $p['quantity']    ?? 0),
+            // preserve any other keys the rest of the code might read
+        ] + array_map(static function ($v) use ($scalar) {
+            return is_array($v) ? $scalar($v) : $v;
+        }, $p);
     }
 
     /**
