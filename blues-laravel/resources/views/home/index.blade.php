@@ -113,18 +113,18 @@
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
             </span>
-            Trusted Digital Accounts Marketplace
+            Nigeria's #1 Digital Accounts Marketplace
         </div>
 
         {{-- Headline with typing effect --}}
         <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-6" style="animation:slide-up .7s ease .1s both">
-            Buy Verified<br>
+            Own Premium<br>
             <span class="shimmer-text" id="typing-target">Digital Accounts</span><span class="cursor" id="cursor"></span>
         </h1>
 
         <p class="text-xl text-slate-400 max-w-2xl mx-auto mb-10" style="animation:slide-up .7s ease .2s both">
-            Social Media accounts &amp; Virtual Numbers —
-            <span class="text-white font-medium">all verified, delivered instantly.</span>
+            Facebook · Instagram · TikTok · Twitter · Virtual Numbers —
+            <span class="text-white font-medium">every account hand-verified, delivered in seconds.</span>
         </p>
 
         {{-- CTAs --}}
@@ -133,20 +133,20 @@
                 <span class="absolute inset-0 grad-bg opacity-90 group-hover:opacity-100 transition-opacity"></span>
                 <span class="relative flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                    Browse Marketplace
+                    Shop the Marketplace
                 </span>
             </a>
             @guest
             <a href="{{ route('register') }}" class="group inline-flex items-center justify-center gap-2 border border-slate-600 hover:border-brand bg-slate-800/60 backdrop-blur text-slate-300 hover:text-white font-bold px-8 py-4 rounded-xl text-base transition-all hover:bg-slate-800">
                 <svg class="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-                Create Free Account
+                Get Started Free
             </a>
             @endguest
         </div>
 
         {{-- Trust mini-badges --}}
         <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500" style="animation:slide-up .7s ease .4s both">
-            @foreach(['Instant Delivery','Verified Accounts','Secure Wallet','24/7 Support'] as $badge)
+            @foreach(['Delivered in Seconds','Hand-Verified Accounts','Naira Wallet Payments','Encrypted & Secure','24/7 Support'] as $badge)
             <span class="flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                 {{ $badge }}
@@ -801,11 +801,11 @@
 
     <div class="relative max-w-3xl mx-auto text-center reveal">
         @guest
-        <span class="text-xs font-bold text-brand uppercase tracking-widest">Ready?</span>
+        <span class="text-xs font-bold text-brand uppercase tracking-widest">Join Thousands of Buyers</span>
         <h2 class="text-4xl sm:text-5xl font-extrabold text-white mt-3 mb-4 leading-tight">
-            Start Buying <span class="shimmer-text">Digital Accounts</span><br>Today
+            Your Next <span class="shimmer-text">Premium Account</span><br>Is One Click Away
         </h2>
-        <p class="text-slate-400 mb-10 text-lg">Free to join. No monthly fees. Pay only for what you buy.</p>
+        <p class="text-slate-400 mb-10 text-lg">Free to join. Zero monthly fees. Instant delivery every time.</p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="{{ route('register') }}" class="group relative inline-flex items-center justify-center gap-2 text-white font-bold px-10 py-4 rounded-xl text-base overflow-hidden">
                 <span class="absolute inset-0 grad-bg"></span>
@@ -813,16 +813,16 @@
                 <svg class="relative w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
             <a href="{{ route('dashboard.marketplace') }}" class="inline-flex items-center justify-center gap-2 border border-slate-600 hover:border-brand bg-slate-800/60 text-slate-300 hover:text-white font-bold px-10 py-4 rounded-xl text-base transition-all">
-                Browse First
+                Browse Without Signing Up
             </a>
         </div>
         @else
-        <span class="text-xs font-bold text-brand uppercase tracking-widest">You're In</span>
-        <h2 class="text-4xl font-extrabold text-white mt-3 mb-4">What Will You Buy Next?</h2>
-        <p class="text-slate-400 mb-8">Hundreds of verified accounts waiting in the marketplace.</p>
+        <span class="text-xs font-bold text-brand uppercase tracking-widest">Welcome Back</span>
+        <h2 class="text-4xl font-extrabold text-white mt-3 mb-4">Ready to Grab Your Next Account?</h2>
+        <p class="text-slate-400 mb-8">Fresh stock added daily — don't miss out on the best deals.</p>
         <a href="{{ route('dashboard.marketplace') }}" class="group relative inline-flex items-center justify-center gap-2 text-white font-bold px-10 py-4 rounded-xl text-base overflow-hidden">
             <span class="absolute inset-0 grad-bg"></span>
-            <span class="relative">Browse Marketplace</span>
+            <span class="relative">Shop the Marketplace</span>
             <svg class="relative w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>
         @endauth
@@ -844,7 +844,7 @@ const toastData = @json($recentActivity->values());
 @push('scripts')
 <script>
 /* ─── Typing animation ────────────────────────────────── */
-const phrases = ['Digital Accounts','Facebook Pages','Instagram Profiles','TikTok Accounts','Phone Numbers'];
+const phrases = ['Digital Accounts','Facebook Pages','Instagram Profiles','TikTok Accounts','Twitter Handles','Telegram Accounts','Virtual Numbers','Aged Accounts'];
 let phraseIdx = 0, charIdx = 0, deleting = false;
 const el = document.getElementById('typing-target');
 const cursor = document.getElementById('cursor');

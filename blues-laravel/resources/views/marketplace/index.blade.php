@@ -39,8 +39,48 @@
     </div>
     @endif
 
-    {{-- ── Listings ──────────────────────────────────────────────────────────── --}}
-    @if($listings->isEmpty())
+    {{-- ── Unified Listings (local + API merged by category) ───────────────── --}}
+    @php
+        $categoryMap = $categories->keyBy('slug');
+
+        // Build merged groups: keyed by display label, each holding local + api items
+        $mergedGroups = [];
+
+        // Add local listings (current page)
+        foreach ($listings as $listing) {
+            $catSlug  = $listing->category;
+            $catInfo  = $categoryMap[$catSlug] ?? null;
+            $catLabel = $catInfo?->name ?? $catSlug ?? 'Other';
+            if (!isset($mergedGroups[$catLabel])) {
+                $mergedGroups[$catLabel] = ['slug' => $catSlug, 'local' => [], 'api' => []];
+            }
+            $mergedGroups[$catLabel]['local'][] = $listing;
+        }
+
+        // Merge API products into matching category groups (or create new ones)
+        foreach ($apiProductsByCategory as $apiCatName => $products) {
+            $matched = null;
+            foreach ($mergedGroups as $label => $data) {
+                if (strcasecmp($label, $apiCatName) === 0
+                    || str_contains(strtolower($label), strtolower($apiCatName))
+                    || str_contains(strtolower($apiCatName), strtolower($label))) {
+                    $matched = $label;
+                    break;
+                }
+            }
+            $key = $matched ?? $apiCatName;
+            if (!isset($mergedGroups[$key])) {
+                $mergedGroups[$key] = ['slug' => null, 'local' => [], 'api' => []];
+            }
+            $mergedGroups[$key]['api'] = array_merge($mergedGroups[$key]['api'], $products);
+        }
+
+        $totalLocalCount = $listings->total();
+        $totalApiCount   = collect($apiProductsByCategory)->sum(fn($p) => count($p));
+        $hasAnything     = !empty($mergedGroups);
+    @endphp
+
+    @if(!$hasAnything)
         <div class="flex flex-col items-center justify-center py-24 text-center">
             <div class="w-14 h-14 rounded-2xl bg-slate-700 flex items-center justify-center mb-4">
                 <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
@@ -51,34 +91,57 @@
             <a href="{{ route('dashboard.marketplace') }}" class="px-5 py-2 bg-brand hover:bg-brand-dark text-white text-sm font-semibold rounded-xl transition-colors">Clear Filters</a>
             @endif
         </div>
-    @else
-
-    @php
-        $categoryMap = $categories->keyBy('slug');
-        $grouped     = $listings->groupBy('category');
-    @endphp
-
-    @if(request('search') || request('sort'))
-        <p class="text-xs text-slate-500 mb-4">{{ $listings->total() }} result{{ $listings->total() !== 1 ? 's' : '' }}</p>
+    @elseif(request('search') || request('sort'))
+        {{-- Flat list when searching / sorting --}}
+        @php $totalShown = $totalLocalCount + $totalApiCount; @endphp
+        <p class="text-xs text-slate-500 mb-4">{{ $totalShown }} result{{ $totalShown !== 1 ? 's' : '' }}</p>
         <div class="space-y-3">
             @foreach($listings as $listing)
                 @include('marketplace._card', ['listing' => $listing, 'categoryMap' => $categoryMap])
             @endforeach
+            @foreach($apiProductsByCategory as $_ => $catProducts)
+                @foreach($catProducts as $product)
+                    @include('marketplace._api_card', ['product' => $product])
+                @endforeach
+            @endforeach
         </div>
     @else
-        @foreach($grouped as $catSlug => $items)
-        @php $catInfo = $categoryMap[$catSlug] ?? null; $catLabel = $catInfo?->name ?? $catSlug ?? 'Other'; @endphp
-        <div class="mb-8">
-            <div class="mb-4">
-                <h2 class="text-lg font-extrabold text-white">{{ $catLabel }}</h2>
-                <p class="text-sm text-slate-400">Available logs</p>
+        {{-- Grouped by category — local + API side by side --}}
+        @foreach($mergedGroups as $catLabel => $group)
+            @if(empty($group['local']) && empty($group['api']))
+                @continue
+            @endif
+            @php
+                $localCount = count($group['local']);
+                $apiCount   = count($group['api']);
+                $apiStock   = collect($group['api'])->sum('stock');
+                $totalItems = $localCount + $apiCount;
+            @endphp
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-lg font-extrabold text-white">{{ $catLabel }}</h2>
+                        <p class="text-sm text-slate-400 mt-0.5">
+                            {{ $totalItems }} {{ Str::plural('item', $totalItems) }}
+                            @if($apiCount > 0)
+                                &middot; <span class="{{ $apiStock > 0 ? 'text-green-400' : 'text-red-400' }}">{{ $apiStock > 0 ? number_format($apiStock).' in stock' : 'Out of stock' }}</span>
+                            @endif
+                        </p>
+                    </div>
+                    <span class="flex items-center gap-1.5 text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20 rounded-full px-3 py-1 whitespace-nowrap">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                        Instant Delivery
+                    </span>
+                </div>
+                <div class="space-y-3">
+                    @foreach($group['local'] as $listing)
+                        @include('marketplace._card', ['listing' => $listing, 'categoryMap' => $categoryMap])
+                    @endforeach
+                    @foreach($group['api'] as $product)
+                        @include('marketplace._api_card', ['product' => $product])
+                    @endforeach
+                </div>
             </div>
-            <div class="space-y-3">
-                @foreach($items as $listing)
-                    @include('marketplace._card', ['listing' => $listing, 'categoryMap' => $categoryMap])
-                @endforeach
-            </div>
-        </div>
         @endforeach
     @endif
 
@@ -86,45 +149,6 @@
     <div class="mt-8 flex justify-center">
         {{ $listings->appends(request()->query())->links('pagination::tailwind') }}
     </div>
-    @endif
-
-    @endif
-
-    {{-- ── API Products — grouped by category ────────────────────────────────── --}}
-    @if(!empty($apiProductsByCategory) && !request('category'))
-        @foreach($apiProductsByCategory as $catName => $catProducts)
-        @php
-            $inStock   = collect($catProducts)->sum('stock');
-            $itemCount = count($catProducts);
-        @endphp
-        <div class="mb-8 {{ $listings->isEmpty() && $loop->first ? 'mt-0' : 'mt-8' }}">
-
-            {{-- Category header --}}
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-lg font-extrabold text-white">{{ $catName }}</h2>
-                    <p class="text-sm text-slate-400 mt-0.5">
-                        {{ $itemCount }} {{ Str::plural('product', $itemCount) }} &middot;
-                        <span class="{{ $inStock > 0 ? 'text-green-400' : 'text-red-400' }}">
-                            {{ $inStock > 0 ? number_format($inStock).' in stock' : 'Out of stock' }}
-                        </span>
-                    </p>
-                </div>
-                @if($inStock > 0)
-                <span class="flex items-center gap-1.5 text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20 rounded-full px-3 py-1 whitespace-nowrap">
-                    <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                    Instant Delivery
-                </span>
-                @endif
-            </div>
-
-            <div class="space-y-3">
-                @foreach($catProducts as $product)
-                    @include('marketplace._api_card', ['product' => $product])
-                @endforeach
-            </div>
-        </div>
-        @endforeach
     @endif
 </div>
 

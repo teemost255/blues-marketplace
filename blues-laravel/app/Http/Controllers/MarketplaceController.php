@@ -45,33 +45,45 @@ class MarketplaceController extends Controller
 
         // Fetch API catalog products (cached 5 min) with commission markup
         $apiProductsByCategory = [];
-        if (!\Illuminate\Support\Facades\Request::filled('category')) {
-            $sujan      = app(SujanDepartmentService::class);
-            $rawProducts = $sujan->getProducts();
+        $sujan       = app(SujanDepartmentService::class);
+        $rawProducts = $sujan->getProducts();
 
-            // Apply search filter on the API results
-            if ($request->filled('search')) {
-                $search      = strtolower($request->search);
-                $rawProducts = array_values(array_filter($rawProducts, fn($p) =>
-                    str_contains(strtolower($p['name'] ?? ''), $search) ||
-                    str_contains(strtolower($p['description'] ?? ''), $search)
+        // Apply search filter on the API results
+        if ($request->filled('search')) {
+            $search      = strtolower($request->search);
+            $rawProducts = array_values(array_filter($rawProducts, fn($p) =>
+                str_contains(strtolower($p['name'] ?? ''), $search) ||
+                str_contains(strtolower($p['description'] ?? ''), $search)
+            ));
+        }
+
+        // Apply category filter on API products to match the local category selection
+        if ($request->filled('category')) {
+            $catModel = $categories->firstWhere('slug', $request->category);
+            if ($catModel) {
+                $catNameLower = strtolower($catModel->name);
+                $rawProducts  = array_values(array_filter($rawProducts, fn($p) =>
+                    str_contains(strtolower($p['category'] ?? ''), $catNameLower) ||
+                    str_contains($catNameLower, strtolower($p['category'] ?? ''))
                 ));
+            } else {
+                $rawProducts = [];
             }
+        }
 
-            // Apply commission markup to sell price
-            $commission = (float) \App\Models\Setting::get('api_commission_percent', '0');
-            $multiplier = 1 + ($commission / 100);
-            foreach ($rawProducts as &$p) {
-                $p['base_price'] = $p['price'];
-                $p['price']      = round($p['price'] * $multiplier, 2);
-            }
-            unset($p);
+        // Apply commission markup to sell price
+        $commission = (float) \App\Models\Setting::get('api_commission_percent', '0');
+        $multiplier = 1 + ($commission / 100);
+        foreach ($rawProducts as &$p) {
+            $p['base_price'] = $p['price'];
+            $p['price']      = round($p['price'] * $multiplier, 2);
+        }
+        unset($p);
 
-            // Group by category name for organised display
-            foreach ($rawProducts as $product) {
-                $cat = $product['category'] ?: 'Other';
-                $apiProductsByCategory[$cat][] = $product;
-            }
+        // Group by category name for organised display
+        foreach ($rawProducts as $product) {
+            $cat = $product['category'] ?: 'Other';
+            $apiProductsByCategory[$cat][] = $product;
         }
 
         return view('marketplace.index', compact('listings', 'categories', 'wishlistIds', 'apiProductsByCategory'));
