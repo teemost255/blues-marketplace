@@ -42,13 +42,7 @@
                         <p class="text-white font-medium">
                             {{ $order->listing?->title ?? $order->api_product_name ?? 'Deleted listing' }}
                         </p>
-                        <p class="text-xs mt-0.5">
-                            @if($order->source === 'api')
-                                <span class="text-sky-400 font-semibold">API Catalog</span>
-                            @else
-                                <span class="text-slate-500">{{ $order->listing?->category ?? '' }}</span>
-                            @endif
-                        </p>
+                        <p class="text-xs text-slate-500 mt-0.5">{{ $order->listing?->category ?? '' }}</p>
                     </td>
                     <td class="px-6 py-4 text-white font-semibold">₦{{ number_format($order->amount, 2) }}</td>
                     <td class="px-6 py-4">
@@ -127,9 +121,7 @@
         <div class="flex items-start justify-between gap-3 mb-3">
             <div class="min-w-0">
                 <p class="text-white font-semibold text-sm leading-snug truncate">{{ $order->listing?->title ?? $order->api_product_name ?? 'Deleted listing' }}</p>
-                @if($order->source === 'api')
-                    <p class="text-xs text-sky-400 mt-0.5 font-semibold">API Catalog</p>
-                @elseif($order->listing?->category)
+                @if($order->listing?->category)
                     <p class="text-xs text-brand mt-0.5">{{ $order->listing->category }}</p>
                 @endif
             </div>

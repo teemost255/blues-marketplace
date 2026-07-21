@@ -27,7 +27,8 @@ class SujanDepartmentService
     }
 
     /**
-     * Fetch all active catalog products (cached).
+     * Fetch all active catalog products enriched with live stock.
+     * Products are cached for 5 min; stock counts use a shorter 60-second cache.
      * Returns array of product objects, or empty array on failure.
      */
     public function getProducts(): array
@@ -36,12 +37,12 @@ class SujanDepartmentService
             return [];
         }
 
-        return Cache::remember('sujan_products', self::CACHE_TTL, function () {
+        // Fetch the product list (5-min cache for structure)
+        $products = Cache::remember('sujan_products', self::CACHE_TTL, function () {
             try {
                 $response = $this->http()->get(self::BASE_URL . '/reseller/v1/products');
                 if ($response->successful()) {
                     $data = $response->json();
-                    // API may return array directly or wrapped in a data key
                     return is_array($data) ? (isset($data['data']) ? $data['data'] : $data) : [];
                 }
                 Log::warning('SujanDepartment: products fetch failed', ['status' => $response->status()]);
@@ -50,10 +51,84 @@ class SujanDepartmentService
             }
             return [];
         });
+
+        if (empty($products)) {
+            return [];
+        }
+
+        // Enrich each product with a live stock count (1-min cache per product)
+        return $this->enrichWithStock($products);
     }
 
     /**
-     * Get live stock for a single product.
+     * Fetch live stock for each product in parallel and merge into the product array.
+     */
+    private function enrichWithStock(array $products): array
+    {
+        if (!$this->isConfigured()) {
+            return $products;
+        }
+
+        $key    = $this->apiKey();
+        $ids    = array_column($products, 'id');
+
+        // Build per-product stock cache keys
+        $stockMap = [];
+        $missing  = [];
+        foreach ($ids as $id) {
+            $cached = Cache::get("sujan_stock_{$id}");
+            if ($cached !== null) {
+                $stockMap[$id] = (int) $cached;
+            } else {
+                $missing[] = $id;
+            }
+        }
+
+        // Parallel HTTP requests for any IDs not in cache
+        if (!empty($missing)) {
+            try {
+                $responses = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($missing, $key) {
+                    foreach ($missing as $pid) {
+                        $pool->as((string) $pid)
+                             ->withToken($key)
+                             ->timeout(10)
+                             ->acceptJson()
+                             ->get(self::BASE_URL . "/reseller/v1/products/{$pid}/stock");
+                    }
+                });
+
+                foreach ($missing as $pid) {
+                    $res = $responses[(string) $pid] ?? null;
+                    if ($res && $res->successful()) {
+                        $d = $res->json();
+                        $stock = (int) ($d['stock'] ?? $d['data']['stock'] ?? $d['count'] ?? $d['quantity'] ?? 0);
+                    } else {
+                        // Fallback: use stock already on the product object
+                        $stock = null;
+                    }
+
+                    if ($stock !== null) {
+                        Cache::put("sujan_stock_{$pid}", $stock, 60); // 1-minute cache
+                        $stockMap[$pid] = $stock;
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error('SujanDepartment: parallel stock fetch exception', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // Merge live stock into products; keep product's own stock value as fallback
+        return array_map(function ($product) use ($stockMap) {
+            $pid = (int) ($product['id'] ?? 0);
+            if (isset($stockMap[$pid])) {
+                $product['stock'] = $stockMap[$pid];
+            }
+            return $product;
+        }, $products);
+    }
+
+    /**
+     * Get live stock for a single product (also warms the per-product cache).
      */
     public function getStock(int $productId): ?int
     {
@@ -64,8 +139,10 @@ class SujanDepartmentService
         try {
             $response = $this->http()->get(self::BASE_URL . "/reseller/v1/products/{$productId}/stock");
             if ($response->successful()) {
-                $data = $response->json();
-                return (int) ($data['stock'] ?? $data['data']['stock'] ?? $data['count'] ?? 0);
+                $data  = $response->json();
+                $stock = (int) ($data['stock'] ?? $data['data']['stock'] ?? $data['count'] ?? $data['quantity'] ?? 0);
+                Cache::put("sujan_stock_{$productId}", $stock, 60);
+                return $stock;
             }
         } catch (\Throwable $e) {
             Log::error('SujanDepartment: stock exception', ['product_id' => $productId, 'error' => $e->getMessage()]);
@@ -138,10 +215,15 @@ class SujanDepartmentService
     }
 
     /**
-     * Flush the products cache (call after admin key change).
+     * Flush the products and stock caches (call after admin key change or purchase).
      */
-    public function clearCache(): void
+    public function clearCache(?array $productIds = null): void
     {
         Cache::forget('sujan_products');
+        if ($productIds) {
+            foreach ($productIds as $pid) {
+                Cache::forget("sujan_stock_{$pid}");
+            }
+        }
     }
 }

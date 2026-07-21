@@ -90,17 +90,12 @@
 
     @endif
 
-    {{-- ── API Catalog Section ───────────────────────────────────────────────── --}}
+    {{-- ── More Products ─────────────────────────────────────────────────────── --}}
     @if(!empty($apiProducts) && !request('category'))
     <div class="mb-8 {{ $listings->isEmpty() ? 'mt-0' : 'mt-8' }}">
-        <div class="mb-4 flex items-center gap-3">
-            <div>
-                <h2 class="text-lg font-extrabold text-white flex items-center gap-2">
-                    API Catalog
-                    <span class="text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-600/30 rounded-full px-2.5 py-0.5">Live</span>
-                </h2>
-                <p class="text-sm text-slate-400">Fresh stock from our reseller catalog — delivered instantly</p>
-            </div>
+        <div class="mb-4">
+            <h2 class="text-lg font-extrabold text-white">More Products</h2>
+            <p class="text-sm text-slate-400">Instant delivery — available right now</p>
         </div>
         <div class="space-y-3">
             @foreach($apiProducts as $product)

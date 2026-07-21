@@ -8,10 +8,11 @@
     $pid      = (int) ($product['id'] ?? 0);
     $name     = $product['name'] ?? 'Unknown Product';
     $desc     = $product['description'] ?? null;
+    $catLabel = $product['category'] ?? $product['type'] ?? null;
 
     $previewData = json_encode([
         'title'       => $name,
-        'category'    => 'Catalog',
+        'category'    => $catLabel,
         'description' => $desc,
         'format'      => null,
         'stock'       => $stock,
@@ -20,7 +21,6 @@
         'buyUrl'      => auth()->check() ? route('dashboard.marketplace.buy-api', $pid) : null,
         'iconBg'      => $iconBg,
         'letter'      => $letter,
-        'isApi'       => true,
     ]);
 @endphp
 
@@ -39,7 +39,9 @@
                     <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                     Instant
                 </span>
-                <span class="shrink-0 text-[10px] font-semibold text-sky-400 border border-sky-600/40 bg-sky-500/10 rounded-full px-2 py-0.5 whitespace-nowrap">Catalog</span>
+                @if($catLabel)
+                <span class="shrink-0 text-[10px] font-semibold text-slate-400 border border-slate-600/50 rounded-full px-2 py-0.5 whitespace-nowrap">{{ $catLabel }}</span>
+                @endif
             </div>
         </div>
     </div>
