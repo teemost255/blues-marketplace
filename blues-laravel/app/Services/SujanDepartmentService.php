@@ -130,54 +130,65 @@ class SujanDepartmentService
     }
 
     /**
-     * Fetch live stock for a single product ID from the API.
-     * Tries the dedicated stock endpoint first; falls back to re-fetching the product detail.
-     * Returns null if neither succeeds (caller keeps the normalised fallback value).
+     * Fetch live stock for a single product using the guide endpoint:
+     *   GET /reseller/v1/products/{product_id}/stock
+     *
+     * Handles every realistic response shape:
+     *   • Plain integer body:              5
+     *   • Flat object:                     {"stock":5}  {"quantity":5}  {"stock_count":5}  etc.
+     *   • Data-wrapped:                    {"data":{"stock":5}}
+     *   • Success-wrapped:                 {"success":true,"stock":5}
+     *
+     * Returns null only on a network/HTTP failure (caller keeps the product-list fallback).
      */
     private function fetchStockForProduct(int $pid): ?int
     {
-        // ── Attempt 1: dedicated stock endpoint ──────────────────────────────
         try {
-            $res = $this->http()->get(self::BASE_URL . "/reseller/v1/products/{$pid}/stock");
-            Log::debug("SujanDepartment stock/{$pid}: HTTP {$res->status()} — " . substr($res->body(), 0, 200));
+            $res = $this->http()
+                ->timeout(10)
+                ->get(self::BASE_URL . "/reseller/v1/products/{$pid}/stock");
 
-            if ($res->successful()) {
-                $d = $res->json();
-                // Handle both flat {"stock":N} and wrapped {"data":{"stock":N}} responses
-                $stock = $d['stock']
-                    ?? $d['quantity']
-                    ?? $d['available']
-                    ?? $d['count']
-                    ?? ($d['data']['stock']    ?? null)
-                    ?? ($d['data']['quantity'] ?? null);
+            // Always log so you can see the exact shape in storage/logs/laravel.log
+            Log::info("SujanDepartment [stock/{$pid}] HTTP {$res->status()}: " . $res->body());
 
-                if ($stock !== null) {
-                    return (int) $stock;
+            if (!$res->successful()) {
+                return null;
+            }
+
+            $body = trim($res->body());
+
+            // ── Shape 1: plain integer body ────────────────────────────────
+            if (is_numeric($body)) {
+                return (int) $body;
+            }
+
+            $d = $res->json();
+
+            // ── Shape 2: unwrap common envelope keys ──────────────────────
+            $payload = $d['data'] ?? $d;
+
+            // ── Shape 3: scan every known stock key name ──────────────────
+            foreach (['stock', 'stock_count', 'quantity', 'qty', 'available', 'count', 'in_stock'] as $key) {
+                if (isset($payload[$key]) && is_numeric($payload[$key])) {
+                    return (int) $payload[$key];
                 }
             }
-        } catch (\Throwable $e) {
-            Log::warning("SujanDepartment stock/{$pid} exception: " . $e->getMessage());
-        }
 
-        // ── Attempt 2: re-fetch the individual product (some APIs embed stock here) ──
-        try {
-            $res = $this->http()->get(self::BASE_URL . "/reseller/v1/products/{$pid}");
-            Log::debug("SujanDepartment product/{$pid}: HTTP {$res->status()} — " . substr($res->body(), 0, 200));
-
-            if ($res->successful()) {
-                $d       = $res->json();
-                $payload = $d['data'] ?? $d;
-                $stock   = $payload['stock'] ?? $payload['quantity'] ?? $payload['available'] ?? null;
-
-                if ($stock !== null) {
-                    return (int) $stock;
+            // ── Shape 4: single-value object — {"stock":5} at top level ──
+            foreach (['stock', 'stock_count', 'quantity', 'qty', 'available', 'count', 'in_stock'] as $key) {
+                if (isset($d[$key]) && is_numeric($d[$key])) {
+                    return (int) $d[$key];
                 }
             }
-        } catch (\Throwable $e) {
-            Log::warning("SujanDepartment product/{$pid} exception: " . $e->getMessage());
-        }
 
-        return null;
+            // Response was 200 but we couldn't find a numeric stock field — log the full body
+            Log::warning("SujanDepartment [stock/{$pid}] 200 but no stock key found. Body: {$body}");
+            return null;
+
+        } catch (\Throwable $e) {
+            Log::error("SujanDepartment [stock/{$pid}] exception: " . $e->getMessage());
+            return null;
+        }
     }
 
     /**
