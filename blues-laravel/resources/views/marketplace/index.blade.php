@@ -90,19 +90,41 @@
 
     @endif
 
-    {{-- ── More Products ─────────────────────────────────────────────────────── --}}
-    @if(!empty($apiProducts) && !request('category'))
-    <div class="mb-8 {{ $listings->isEmpty() ? 'mt-0' : 'mt-8' }}">
-        <div class="mb-4">
-            <h2 class="text-lg font-extrabold text-white">More Products</h2>
-            <p class="text-sm text-slate-400">Instant delivery — available right now</p>
+    {{-- ── API Products — grouped by category ────────────────────────────────── --}}
+    @if(!empty($apiProductsByCategory) && !request('category'))
+        @foreach($apiProductsByCategory as $catName => $catProducts)
+        @php
+            $inStock   = collect($catProducts)->sum('stock');
+            $itemCount = count($catProducts);
+        @endphp
+        <div class="mb-8 {{ $listings->isEmpty() && $loop->first ? 'mt-0' : 'mt-8' }}">
+
+            {{-- Category header --}}
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-extrabold text-white">{{ $catName }}</h2>
+                    <p class="text-sm text-slate-400 mt-0.5">
+                        {{ $itemCount }} {{ Str::plural('product', $itemCount) }} &middot;
+                        <span class="{{ $inStock > 0 ? 'text-green-400' : 'text-red-400' }}">
+                            {{ $inStock > 0 ? number_format($inStock).' in stock' : 'Out of stock' }}
+                        </span>
+                    </p>
+                </div>
+                @if($inStock > 0)
+                <span class="flex items-center gap-1.5 text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20 rounded-full px-3 py-1 whitespace-nowrap">
+                    <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                    Instant Delivery
+                </span>
+                @endif
+            </div>
+
+            <div class="space-y-3">
+                @foreach($catProducts as $product)
+                    @include('marketplace._api_card', ['product' => $product])
+                @endforeach
+            </div>
         </div>
-        <div class="space-y-3">
-            @foreach($apiProducts as $product)
-                @include('marketplace._api_card', ['product' => $product])
-            @endforeach
-        </div>
-    </div>
+        @endforeach
     @endif
 </div>
 

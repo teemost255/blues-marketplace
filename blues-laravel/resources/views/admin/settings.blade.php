@@ -375,7 +375,26 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 </button>
             </div>
-            <p class="text-xs text-slate-500 mt-1.5">Bearer token used to authenticate requests to <span class="font-mono text-slate-300">api.sujandepartment.com</span>. Products are cached for 5 minutes and shown in the <strong class="text-slate-300">API Catalog</strong> section of the marketplace.</p>
+            <p class="text-xs text-slate-500 mt-1.5">Bearer token used to authenticate requests to <span class="font-mono text-slate-300">api.sujandepartment.com</span>. Products are cached for 5 minutes and shown in the marketplace.</p>
+        </div>
+
+        <div class="mt-5 pt-5 border-t border-slate-700">
+            <label class="block text-xs text-slate-400 mb-1.5">Commission / Markup <span class="text-slate-500">(%)</span></label>
+            <div class="flex items-center gap-3">
+                <div class="relative w-36">
+                    <input type="number" name="api_commission_percent"
+                        value="{{ $settings['api_commission_percent'] }}"
+                        min="0" max="200" step="0.5"
+                        placeholder="0"
+                        class="w-full pr-8 text-sm font-semibold">
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">%</span>
+                </div>
+                <p class="text-xs text-slate-500">
+                    Added on top of the base reseller price before showing it to users.<br>
+                    E.g. <span class="text-slate-300 font-semibold">15</span> → a ₦1,200 product shows as <span class="text-slate-300 font-semibold">₦1,380</span>.
+                    Set to <span class="text-slate-300 font-semibold">0</span> to sell at cost.
+                </p>
+            </div>
         </div>
     </div>
 

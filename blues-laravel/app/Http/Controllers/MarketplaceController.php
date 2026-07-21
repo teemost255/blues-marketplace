@@ -43,24 +43,38 @@ class MarketplaceController extends Controller
             ? Wishlist::where('user_id', Auth::id())->pluck('listing_id')->toArray()
             : [];
 
-        // Fetch API catalog products (cached 5 min)
-        $apiProducts = [];
+        // Fetch API catalog products (cached 5 min) with commission markup
+        $apiProductsByCategory = [];
         if (!\Illuminate\Support\Facades\Request::filled('category')) {
-            $sujan = app(SujanDepartmentService::class);
-            $apiProducts = $sujan->getProducts();
+            $sujan      = app(SujanDepartmentService::class);
+            $rawProducts = $sujan->getProducts();
 
-            // Apply search filter client-side on the API results
+            // Apply search filter on the API results
             if ($request->filled('search')) {
-                $search = strtolower($request->search);
-                $apiProducts = array_filter($apiProducts, fn($p) =>
+                $search      = strtolower($request->search);
+                $rawProducts = array_values(array_filter($rawProducts, fn($p) =>
                     str_contains(strtolower($p['name'] ?? ''), $search) ||
                     str_contains(strtolower($p['description'] ?? ''), $search)
-                );
-                $apiProducts = array_values($apiProducts);
+                ));
+            }
+
+            // Apply commission markup to sell price
+            $commission = (float) \App\Models\Setting::get('api_commission_percent', '0');
+            $multiplier = 1 + ($commission / 100);
+            foreach ($rawProducts as &$p) {
+                $p['base_price'] = $p['price'];
+                $p['price']      = round($p['price'] * $multiplier, 2);
+            }
+            unset($p);
+
+            // Group by category name for organised display
+            foreach ($rawProducts as $product) {
+                $cat = $product['category'] ?: 'Other';
+                $apiProductsByCategory[$cat][] = $product;
             }
         }
 
-        return view('marketplace.index', compact('listings', 'categories', 'wishlistIds', 'apiProducts'));
+        return view('marketplace.index', compact('listings', 'categories', 'wishlistIds', 'apiProductsByCategory'));
     }
 
     public function show(int $id)
@@ -225,7 +239,9 @@ class MarketplaceController extends Controller
             return back()->with('error', 'Product not found in catalog.');
         }
 
-        $price       = (float) ($product['price'] ?? 0);
+        // Apply commission markup — user pays sell price, reseller balance covers base cost
+        $commission = (float) \App\Models\Setting::get('api_commission_percent', '0');
+        $price      = round((float) ($product['price'] ?? 0) * (1 + $commission / 100), 2);
         $productName = $product['name'] ?? 'Catalog Product';
         $stock       = (int) ($product['stock'] ?? 0);
 
