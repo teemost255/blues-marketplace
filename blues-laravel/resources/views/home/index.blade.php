@@ -107,14 +107,6 @@
     <div class="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(14,165,233,0.18),transparent)]"></div>
 
     <div class="relative max-w-5xl mx-auto text-center w-full">
-        {{-- Badge --}}
-        <div class="inline-flex items-center gap-2 bg-brand/10 border border-brand/30 text-brand text-xs font-semibold px-4 py-1.5 rounded-full mb-8" style="animation:slide-up .6s ease both">
-            <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
-            </span>
-            Nigeria's #1 Digital Accounts Marketplace
-        </div>
 
         {{-- Headline with typing effect --}}
         <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-6" style="animation:slide-up .7s ease .1s both">
