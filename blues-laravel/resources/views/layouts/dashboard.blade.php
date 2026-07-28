@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="format-detection" content="telephone=no">
     <title>@yield('title', 'Dashboard') — BluesMarketplace</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);if(t==='light')document.documentElement.classList.add('light-mode');}());</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -132,11 +133,8 @@
     class="w-60 bg-slate-800 border-r border-slate-700 flex flex-col min-h-screen fixed top-0 left-0 bottom-0 z-40
            -translate-x-full lg:translate-x-0">
     <div class="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
-        <a href="{{ route('home') }}" class="flex items-center gap-2">
-            <div class="w-7 h-7 bg-brand rounded-lg flex items-center justify-center">
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <span class="font-bold text-white text-sm">Blues<span class="text-brand">Marketplace</span></span>
+        <a href="{{ route('home') }}" class="flex items-center">
+            <img src="/images/logo.jpeg" alt="Blues Marketplace" class="h-9 w-auto">
         </a>
         {{-- Close button (mobile only) --}}
         <button onclick="closeMobileSidebar()"

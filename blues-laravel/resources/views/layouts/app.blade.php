@@ -7,6 +7,7 @@
     <script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);if(t==='light')document.documentElement.classList.add('light-mode');}());</script>
     <title>@yield('title', 'Blues Marketplace') — Buy Digital Accounts</title>
     <meta name="description" content="@yield('meta_description', 'Blues Marketplace — Buy verified Facebook, Instagram, TikTok accounts and second phone numbers.')">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -111,13 +112,8 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
             {{-- Logo --}}
-            <a href="{{ route('home') }}" class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                    </svg>
-                </div>
-                <span class="font-bold text-white text-lg">Blues <span class="text-brand">Marketplace</span></span>
+            <a href="{{ route('home') }}" class="flex items-center">
+                <img src="/images/logo.jpeg" alt="Blues Marketplace" class="h-10 w-auto">
             </a>
 
             {{-- Nav links --}}
@@ -225,11 +221,8 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div class="col-span-1 md:col-span-2">
-                <div class="flex items-center gap-2 mb-4">
-                    <div class="w-7 h-7 bg-brand rounded-lg flex items-center justify-center">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    </div>
-                    <span class="font-bold text-white">Blues <span class="text-brand">Marketplace</span></span>
+                <div class="flex items-center mb-4">
+                    <img src="/images/logo.jpeg" alt="Blues Marketplace" class="h-10 w-auto">
                 </div>
                 <p class="text-slate-400 text-sm leading-relaxed max-w-sm">The trusted marketplace for verified digital accounts — Facebook, Instagram, TikTok, and second phone numbers.</p>
             </div>
