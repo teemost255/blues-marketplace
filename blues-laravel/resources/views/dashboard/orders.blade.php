@@ -204,8 +204,44 @@
             </div>
 
             <div class="px-6 py-4">
+                @php
+                    $rawData   = $order->delivery_data;
+                    $decoded   = is_string($rawData) ? json_decode($rawData, true) : null;
+                    $isApiOrder = is_array($decoded) && ($decoded['source'] ?? '') === 'sujan_api';
+
+                    if ($isApiOrder) {
+                        $creds = $decoded['credentials'] ?? null;
+                        // credentials may itself be a JSON string or array
+                        if (is_string($creds)) {
+                            $innerDecoded = json_decode($creds, true);
+                            if (is_array($innerDecoded)) {
+                                // Format key: value pairs
+                                $displayCreds = collect($innerDecoded)
+                                    ->map(fn($v, $k) => strtoupper($k) . ': ' . $v)
+                                    ->implode("\n");
+                            } else {
+                                $displayCreds = $creds;
+                            }
+                        } elseif (is_array($creds)) {
+                            $displayCreds = collect($creds)
+                                ->map(fn($v, $k) => strtoupper($k) . ': ' . $v)
+                                ->implode("\n");
+                        } else {
+                            $displayCreds = $rawData;
+                        }
+                        $productLabel = $decoded['product'] ?? null;
+                    } else {
+                        $displayCreds = $rawData;
+                        $productLabel = null;
+                    }
+                @endphp
+
+                @if($isApiOrder && $productLabel)
+                    <p class="text-xs text-slate-400 mb-2">Product: <span class="text-slate-200 font-medium">{{ $productLabel }}</span></p>
+                @endif
+
                 <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 relative">
-                    <pre id="creds-{{ $order->id }}" class="text-green-300 text-xs font-mono whitespace-pre-wrap break-all leading-relaxed">{{ $order->delivery_data }}</pre>
+                    <pre id="creds-{{ $order->id }}" class="text-green-300 text-xs font-mono whitespace-pre-wrap break-all leading-relaxed">{{ $displayCreds }}</pre>
                     <button onclick="copyDetails({{ $order->id }})"
                         class="absolute top-3 right-3 flex items-center gap-1 text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded px-2 py-1 transition-colors"
                         id="copy-btn-{{ $order->id }}">
