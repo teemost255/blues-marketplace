@@ -44,6 +44,40 @@ class GrizzlySmsService
         }
     }
 
+    /**
+     * Fetch counts AND prices for a country in a single parallel pool request.
+     * Returns ['counts' => [...], 'prices' => [...]].
+     */
+    public function getServicesAndPrices(int $country): array
+    {
+        try {
+            $params = ['api_key' => $this->apiKey];
+
+            $responses = Http::pool(fn ($pool) => [
+                $pool->as('counts')->timeout(15)->get($this->baseUrl, array_merge($params, [
+                    'action'  => 'getNumbersStatus',
+                    'country' => $country,
+                ])),
+                $pool->as('prices')->timeout(15)->get($this->baseUrl, array_merge(
+                    $params,
+                    ['action' => 'getPrices'],
+                    $country > 0 ? ['country' => $country] : []
+                )),
+            ]);
+
+            $countsRaw = $responses['counts']->json() ?? [];
+            $pricesRaw = $responses['prices']->json() ?? [];
+
+            return [
+                'counts' => $this->normalizeCounts((array) $countsRaw),
+                'prices' => $this->normalizePrices((array) $pricesRaw, $country),
+            ];
+        } catch (\Exception $e) {
+            Log::error('GrizzlySMS parallel fetch error', ['error' => $e->getMessage()]);
+            return ['counts' => [], 'prices' => []];
+        }
+    }
+
     public function getServicesForCountry(int $country): array
     {
         try {
@@ -55,28 +89,7 @@ class GrizzlySmsService
             $data = $response->json();
             if (!is_array($data)) return [];
 
-            // Normalize response shapes into { code => count }.
-            // GrizzlySMS appends a country suffix to service codes:
-            //   "tg_0" => 150  (country 0)   Strip "_N" to get "tg".
-            // Shape A (flat):   { "tg_0": 150, "wa_0": 200 }
-            // Shape B (object): { "tg_0": {"count": 150, ...}, ... }
-            $normalized = [];
-            foreach ($data as $rawCode => $value) {
-                // Strip trailing _<digits> country suffix (e.g. "tg_0" → "tg")
-                $code = preg_replace('/_\d+$/', '', (string) $rawCode);
-
-                if (is_array($value)) {
-                    $count = (int) ($value['count'] ?? $value['qty'] ?? 0);
-                } else {
-                    $count = (int) $value;
-                }
-                if ($count > 0) {
-                    // Keep the highest count if the same service appears twice
-                    $existing = $normalized[$code] ?? 0;
-                    $normalized[$code] = max($existing, $count);
-                }
-            }
-            return $normalized;
+            return $this->normalizeCounts($data);
         } catch (\Exception $e) {
             Log::error('SMS service getNumbersStatus error', ['error' => $e->getMessage()]);
             return [];
@@ -112,6 +125,28 @@ class GrizzlySmsService
             Log::error('SMS service getPrices error', ['country' => $country, 'error' => $e->getMessage()]);
             return [];
         }
+    }
+
+    /**
+     * Normalize getNumbersStatus response → { code => count }.
+     * GrizzlySMS appends a country suffix: "tg_0" → strip to "tg".
+     */
+    private function normalizeCounts(array $data): array
+    {
+        $normalized = [];
+        foreach ($data as $rawCode => $value) {
+            // Strip trailing _<digits> country suffix (e.g. "tg_0" → "tg")
+            $code = preg_replace('/_\d+$/', '', (string) $rawCode);
+
+            $count = is_array($value)
+                ? (int) ($value['count'] ?? $value['qty'] ?? 0)
+                : (int) $value;
+
+            if ($count > 0) {
+                $normalized[$code] = max($normalized[$code] ?? 0, $count);
+            }
+        }
+        return $normalized;
     }
 
     private function normalizePrices(array $data, int $country): array
