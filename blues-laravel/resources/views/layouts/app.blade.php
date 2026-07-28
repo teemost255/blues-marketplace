@@ -127,25 +127,76 @@
                 <a href="{{ route('privacy') }}" class="nav-link">Privacy</a>
             </nav>
 
-            {{-- Auth buttons --}}
+            {{-- Auth buttons + hamburger --}}
             <div class="flex items-center gap-3">
                 {{-- Theme toggle --}}
                 <button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark / light mode">
                     <svg id="icon-sun" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
                     <svg id="icon-moon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                 </button>
+                {{-- Desktop auth --}}
                 @auth
-                    <a href="{{ route('dashboard.index') }}" class="nav-link hidden sm:inline-flex items-center gap-1.5">
+                    <a href="{{ route('dashboard.index') }}" class="nav-link hidden md:inline-flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                         Dashboard
                     </a>
-                    <form method="POST" action="{{ route('logout') }}" class="inline">
+                    <form method="POST" action="{{ route('logout') }}" class="hidden md:inline">
                         @csrf
                         <button type="submit" class="btn-outline !py-2 !px-4">Sign out</button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" class="nav-link hidden sm:inline">Sign in</a>
-                    <a href="{{ route('register') }}" class="btn-primary !py-2 !px-4">Get Started</a>
+                    <a href="{{ route('login') }}" class="nav-link hidden md:inline">Sign in</a>
+                    <a href="{{ route('register') }}" class="btn-primary !py-2 !px-4 hidden md:inline-flex">Get Started</a>
+                @endauth
+
+                {{-- Hamburger (mobile only) --}}
+                <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="md:hidden flex flex-col justify-center items-center w-9 h-9 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 transition-colors gap-1.5" aria-label="Open menu" aria-expanded="false">
+                    <span id="ham-1" class="block w-5 h-0.5 bg-slate-300 rounded transition-all duration-300"></span>
+                    <span id="ham-2" class="block w-5 h-0.5 bg-slate-300 rounded transition-all duration-300"></span>
+                    <span id="ham-3" class="block w-5 h-0.5 bg-slate-300 rounded transition-all duration-300"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Mobile menu drawer --}}
+    <div id="mobile-menu"
+         class="md:hidden overflow-hidden transition-all duration-300 ease-in-out"
+         style="max-height:0; opacity:0;">
+        <div class="border-t border-slate-700/60 px-4 py-4 space-y-1 bg-slate-900/98 backdrop-blur">
+            <a href="{{ route('dashboard.marketplace') }}" class="flex items-center gap-3 px-3 py-3 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+                <svg class="w-4 h-4 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                Marketplace
+            </a>
+            <a href="{{ route('terms') }}" class="flex items-center gap-3 px-3 py-3 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Terms
+            </a>
+            <a href="{{ route('privacy') }}" class="flex items-center gap-3 px-3 py-3 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                Privacy
+            </a>
+
+            <div class="border-t border-slate-700/60 pt-3 mt-3 space-y-2">
+                @auth
+                    <a href="{{ route('dashboard.index') }}" class="flex items-center gap-3 px-3 py-3 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+                        <svg class="w-4 h-4 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        Dashboard
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium text-left">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                            Sign out
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg border border-slate-600 hover:border-brand text-slate-300 hover:text-white transition-colors text-sm font-medium">
+                        Sign in
+                    </a>
+                    <a href="{{ route('register') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-brand hover:bg-brand-dark text-white transition-colors text-sm font-semibold">
+                        Get Started
+                    </a>
                 @endauth
             </div>
         </div>
@@ -282,6 +333,49 @@
 
 @stack('scripts')
 <script>
+// ── Mobile menu toggle ──
+function toggleMobileMenu() {
+    var menu = document.getElementById('mobile-menu');
+    var btn  = document.getElementById('mobile-menu-btn');
+    var h1   = document.getElementById('ham-1');
+    var h2   = document.getElementById('ham-2');
+    var h3   = document.getElementById('ham-3');
+    var open = menu.style.maxHeight !== '0px' && menu.style.maxHeight !== '';
+
+    if (open) {
+        menu.style.maxHeight = '0';
+        menu.style.opacity   = '0';
+        btn.setAttribute('aria-expanded', 'false');
+        // Reset bars
+        h1.style.transform = '';
+        h2.style.opacity   = '1';
+        h3.style.transform = '';
+    } else {
+        menu.style.maxHeight = menu.scrollHeight + 'px';
+        menu.style.opacity   = '1';
+        btn.setAttribute('aria-expanded', 'true');
+        // Animate to X
+        h1.style.transform = 'translateY(8px) rotate(45deg)';
+        h2.style.opacity   = '0';
+        h3.style.transform = 'translateY(-8px) rotate(-45deg)';
+    }
+}
+// Close mobile menu on resize to desktop
+window.addEventListener('resize', function() {
+    if (window.innerWidth >= 768) {
+        var menu = document.getElementById('mobile-menu');
+        var btn  = document.getElementById('mobile-menu-btn');
+        if (menu) { menu.style.maxHeight = '0'; menu.style.opacity = '0'; }
+        if (btn)  { btn.setAttribute('aria-expanded', 'false'); }
+        var h1 = document.getElementById('ham-1');
+        var h2 = document.getElementById('ham-2');
+        var h3 = document.getElementById('ham-3');
+        if (h1) h1.style.transform = '';
+        if (h2) h2.style.opacity   = '1';
+        if (h3) h3.style.transform = '';
+    }
+});
+
 // ── Theme toggle ──
 function applyThemeIcons(theme) {
     var sun  = document.getElementById('icon-sun');
