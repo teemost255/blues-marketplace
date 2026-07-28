@@ -5,8 +5,8 @@
 <div class="min-h-[80vh] flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-md">
         <div class="text-center mb-8">
-            <div class="w-12 h-12 bg-brand rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <div class="flex justify-center mb-4">
+                <img src="/images/logo.jpeg" alt="Blues Marketplace" class="h-16 w-auto">
             </div>
             <h1 class="text-2xl font-bold text-white">Welcome back</h1>
             <p class="text-slate-400 text-sm mt-1">Sign in to your BluesMarketplace account</p>
