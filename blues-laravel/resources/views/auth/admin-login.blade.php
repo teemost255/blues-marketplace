@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Sign In — Blues Marketplace</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-slate-900 text-white">
@@ -11,8 +12,7 @@
     {{-- Left panel --}}
     <div class="hidden md:flex flex-col justify-between p-12 bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900">
         <div class="flex items-center gap-2 font-semibold text-white">
-            <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-            Blues Marketplace Admin
+            <img src="/images/logo.jpeg" alt="Blues Marketplace" class="h-8 w-auto">
         </div>
         <div>
             <h2 class="text-3xl font-bold leading-tight">Admin portal.</h2>
@@ -24,8 +24,8 @@
     {{-- Right panel --}}
     <div class="flex items-center justify-center p-6 bg-slate-900">
         <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-xl">
-            <div class="flex items-center gap-2 mb-1">
-                <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            <div class="flex items-center gap-3 mb-1">
+                <img src="/images/logo.jpeg" alt="Blues Marketplace" class="h-10 w-auto">
                 <h1 class="text-2xl font-bold">Admin sign in</h1>
             </div>
             <p class="text-sm text-slate-400 mb-6">Enter your admin credentials to access the dashboard.</p>
