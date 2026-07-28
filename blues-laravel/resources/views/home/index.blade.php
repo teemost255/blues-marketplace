@@ -161,31 +161,6 @@
     </div>
 </section>
 
-{{-- ═══════════════════════════════════════════════════════
-     ANIMATED STATS
-═══════════════════════════════════════════════════════ --}}
-<section class="bg-slate-800 border-y border-slate-700 relative overflow-hidden" id="stats-section">
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(14,165,233,0.06),transparent_70%)]"></div>
-    <div class="relative max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-0 divide-x divide-slate-700 text-center">
-        @php
-        $statItems = [
-            ['val' => $stats['listings'],   'label' => 'Active Listings',    'suffix' => '+', 'icon' => 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10', 'color' => 'text-brand'],
-            ['val' => $stats['users'],      'label' => 'Happy Customers',    'suffix' => '+', 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', 'color' => 'text-purple-400'],
-            ['val' => $stats['sales'],      'label' => 'Completed Sales',    'suffix' => '+', 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', 'color' => 'text-green-400'],
-            ['val' => $stats['categories'], 'label' => 'Account Categories', 'suffix' => '',  'icon' => 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z', 'color' => 'text-pink-400'],
-        ];
-        @endphp
-        @foreach($statItems as $i => $s)
-        <div class="px-6 py-4 reveal" style="transition-delay:{{ $i * 100 }}ms">
-            <div class="flex justify-center mb-2">
-                <svg class="w-5 h-5 {{ $s['color'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $s['icon'] }}"/></svg>
-            </div>
-            <p class="text-3xl font-extrabold text-white stat-count" data-target="{{ $s['val'] }}">0</p>
-            <p class="text-xs text-slate-400 mt-1 font-medium uppercase tracking-wider">{{ $s['label'] }}</p>
-        </div>
-        @endforeach
-    </div>
-</section>
 
 {{-- ═══════════════════════════════════════════════════════
      MARQUEE — Platform names
