@@ -4,14 +4,14 @@ namespace App\Services;
 use App\Models\Setting;
 use Illuminate\Support\Facades\{Http, Log, Cache};
 
-class SujanDepartmentService
+class SurePlusLogsService
 {
-    private const BASE_URL = 'https://api.sujandepartment.com';
+    private const BASE_URL = 'https://api.surepluglogs.com';
     private const CACHE_TTL = 300; // 5 minutes
 
     private function apiKey(): string
     {
-        return Setting::get('sujan_api_key', '');
+        return Setting::get('sureplus_api_key', '');
     }
 
     public function isConfigured(): bool
@@ -38,7 +38,7 @@ class SujanDepartmentService
         }
 
         // Fetch the product list (5-min cache for structure)
-        $products = Cache::remember('sujan_products', self::CACHE_TTL, function () {
+        $products = Cache::remember('sureplus_products', self::CACHE_TTL, function () {
             try {
                 $response = $this->http()->get(self::BASE_URL . '/reseller/v1/products');
                 if ($response->successful()) {
@@ -47,9 +47,9 @@ class SujanDepartmentService
                     // Normalise every product so all scalar fields are strings/numbers
                     return array_values(array_map([$this, 'normaliseProduct'], $raw));
                 }
-                Log::warning('SujanDepartment: products fetch failed', ['status' => $response->status()]);
+                Log::warning('SurePlusLogs: products fetch failed', ['status' => $response->status()]);
             } catch (\Throwable $e) {
-                Log::error('SujanDepartment: products exception', ['error' => $e->getMessage()]);
+                Log::error('SurePlusLogs: products exception', ['error' => $e->getMessage()]);
             }
             return [];
         });
@@ -115,7 +115,7 @@ class SujanDepartmentService
         $missing  = [];
         foreach ($products as $product) {
             $pid    = (int) ($product['id'] ?? 0);
-            $cached = Cache::get("sujan_stock_{$pid}");
+            $cached = Cache::get("sureplus_stock_{$pid}");
             if ($cached !== null) {
                 $stockMap[$pid] = (int) $cached;
             } else {
@@ -127,7 +127,7 @@ class SujanDepartmentService
         foreach ($missing as $pid) {
             $stock = $this->fetchStockForProduct($pid);
             if ($stock !== null) {
-                Cache::put("sujan_stock_{$pid}", $stock, 60);
+                Cache::put("sureplus_stock_{$pid}", $stock, 60);
                 $stockMap[$pid] = $stock;
             }
         }
@@ -161,7 +161,7 @@ class SujanDepartmentService
                 ->timeout(10)
                 ->get(self::BASE_URL . "/reseller/v1/products/{$pid}/stock");
 
-            Log::info("SujanDepartment [stock/{$pid}] HTTP {$res->status()}: " . $res->body());
+            Log::info("SurePlusLogs [stock/{$pid}] HTTP {$res->status()}: " . $res->body());
 
             if (!$res->successful()) {
                 return null;
@@ -186,11 +186,11 @@ class SujanDepartmentService
                 }
             }
 
-            Log::warning("SujanDepartment [stock/{$pid}] 200 but no stock key found. Body: {$body}");
+            Log::warning("SurePlusLogs [stock/{$pid}] 200 but no stock key found. Body: {$body}");
             return null;
 
         } catch (\Throwable $e) {
-            Log::error("SujanDepartment [stock/{$pid}] exception: " . $e->getMessage());
+            Log::error("SurePlusLogs [stock/{$pid}] exception: " . $e->getMessage());
             return null;
         }
     }
@@ -202,7 +202,7 @@ class SujanDepartmentService
     {
         $stock = $this->fetchStockForProduct($productId);
         if ($stock !== null) {
-            Cache::put("sujan_stock_{$productId}", $stock, 60);
+            Cache::put("sureplus_stock_{$productId}", $stock, 60);
         }
         return $stock;
     }
@@ -223,7 +223,7 @@ class SujanDepartmentService
                 return (float) ($data['balance'] ?? $data['data']['balance'] ?? 0);
             }
         } catch (\Throwable $e) {
-            Log::error('SujanDepartment: balance exception', ['error' => $e->getMessage()]);
+            Log::error('SurePlusLogs: balance exception', ['error' => $e->getMessage()]);
         }
         return null;
     }
@@ -253,20 +253,20 @@ class SujanDepartmentService
 
                 if ($credentials) {
                     // Bust the products cache so stock updates reflect quickly
-                    Cache::forget('sujan_products');
+                    Cache::forget('sureplus_products');
                     return ['success' => true, 'credentials' => $credentials, 'order_id' => $payload['id'] ?? $payload['order_id'] ?? null];
                 }
 
-                Log::warning('SujanDepartment: order succeeded but no credentials', ['response' => $data]);
+                Log::warning('SurePlusLogs: order succeeded but no credentials', ['response' => $data]);
                 return ['success' => false, 'message' => 'Order placed but credentials were not returned. Contact support.'];
             }
 
             $error = $response->json('message') ?? $response->json('error') ?? 'Order failed.';
-            Log::error('SujanDepartment: order failed', ['status' => $response->status(), 'body' => $response->body()]);
+            Log::error('SurePlusLogs: order failed', ['status' => $response->status(), 'body' => $response->body()]);
             return ['success' => false, 'message' => $error];
 
         } catch (\Throwable $e) {
-            Log::error('SujanDepartment: order exception', ['error' => $e->getMessage()]);
+            Log::error('SurePlusLogs: order exception', ['error' => $e->getMessage()]);
             return ['success' => false, 'message' => 'Could not reach the catalog API. Please try again.'];
         }
     }
@@ -276,10 +276,10 @@ class SujanDepartmentService
      */
     public function clearCache(?array $productIds = null): void
     {
-        Cache::forget('sujan_products');
+        Cache::forget('sureplus_products');
         if ($productIds) {
             foreach ($productIds as $pid) {
-                Cache::forget("sujan_stock_{$pid}");
+                Cache::forget("sureplus_stock_{$pid}");
             }
         }
     }

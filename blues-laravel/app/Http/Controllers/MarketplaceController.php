@@ -2,7 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Listing, ListingCategory, ListingCredential, Purchase, Wallet, WalletTransaction, Wishlist, Notification};
-use App\Services\{ReferralService, SujanDepartmentService};
+use App\Services\{ReferralService, SurePlusLogsService};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Auth, DB, Log};
 
@@ -44,7 +44,7 @@ class MarketplaceController extends Controller
             : [];
 
         // Fetch ALL API catalog products (unfiltered — needed for category pills)
-        $sujan          = app(SujanDepartmentService::class);
+        $sujan          = app(SurePlusLogsService::class);
         $allApiProducts = $sujan->getProducts();
 
         // Apply commission markup once on the full list
@@ -252,7 +252,7 @@ class MarketplaceController extends Controller
     }
 
     /**
-     * Buy a product from the Sujan Department API catalog.
+     * Buy a product from the SurePlusLogs API catalog.
      */
     public function buyApi(Request $request, int $productId)
     {
@@ -260,7 +260,7 @@ class MarketplaceController extends Controller
             return redirect()->route('login')->with('error', 'Please log in to purchase.');
         }
 
-        $sujan = app(SujanDepartmentService::class);
+        $sujan = app(SurePlusLogsService::class);
         if (!$sujan->isConfigured()) {
             return back()->with('error', 'Catalog API is not configured. Please contact support.');
         }
@@ -319,13 +319,13 @@ class MarketplaceController extends Controller
                 ]);
             });
 
-            Log::error('Sujan API order failed', ['product_id' => $productId, 'message' => $result['message']]);
+            Log::error('SurePlusLogs API order failed', ['product_id' => $productId, 'message' => $result['message']]);
             return back()->with('error', 'Could not complete purchase: ' . $result['message']);
         }
 
         $credentials = $result['credentials'];
         $deliveryData = json_encode([
-            'source'      => 'sujan_api',
+            'source'      => 'sureplus_api',
             'product_id'  => $productId,
             'product'     => $productName,
             'credentials' => $credentials,
