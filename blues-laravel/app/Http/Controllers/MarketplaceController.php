@@ -303,8 +303,9 @@ class MarketplaceController extends Controller
             ]);
         });
 
-        // Call the API to fulfill the order
-        $result = $sujan->createOrder($productId, 1);
+        // Call the API to fulfill the order (pass product_type from product data)
+        $productType = $product['type'] ?? 'catalog';
+        $result = $sujan->createOrder($productId, 1, $productType);
 
         if (!$result['success']) {
             // Refund wallet
