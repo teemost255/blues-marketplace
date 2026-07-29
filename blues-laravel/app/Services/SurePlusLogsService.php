@@ -7,8 +7,10 @@ use Illuminate\Support\Facades\{Http, Log, Cache};
 class SurePlusLogsService
 {
     private const BASE_URL        = 'https://surepluglogs.com/api/v1/accounts';
+    private const CATEGORIES_URL  = 'https://surepluglogs.com/api/v1/accounts/categories';
     private const PURCHASE_URL    = 'https://surepluglogs.com/api/v1/advanced/purchase-account';
-    private const CACHE_TTL       = 300; // 5 minutes
+    private const CACHE_TTL       = 300;  // 5 minutes
+    private const CAT_CACHE_TTL   = 3600; // 1 hour
 
     private function apiKey(): string
     {
@@ -30,6 +32,44 @@ class SurePlusLogsService
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
+     * Fetch all API categories and return a map of [ id => name ].
+     * Results are cached for 1 hour.
+     */
+    public function getCategories(): array
+    {
+        if (!$this->isConfigured()) {
+            return [];
+        }
+
+        return Cache::remember('sureplus_categories', self::CAT_CACHE_TTL, function () {
+            try {
+                $response = $this->http()->get(self::CATEGORIES_URL, [
+                    'key' => $this->apiKey(),
+                ]);
+
+                if ($response->successful()) {
+                    $data = $response->json('data') ?? $response->json() ?? [];
+                    // Normalise into [ id => name ]
+                    $map = [];
+                    foreach ((array) $data as $cat) {
+                        $id   = $cat['id']    ?? null;
+                        $name = $cat['name']  ?? $cat['title'] ?? null;
+                        if ($id !== null && $name) {
+                            $map[(string) $id] = (string) $name;
+                        }
+                    }
+                    return $map;
+                }
+
+                Log::warning('SurePlusLogs: categories fetch failed', ['status' => $response->status()]);
+            } catch (\Throwable $e) {
+                Log::error('SurePlusLogs: getCategories exception', ['error' => $e->getMessage()]);
+            }
+            return [];
+        });
+    }
+
+    /**
      * Fetch all available products (catalog + manual) from the API.
      * Returns a flat array of normalised product objects, or [] on failure.
      * Results are cached for 5 minutes.
@@ -41,6 +81,7 @@ class SurePlusLogsService
         }
 
         return Cache::remember('sureplus_products', self::CACHE_TTL, function () {
+            $categoryMap = $this->getCategories();
             try {
                 $response = $this->http()->get(self::BASE_URL . '/products', [
                     'key' => $this->apiKey(),
@@ -52,8 +93,8 @@ class SurePlusLogsService
                     $manual  = $data['data']['manual']  ?? [];
 
                     $products = array_merge(
-                        array_map(fn($p) => $this->normaliseProduct($p, 'catalog'), $catalog),
-                        array_map(fn($p) => $this->normaliseProduct($p, 'manual'),  $manual)
+                        array_map(fn($p) => $this->normaliseProduct($p, 'catalog', $categoryMap), $catalog),
+                        array_map(fn($p) => $this->normaliseProduct($p, 'manual',  $categoryMap), $manual)
                     );
 
                     return array_values($products);
@@ -76,6 +117,7 @@ class SurePlusLogsService
             return [];
         }
 
+        $categoryMap = $this->getCategories();
         $params = ['key' => $this->apiKey(), 'search' => $search];
         if ($categoryId !== null) {
             $params['category'] = $categoryId;
@@ -90,8 +132,8 @@ class SurePlusLogsService
                 $manual  = $data['data']['manual']  ?? [];
 
                 return array_values(array_merge(
-                    array_map(fn($p) => $this->normaliseProduct($p, 'catalog'), $catalog),
-                    array_map(fn($p) => $this->normaliseProduct($p, 'manual'),  $manual)
+                    array_map(fn($p) => $this->normaliseProduct($p, 'catalog', $categoryMap), $catalog),
+                    array_map(fn($p) => $this->normaliseProduct($p, 'manual',  $categoryMap), $manual)
                 ));
             }
         } catch (\Throwable $e) {
@@ -102,20 +144,33 @@ class SurePlusLogsService
 
     /**
      * Normalise a raw API product into consistent scalar types for Blade.
+     *
+     * Category resolution order:
+     *   1. 'category' field  (string name — catalog products)
+     *   2. 'category_name'   (some API versions)
+     *   3. 'category_id' mapped through $categoryMap  (manual products)
+     *   4. raw 'category_id' string as a last resort
      */
-    private function normaliseProduct(array $p, string $type): array
+    private function normaliseProduct(array $p, string $type, array $categoryMap = []): array
     {
+        // Try to resolve a human-readable category name
+        $categoryName = (string) ($p['category'] ?? $p['category_name'] ?? '');
+        if ($categoryName === '') {
+            $categoryId = (string) ($p['category_id'] ?? '');
+            $categoryName = $categoryMap[$categoryId] ?? $categoryId;
+        }
+
         return [
-            'id'           => (int)    ($p['id']          ?? 0),
+            'id'           => (int)    ($p['id']           ?? 0),
             'type'         => $type,   // 'catalog' or 'manual'
-            'name'         => (string) ($p['title']        ?? $p['name'] ?? ''),
-            'description'  => (string) ($p['description']  ?? ''),
-            'image'        => (string) ($p['image']        ?? ''),
-            'category'     => (string) ($p['category_id']  ?? ''),  // manual products have category_id
-            'price'        => (float)  ($p['price']        ?? 0),
-            'min_quantity' => (int)    ($p['min_quantity']  ?? 1),
-            'max_quantity' => (int)    ($p['max_quantity']  ?? 1),
-            'stock'        => (int)    ($p['stock']         ?? 0),
+            'name'         => (string) ($p['title']         ?? $p['name'] ?? ''),
+            'description'  => (string) ($p['description']   ?? ''),
+            'image'        => (string) ($p['image']         ?? ''),
+            'category'     => $categoryName,
+            'price'        => (float)  ($p['price']         ?? 0),
+            'min_quantity' => (int)    ($p['min_quantity']   ?? 1),
+            'max_quantity' => (int)    ($p['max_quantity']   ?? 1),
+            'stock'        => (int)    ($p['stock']          ?? 0),
             'platform'     => '',
         ];
     }
