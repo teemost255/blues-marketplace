@@ -43,7 +43,7 @@ class MarketplaceController extends Controller
             ? Wishlist::where('user_id', Auth::id())->pluck('listing_id')->toArray()
             : [];
 
-        // Fetch ALL API catalog products (unfiltered — needed for category pills)
+        // Fetch ALL API catalog products (unfiltered — needed for category grouping)
         $sujan          = app(SurePlusLogsService::class);
         $allApiProducts = $sujan->getProducts();
 
@@ -55,16 +55,49 @@ class MarketplaceController extends Controller
         }
         unset($p);
 
-        // Extract unique API category names for the pills bar (unfiltered)
-        $apiCategoryNames = collect($allApiProducts)
-            ->pluck('category')
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values()
-            ->toArray();
+        // Normalise every API product's category to the matching local category name
+        // so they appear inside the same sections as local listings.
+        $slugKeywords = [
+            'streaming'       => ['netflix','disney','hulu','hbo','prime video','peacock','paramount','apple tv','crunchyroll','funimation','showmax','stream'],
+            'music'           => ['spotify','apple music','tidal','deezer','youtube music','soundcloud','audiomack','boomplay','music'],
+            'social-media'    => ['facebook','instagram','twitter','tiktok','snapchat','linkedin','pinterest','reddit','whatsapp','telegram','social media'],
+            'gaming'          => ['steam','playstation','xbox','roblox','pubg','fortnite','minecraft','valorant','genshin','call of duty','gaming','game'],
+            'email-accounts'  => ['gmail','outlook','yahoo','hotmail','icloud','zoho','email','mail'],
+            'vpn-privacy'     => ['nordvpn','expressvpn','surfshark','cyberghost','vpn','privacy'],
+            'education'       => ['coursera','udemy','skillshare','duolingo','masterclass','brilliant','education','learning','course'],
+            'shopping'        => ['amazon','ebay','shein','aliexpress','walmart','etsy','jumia','konga','shopping'],
+            'productivity'    => ['microsoft','adobe','canva','notion','slack','zoom','office 365','google workspace','productivity'],
+            'dating'          => ['tinder','bumble','hinge','badoo','eharmony','dating'],
+            'virtual-numbers' => ['virtual number','phone number','sms','otp','virtual sim'],
+        ];
 
-        // Now filter the products for actual display
+        foreach ($allApiProducts as &$p) {
+            $lower    = strtolower($p['category'] ?? '');
+            $resolved = null;
+
+            foreach ($slugKeywords as $slug => $keywords) {
+                foreach ($keywords as $kw) {
+                    if ($lower !== '' && str_contains($lower, $kw)) {
+                        $cat      = $categories->firstWhere('slug', $slug);
+                        $resolved = $cat?->name;
+                        break 2;
+                    }
+                }
+            }
+
+            // Fall back to a direct name / slug match
+            if (!$resolved) {
+                $direct   = $categories->first(fn($c) =>
+                    strtolower($c->name) === $lower || strtolower($c->slug) === $lower
+                );
+                $resolved = $direct?->name ?? ($p['category'] ?: 'Other');
+            }
+
+            $p['category'] = $resolved;
+        }
+        unset($p);
+
+        // Filter the products for display
         $rawProducts = $allApiProducts;
 
         // Search filter
@@ -76,29 +109,15 @@ class MarketplaceController extends Controller
             ));
         }
 
-        // Local-category filter → fuzzy-match against API category name
+        // Category filter — now a simple exact match because categories are already normalised
         if ($request->filled('category')) {
-            $catModel = $categories->firstWhere('slug', $request->category);
-            if ($catModel) {
-                $catNameLower = strtolower($catModel->name);
-                $rawProducts  = array_values(array_filter($rawProducts, fn($p) =>
-                    str_contains(strtolower($p['category'] ?? ''), $catNameLower) ||
-                    str_contains($catNameLower, strtolower($p['category'] ?? ''))
-                ));
-            } else {
-                $rawProducts = [];
-            }
+            $catModel    = $categories->firstWhere('slug', $request->category);
+            $rawProducts = $catModel
+                ? array_values(array_filter($rawProducts, fn($p) => ($p['category'] ?? '') === $catModel->name))
+                : [];
         }
 
-        // API-specific category filter (from pills for API-only categories)
-        if ($request->filled('api_category')) {
-            $apiCatFilter = $request->api_category;
-            $rawProducts  = array_values(array_filter($rawProducts, fn($p) =>
-                ($p['category'] ?? '') === $apiCatFilter
-            ));
-        }
-
-        // Group filtered products by category for display
+        // Group filtered products by (normalised) local category name
         $apiProductsByCategory = [];
         foreach ($rawProducts as $product) {
             $cat = $product['category'] ?: 'Other';
@@ -107,7 +126,7 @@ class MarketplaceController extends Controller
 
         return view('marketplace.index', compact(
             'listings', 'categories', 'wishlistIds',
-            'apiProductsByCategory', 'apiCategoryNames'
+            'apiProductsByCategory'
         ));
     }
 
