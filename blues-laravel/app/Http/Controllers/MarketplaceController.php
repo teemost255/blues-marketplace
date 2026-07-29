@@ -55,13 +55,6 @@ class MarketplaceController extends Controller
         }
         unset($p);
 
-        // Normalise every API product's category to the matching local category name.
-        // This makes API products group under the same section headers as local listings.
-        foreach ($allApiProducts as &$p) {
-            $p['category'] = $this->resolveApiCategory($p['category'] ?? '', $categories);
-        }
-        unset($p);
-
         // Extract unique API category names for the pills bar (unfiltered)
         $apiCategoryNames = collect($allApiProducts)
             ->pluck('category')
@@ -256,54 +249,6 @@ class MarketplaceController extends Controller
                 ? 'Purchase successful! Your login details are shown below.'
                 : 'Purchase successful! Check your orders for details.'
         );
-    }
-
-    /**
-     * Map an API product category name to a matching local category name.
-     * Falls back to the original API category if no local match is found.
-     */
-    private function resolveApiCategory(string $apiCategory, $localCategories): string
-    {
-        if ($apiCategory === '') {
-            return '';
-        }
-
-        $lower = strtolower($apiCategory);
-
-        // Keyword → local category slug map.
-        // Add more entries here as you discover the exact names your API returns.
-        $keywordMap = [
-            'streaming'      => ['netflix', 'disney', 'hulu', 'hbo', 'prime video', 'peacock', 'paramount', 'apple tv', 'crunchyroll', 'funimation', 'stream', 'showmax'],
-            'music'          => ['spotify', 'apple music', 'tidal', 'deezer', 'youtube music', 'soundcloud', 'audiomack', 'boomplay', 'music'],
-            'social-media'   => ['facebook', 'instagram', 'twitter', 'tiktok', 'snapchat', 'linkedin', 'pinterest', 'reddit', 'social media', 'whatsapp', 'telegram'],
-            'gaming'         => ['steam', 'playstation', 'xbox', 'roblox', 'pubg', 'fortnite', 'minecraft', 'gaming', 'game', 'valorant', 'genshin', 'call of duty'],
-            'email-accounts' => ['gmail', 'outlook', 'yahoo', 'hotmail', 'icloud', 'zoho', 'email', 'mail'],
-            'vpn-privacy'    => ['nordvpn', 'expressvpn', 'surfshark', 'cyberghost', 'vpn', 'privacy'],
-            'education'      => ['coursera', 'udemy', 'skillshare', 'linkedin learning', 'duolingo', 'masterclass', 'brilliant', 'education', 'learning', 'course'],
-            'shopping'       => ['amazon', 'ebay', 'shein', 'aliexpress', 'walmart', 'etsy', 'shopify', 'jumia', 'konga', 'shopping'],
-            'productivity'   => ['microsoft', 'adobe', 'canva', 'notion', 'slack', 'zoom', 'office 365', 'google workspace', 'productivity'],
-            'dating'         => ['tinder', 'bumble', 'hinge', 'badoo', 'eharmony', 'dating'],
-            'virtual-numbers'=> ['virtual number', 'phone number', '2nd number', 'sms', 'otp', 'virtual sim'],
-        ];
-
-        foreach ($keywordMap as $slug => $keywords) {
-            foreach ($keywords as $keyword) {
-                if (str_contains($lower, $keyword)) {
-                    $cat = $localCategories->firstWhere('slug', $slug);
-                    if ($cat) {
-                        return $cat->name; // e.g. "Streaming"
-                    }
-                }
-            }
-        }
-
-        // Also try a direct name match against local categories
-        $directMatch = $localCategories->first(function ($cat) use ($lower) {
-            return strtolower($cat->name) === $lower
-                || strtolower($cat->slug) === $lower;
-        });
-
-        return $directMatch ? $directMatch->name : $apiCategory;
     }
 
     /**
