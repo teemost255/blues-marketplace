@@ -244,6 +244,100 @@ class SurePlusLogsService
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Orders
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * List all orders (paginated).
+     * Returns ['data' => [...], 'pagination' => [...]] or [] on failure.
+     */
+    public function getOrders(int $page = 1, int $perPage = 20): array
+    {
+        if (!$this->isConfigured()) {
+            return [];
+        }
+
+        try {
+            $response = $this->http()->get(self::BASE_URL . '/orders', [
+                'key'      => $this->apiKey(),
+                'page'     => $page,
+                'per_page' => $perPage,
+            ]);
+
+            if ($response->successful()) {
+                return $response->json() ?? [];
+            }
+
+            Log::warning('SurePlusLogs: getOrders failed', ['status' => $response->status()]);
+        } catch (\Throwable $e) {
+            Log::error('SurePlusLogs: getOrders exception', ['error' => $e->getMessage()]);
+        }
+        return [];
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Accounts
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * List all delivered accounts (paginated).
+     * Returns the full API response array or [] on failure.
+     */
+    public function getAccounts(int $page = 1, int $perPage = 20): array
+    {
+        if (!$this->isConfigured()) {
+            return [];
+        }
+
+        try {
+            $response = $this->http()->get(self::BASE_URL, [
+                'key'      => $this->apiKey(),
+                'page'     => $page,
+                'per_page' => $perPage,
+            ]);
+
+            if ($response->successful()) {
+                return $response->json() ?? [];
+            }
+
+            Log::warning('SurePlusLogs: getAccounts failed', ['status' => $response->status()]);
+        } catch (\Throwable $e) {
+            Log::error('SurePlusLogs: getAccounts exception', ['error' => $e->getMessage()]);
+        }
+        return [];
+    }
+
+    /**
+     * Get a single account's details by ID.
+     * Returns the account data array or null on failure/not found.
+     */
+    public function getAccountDetails(int $id): ?array
+    {
+        if (!$this->isConfigured()) {
+            return null;
+        }
+
+        try {
+            $response = $this->http()->get(self::BASE_URL . '/' . $id, [
+                'key' => $this->apiKey(),
+            ]);
+
+            if ($response->successful()) {
+                return $response->json('data');
+            }
+
+            if ($response->status() === 404) {
+                return null;
+            }
+
+            Log::warning('SurePlusLogs: getAccountDetails failed', ['id' => $id, 'status' => $response->status()]);
+        } catch (\Throwable $e) {
+            Log::error('SurePlusLogs: getAccountDetails exception', ['error' => $e->getMessage()]);
+        }
+        return null;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Cache helpers
     // ─────────────────────────────────────────────────────────────────────────
 
