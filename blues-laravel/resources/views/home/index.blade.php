@@ -44,10 +44,22 @@
 /* ── Category card glow ─────────────────────────────────── */
 .cat-card { transition:all .3s ease; }
 .cat-card:hover { transform:translateY(-6px) scale(1.04); }
-.cat-card.fb:hover  { box-shadow:0 0 32px rgba(59,130,246,.35); }
-.cat-card.ig:hover  { box-shadow:0 0 32px rgba(236,72,153,.35); }
-.cat-card.tt:hover  { box-shadow:0 0 32px rgba(139,92,246,.35); }
-.cat-card.num:hover { box-shadow:0 0 32px rgba(16,185,129,.35); }
+.cat-card.fb:hover     { box-shadow:0 0 32px rgba(59,130,246,.35); }
+.cat-card.ig:hover     { box-shadow:0 0 32px rgba(236,72,153,.35); }
+.cat-card.tt:hover     { box-shadow:0 0 32px rgba(139,92,246,.35); }
+.cat-card.num:hover    { box-shadow:0 0 32px rgba(16,185,129,.35); }
+.cat-card.tw:hover     { box-shadow:0 0 32px rgba(14,165,233,.35); }
+.cat-card.tg:hover     { box-shadow:0 0 32px rgba(6,182,212,.35); }
+.cat-card.stream:hover { box-shadow:0 0 32px rgba(239,68,68,.35); }
+.cat-card.social:hover { box-shadow:0 0 32px rgba(99,102,241,.35); }
+.cat-card.music:hover  { box-shadow:0 0 32px rgba(167,139,250,.35); }
+.cat-card.gaming:hover { box-shadow:0 0 32px rgba(249,115,22,.35); }
+.cat-card.email:hover  { box-shadow:0 0 32px rgba(96,165,250,.35); }
+.cat-card.vpn:hover    { box-shadow:0 0 32px rgba(34,197,94,.35); }
+.cat-card.edu:hover    { box-shadow:0 0 32px rgba(234,179,8,.35); }
+.cat-card.shop:hover   { box-shadow:0 0 32px rgba(20,184,166,.35); }
+.cat-card.prod:hover   { box-shadow:0 0 32px rgba(148,163,184,.35); }
+.cat-card.date:hover   { box-shadow:0 0 32px rgba(244,63,94,.35); }
 
 /* ── Listing card ───────────────────────────────────────── */
 .listing-card { transition:all .3s ease; }
@@ -115,7 +127,7 @@
         </h1>
 
         <p class="text-xl text-slate-400 max-w-2xl mx-auto mb-10" style="animation:slide-up .7s ease .2s both">
-            Facebook · Instagram · TikTok · Twitter · Virtual Numbers —
+            Streaming · Social Media · Gaming · Music · VPN · Virtual Numbers —
             <span class="text-white font-medium">every account hand-verified, delivered in seconds.</span>
         </p>
 
@@ -159,7 +171,7 @@
 ═══════════════════════════════════════════════════════ --}}
 <div class="bg-slate-900 border-b border-slate-800 py-3 overflow-hidden">
     <div class="marquee-track select-none">
-        @foreach(array_fill(0, 2, ['Facebook Accounts','Instagram Accounts','TikTok Accounts','Twitter Accounts','Telegram Accounts','Virtual Numbers','Verified Profiles','Aged Accounts','High Followers','Business Pages','Creator Accounts','Phone Verified']) as $chunk)
+        @foreach(array_fill(0, 2, ['Streaming Accounts','Social Media','Gaming Accounts','Music Subscriptions','VPN & Privacy','Virtual Numbers','Email Accounts','Shopping Accounts','Education Platforms','Productivity Tools','Facebook Accounts','Instagram Accounts','TikTok Accounts','Twitter Accounts','Telegram Accounts','Instant Delivery']) as $chunk)
         @foreach($chunk as $item)
         <span class="inline-flex items-center gap-2 mx-8 text-slate-500 text-sm font-medium whitespace-nowrap">
             <span class="w-1.5 h-1.5 rounded-full bg-brand/60"></span>
@@ -177,24 +189,36 @@
     <div class="text-center mb-14 reveal">
         <span class="text-xs font-bold text-brand uppercase tracking-widest">What We Offer</span>
         <h2 class="text-4xl font-bold text-white mt-2 mb-3">Browse by Category</h2>
-        <p class="text-slate-400 max-w-lg mx-auto">Social Media accounts, Virtual Numbers — every account is hand-verified before listing.</p>
+        <p class="text-slate-400 max-w-lg mx-auto">Streaming, Social Media, Gaming, Virtual Numbers and more — every account is hand-verified before listing.</p>
     </div>
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
         @php
         $catData = [
-            'Facebook'       => ['cls'=>'fb',   'border'=>'border-blue-500/25',   'ring'=>'ring-blue-500/40',   'icon_bg'=>'bg-blue-500/15',   'label_color'=>'text-blue-300',   'desc'=>'Aged & new FB accounts, pages, business',    'path'=>'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z'],
-            'Instagram'      => ['cls'=>'ig',   'border'=>'border-pink-500/25',   'ring'=>'ring-pink-500/40',   'icon_bg'=>'bg-pink-500/15',   'label_color'=>'text-pink-300',   'desc'=>'High-follower & niche IG profiles',             'path'=>'M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37zm1.5-4.87h.01M6.5 19.5h11a3 3 0 003-3v-11a3 3 0 00-3-3h-11a3 3 0 00-3 3v11a3 3 0 003 3z'],
-            'TikTok'         => ['cls'=>'tt',   'border'=>'border-purple-500/25', 'ring'=>'ring-purple-500/40', 'icon_bg'=>'bg-purple-500/15', 'label_color'=>'text-purple-300', 'desc'=>'Creator & brand TikTok accounts',                'path'=>'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3'],
-            'Twitter'        => ['cls'=>'tw',   'border'=>'border-sky-500/25',    'ring'=>'ring-sky-500/40',    'icon_bg'=>'bg-sky-500/15',    'label_color'=>'text-sky-300',    'desc'=>'Aged Twitter/X accounts with followers',       'path'=>'M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z'],
-            'Telegram'       => ['cls'=>'tg',   'border'=>'border-cyan-500/25',   'ring'=>'ring-cyan-500/40',   'icon_bg'=>'bg-cyan-500/15',   'label_color'=>'text-cyan-300',   'desc'=>'Telegram accounts & channel memberships',      'path'=>'M21.198 2.433a2.242 2.242 0 00-1.022.215l-16.5 7.5a2.25 2.25 0 00.126 4.238l3.218 1.07 1.675 5.025a.75.75 0 001.373.142l2.116-3.527 4.29 3.206a2.25 2.25 0 003.496-1.39l2.997-15a2.25 2.25 0 00-2.769-2.479z'],
-            'Virtual Numbers'=> ['cls'=>'num',  'border'=>'border-emerald-500/25','ring'=>'ring-emerald-500/40','icon_bg'=>'bg-emerald-500/15','label_color'=>'text-emerald-300','desc'=>'Virtual & physical second phone numbers',       'path'=>'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z'],
+            // Platform-specific
+            'Facebook'        => ['cls'=>'fb',     'border'=>'border-blue-500/25',    'ring'=>'ring-blue-500/40',    'icon_bg'=>'bg-blue-500/15',    'label_color'=>'text-blue-300',    'desc'=>'Aged & new FB accounts, pages & business',     'path'=>'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z'],
+            'Instagram'       => ['cls'=>'ig',     'border'=>'border-pink-500/25',    'ring'=>'ring-pink-500/40',    'icon_bg'=>'bg-pink-500/15',    'label_color'=>'text-pink-300',    'desc'=>'High-follower & niche IG profiles',              'path'=>'M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37zm1.5-4.87h.01M6.5 19.5h11a3 3 0 003-3v-11a3 3 0 00-3-3h-11a3 3 0 00-3 3v11a3 3 0 003 3z'],
+            'TikTok'          => ['cls'=>'tt',     'border'=>'border-purple-500/25',  'ring'=>'ring-purple-500/40',  'icon_bg'=>'bg-purple-500/15',  'label_color'=>'text-purple-300',  'desc'=>'Creator & brand TikTok accounts',                'path'=>'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3'],
+            'Twitter'         => ['cls'=>'tw',     'border'=>'border-sky-500/25',     'ring'=>'ring-sky-500/40',     'icon_bg'=>'bg-sky-500/15',     'label_color'=>'text-sky-300',     'desc'=>'Aged Twitter/X accounts with followers',        'path'=>'M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z'],
+            'Telegram'        => ['cls'=>'tg',     'border'=>'border-cyan-500/25',    'ring'=>'ring-cyan-500/40',    'icon_bg'=>'bg-cyan-500/15',    'label_color'=>'text-cyan-300',    'desc'=>'Telegram accounts & channel memberships',       'path'=>'M21.198 2.433a2.242 2.242 0 00-1.022.215l-16.5 7.5a2.25 2.25 0 00.126 4.238l3.218 1.07 1.675 5.025a.75.75 0 001.373.142l2.116-3.527 4.29 3.206a2.25 2.25 0 003.496-1.39l2.997-15a2.25 2.25 0 00-2.769-2.479z'],
+            'Virtual Numbers' => ['cls'=>'num',    'border'=>'border-emerald-500/25', 'ring'=>'ring-emerald-500/40', 'icon_bg'=>'bg-emerald-500/15', 'label_color'=>'text-emerald-300', 'desc'=>'Virtual & physical second phone numbers',        'path'=>'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z'],
+            // Broad categories
+            'Streaming'       => ['cls'=>'stream', 'border'=>'border-red-500/25',     'ring'=>'ring-red-500/40',     'icon_bg'=>'bg-red-500/15',     'label_color'=>'text-red-300',     'desc'=>'Netflix, Disney+, Prime Video & more',           'path'=>'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664zM21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
+            'Social Media'    => ['cls'=>'social', 'border'=>'border-indigo-500/25',  'ring'=>'ring-indigo-500/40',  'icon_bg'=>'bg-indigo-500/15',  'label_color'=>'text-indigo-300',  'desc'=>'Facebook, Instagram, TikTok, Twitter & more',    'path'=>'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'],
+            'Music'           => ['cls'=>'music',  'border'=>'border-violet-500/25',  'ring'=>'ring-violet-500/40',  'icon_bg'=>'bg-violet-500/15',  'label_color'=>'text-violet-300',  'desc'=>'Spotify, Apple Music, Tidal & more',             'path'=>'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3'],
+            'Gaming'          => ['cls'=>'gaming', 'border'=>'border-orange-500/25',  'ring'=>'ring-orange-500/40',  'icon_bg'=>'bg-orange-500/15',  'label_color'=>'text-orange-300',  'desc'=>'Steam, PlayStation, Xbox, Roblox & more',        'path'=>'M15.5 8.5a1 1 0 11-2 0 1 1 0 012 0zM10.5 8.5a1 1 0 11-2 0 1 1 0 012 0zM12 15.5a1 1 0 110-2 1 1 0 010 2zm-3-5a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2zM3 12a9 9 0 1018 0 9 9 0 00-18 0z'],
+            'Email Accounts'  => ['cls'=>'email',  'border'=>'border-blue-400/25',    'ring'=>'ring-blue-400/40',    'icon_bg'=>'bg-blue-400/15',    'label_color'=>'text-blue-200',    'desc'=>'Gmail, Outlook, Yahoo & other providers',        'path'=>'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'],
+            'VPN & Privacy'   => ['cls'=>'vpn',    'border'=>'border-green-500/25',   'ring'=>'ring-green-500/40',   'icon_bg'=>'bg-green-500/15',   'label_color'=>'text-green-300',   'desc'=>'NordVPN, ExpressVPN, Surfshark & more',          'path'=>'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'],
+            'Education'       => ['cls'=>'edu',    'border'=>'border-yellow-500/25',  'ring'=>'ring-yellow-500/40',  'icon_bg'=>'bg-yellow-500/15',  'label_color'=>'text-yellow-300',  'desc'=>'Coursera, Udemy, Skillshare, Duolingo & more',   'path'=>'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'],
+            'Shopping'        => ['cls'=>'shop',   'border'=>'border-teal-500/25',    'ring'=>'ring-teal-500/40',    'icon_bg'=>'bg-teal-500/15',    'label_color'=>'text-teal-300',    'desc'=>'Amazon, eBay, Shein, AliExpress & more',         'path'=>'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z'],
+            'Productivity'    => ['cls'=>'prod',   'border'=>'border-slate-400/25',   'ring'=>'ring-slate-400/40',   'icon_bg'=>'bg-slate-400/15',   'label_color'=>'text-slate-300',   'desc'=>'Microsoft 365, Adobe, Canva Pro & more',         'path'=>'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'],
+            'Dating'          => ['cls'=>'date',   'border'=>'border-rose-500/25',    'ring'=>'ring-rose-500/40',    'icon_bg'=>'bg-rose-500/15',    'label_color'=>'text-rose-300',    'desc'=>'Tinder Gold, Bumble Premium & more',             'path'=>'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z'],
         ];
         @endphp
-        @foreach($categories as $i => $cat)
-        @php $d = $catData[$cat->name] ?? ['cls'=>'other','border'=>'border-slate-600','ring'=>'ring-brand/40','icon_bg'=>'bg-brand/10','label_color'=>'text-brand','desc'=>'Digital accounts','path'=>'M4 6h16M4 12h16M4 18h16']; @endphp
-        <a href="{{ route('dashboard.marketplace') }}?category={{ urlencode($cat->name) }}"
+        @foreach($categories->filter(fn($c) => $c->slug) as $i => $cat)
+        @php $d = $catData[$cat->name] ?? ['cls'=>'other','border'=>'border-slate-600/50','ring'=>'ring-brand/40','icon_bg'=>'bg-brand/10','label_color'=>'text-brand','desc'=>'Digital accounts','path'=>'M4 6h16M4 12h16M4 18h16']; @endphp
+        <a href="{{ route('dashboard.marketplace') }}?category={{ $cat->slug }}"
            class="cat-card {{ $d['cls'] }} relative bg-slate-800/80 border {{ $d['border'] }} hover:ring-2 {{ $d['ring'] }} rounded-2xl p-6 flex flex-col items-center gap-3 overflow-hidden reveal"
-           style="transition-delay:{{ $i * 80 }}ms">
+           style="transition-delay:{{ $i * 60 }}ms">
             {{-- Glow bg --}}
             <div class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-white/2 to-transparent rounded-2xl transition-opacity"></div>
             {{-- Icon --}}
