@@ -309,16 +309,40 @@ class MarketplaceController extends Controller
             return back()->with('error', 'Insufficient wallet balance. Please top up your wallet.');
         }
 
-        // Deduct wallet first, then call API — refund on failure
-        DB::transaction(function () use ($user, $wallet, $price, $productId, $productName, &$purchase) {
+        // Record a pending attempt before calling the supplier. If the connection
+        // drops after Sameeha processes the order, this record prevents a lost,
+        // untraceable charge and avoids an unsafe automatic refund.
+        $purchaseReference = 'CAT-' . $productId . '-' . \Illuminate\Support\Str::uuid();
+        $deliveryData = [
+            'source' => 'sameeha_api',
+            'product_id' => $productId,
+            'product' => $productName,
+            'currency' => $product['currency'] ?? 'NGN',
+            'quantity' => 1,
+            'fulfillment_state' => 'requesting',
+            'purchase_reference' => $purchaseReference,
+        ];
+
+        DB::transaction(function () use ($user, $wallet, $price, $productId, $productName, $purchaseReference, $deliveryData, &$purchase) {
             $wallet->decrement('balance', $price);
 
             WalletTransaction::create([
                 'user_id'     => $user->id,
                 'amount'      => -$price,
                 'type'        => 'purchase',
-                'reference'   => 'CAT-' . $productId . '-' . time(),
+                'reference'   => $purchaseReference,
                 'description' => 'Purchase: ' . $productName,
+            ]);
+
+            $purchase = Purchase::create([
+                'user_id'          => $user->id,
+                'listing_id'       => null,
+                'amount'           => $price,
+                'status'           => 'pending',
+                'source'           => 'api',
+                'api_product_id'   => $productId,
+                'api_product_name' => $productName,
+                'delivery_data'    => json_encode($deliveryData),
             ]);
         });
 
@@ -326,43 +350,78 @@ class MarketplaceController extends Controller
         $result = $sameeha->createOrder($productId, 1);
 
         if (!$result['success']) {
-            // Refund wallet
-            DB::transaction(function () use ($user, $wallet, $price, $productName) {
+            if ($result['requires_review'] ?? false) {
+                $deliveryData = array_merge($deliveryData, [
+                    'fulfillment_state' => 'needs_review',
+                    'provider_order_id' => $result['order_id'] ?? null,
+                    'provider_charge' => $result['charge'] ?? null,
+                    'provider_http_status' => $result['http_status'] ?? null,
+                    'provider_response_fields' => $result['response_fields'] ?? [],
+                ]);
+                if (!empty($result['credentials'])) {
+                    $deliveryData['credentials'] = $result['credentials'];
+                }
+                $purchase->update(['delivery_data' => json_encode($deliveryData)]);
+
+                Notification::create([
+                    'user_id' => $user->id,
+                    'title'   => 'Purchase under review',
+                    'message' => 'Your purchase of "' . $productName . '" is being checked with the supplier. Do not place the same order again yet.',
+                    'type'    => 'warning',
+                ]);
+
+                Log::error('Sameeha API order requires review', [
+                    'purchase_id' => $purchase->id,
+                    'user_id' => $user->id,
+                    'product_id' => $productId,
+                    'provider_order_id' => $result['order_id'] ?? null,
+                    'provider_http_status' => $result['http_status'] ?? null,
+                    'provider_response_fields' => $result['response_fields'] ?? [],
+                ]);
+
+                return redirect()->route('dashboard.orders')->with(
+                    'error',
+                    'The supplier may have processed this order, but did not return usable credentials. It is recorded for review. Do not buy it again yet.'
+                );
+            }
+
+            // Refund only when the provider returned a definite rejection.
+            DB::transaction(function () use ($user, $wallet, $price, $productName, $purchase, $deliveryData) {
                 $wallet->increment('balance', $price);
                 WalletTransaction::create([
                     'user_id'     => $user->id,
                     'amount'      => $price,
                     'type'        => 'refund',
-                    'reference'   => 'REFUND-CAT-' . time(),
+                    'reference'   => 'REFUND-CAT-' . $purchase->id . '-' . \Illuminate\Support\Str::uuid(),
                     'description' => 'Refund: ' . $productName . ' (API error)',
+                ]);
+                $purchase->update([
+                    'status' => 'refunded',
+                    'delivery_data' => json_encode(array_merge($deliveryData, [
+                        'fulfillment_state' => 'refunded',
+                    ])),
                 ]);
             });
 
-            Log::error('Sameeha API order failed', ['product_id' => $productId, 'message' => $result['message']]);
+            Log::error('Sameeha API order rejected', [
+                'purchase_id' => $purchase->id,
+                'product_id' => $productId,
+                'message' => $result['message'],
+                'provider_http_status' => $result['http_status'] ?? null,
+            ]);
             return back()->with('error', 'Could not complete purchase: ' . $result['message']);
         }
 
         $credentials = $result['credentials'];
-        $deliveryData = json_encode([
-            'source'      => 'sameeha_api',
-            'product_id'  => $productId,
-            'product'     => $productName,
-            'credentials' => $credentials,
-            'order_id'    => $result['order_id'] ?? null,
-            'provider_charge' => $result['charge'] ?? null,
-            'currency'    => $product['currency'] ?? 'NGN',
-            'quantity'    => 1,
-        ]);
-
-        $purchase = Purchase::create([
-            'user_id'          => $user->id,
-            'listing_id'       => null,
-            'amount'           => $price,
-            'status'           => 'completed',
-            'source'           => 'api',
-            'api_product_id'   => $productId,
-            'api_product_name' => $productName,
-            'delivery_data'    => $deliveryData,
+        $purchase->update([
+            'status' => 'completed',
+            'delivery_data' => json_encode(array_merge($deliveryData, [
+                'fulfillment_state' => 'delivered',
+                'credentials' => $credentials,
+                'provider_order_id' => $result['order_id'] ?? null,
+                'provider_charge' => $result['charge'] ?? null,
+                'provider_http_status' => $result['http_status'] ?? null,
+            ])),
         ]);
 
         Notification::create([

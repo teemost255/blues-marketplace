@@ -29,6 +29,7 @@ class ApiOrdersController extends Controller
                 'quantity' => $delivery['quantity'] ?? 1,
                 'unit_price' => (float) $purchase->amount,
                 'total_price' => (float) $purchase->amount,
+                'status' => $purchase->status,
                 'created_at' => $purchase->created_at,
             ];
         })->values()->all();
@@ -39,8 +40,9 @@ class ApiOrdersController extends Controller
             return [
                 'id' => $purchase->id,
                 'product_label' => $purchase->api_product_name ?? $delivery['product'] ?? 'Catalog Product',
-                'order_id' => $delivery['order_id'] ?? $purchase->id,
-                'is_sold' => true,
+                'order_id' => $delivery['provider_order_id'] ?? $delivery['order_id'] ?? $purchase->id,
+                'status' => $purchase->status,
+                'is_sold' => $purchase->status === 'completed' && !empty($delivery['credentials']),
                 'order_total' => (float) $purchase->amount,
                 'created_at' => $purchase->created_at,
                 'credentials' => $delivery['credentials'] ?? '',

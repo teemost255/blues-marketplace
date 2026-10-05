@@ -37,12 +37,20 @@
             </tr></thead>
             <tbody>
             @forelse($orders as $order)
+                @php
+                    $orderDelivery = json_decode((string) $order->delivery_data, true) ?: [];
+                    $providerReview = $order->source === 'api'
+                        && in_array($orderDelivery['fulfillment_state'] ?? '', ['requesting', 'needs_review'], true);
+                @endphp
                 <tr class="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
                     <td class="px-6 py-4">
                         <p class="text-white font-medium">
                             {{ $order->listing?->title ?? $order->api_product_name ?? 'Deleted listing' }}
                         </p>
                         <p class="text-xs text-slate-500 mt-0.5">{{ $order->listing?->category ?? '' }}</p>
+                        @if($providerReview)
+                            <p class="text-xs text-yellow-300 mt-1">Supplier fulfillment is being checked. Do not place this order again yet; contact support if it does not update.</p>
+                        @endif
                     </td>
                     <td class="px-6 py-4 text-white font-semibold">₦{{ number_format($order->amount, 2) }}</td>
                     <td class="px-6 py-4">
@@ -109,6 +117,9 @@
 <div class="md:hidden space-y-3">
     @forelse($orders as $order)
     @php
+        $orderDelivery = json_decode((string) $order->delivery_data, true) ?: [];
+        $providerReview = $order->source === 'api'
+            && in_array($orderDelivery['fulfillment_state'] ?? '', ['requesting', 'needs_review'], true);
         $mbadge = match($order->status) {
             'completed' => 'bg-green-900/50 text-green-400 border-green-700/50',
             'pending'   => 'bg-yellow-900/50 text-yellow-400 border-yellow-700/50',
@@ -133,6 +144,9 @@
             <span class="text-lg font-bold text-white">₦{{ number_format($order->amount, 2) }}</span>
             <span class="text-xs text-slate-400">{{ $order->created_at->format('M j, Y') }}</span>
         </div>
+        @if($providerReview)
+            <p class="text-xs text-yellow-300 mb-3">Supplier fulfillment is being checked. Do not place this order again yet; contact support if it does not update.</p>
+        @endif
 
         {{-- Actions --}}
         <div class="flex items-center gap-2 pt-3 border-t border-slate-700">

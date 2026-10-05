@@ -60,6 +60,7 @@
                 <th class="px-5 py-3 text-left">Order ID</th>
                 <th class="px-5 py-3 text-left">Product</th>
                 <th class="px-5 py-3 text-left">Source</th>
+                <th class="px-5 py-3 text-left">Fulfillment</th>
                 <th class="px-5 py-3 text-left">Qty</th>
                 <th class="px-5 py-3 text-left">Unit Price</th>
                 <th class="px-5 py-3 text-left">Total</th>
@@ -76,6 +77,23 @@
                             {{ ucfirst($order['source'] ?? '—') }}
                         </span>
                     </td>
+                    <td class="px-5 py-3">
+                        @php
+                            $fulfillmentClass = match($order['status'] ?? '') {
+                                'completed' => 'bg-green-900/50 text-green-400',
+                                'pending' => 'bg-yellow-900/50 text-yellow-300',
+                                'refunded' => 'bg-blue-900/50 text-blue-300',
+                                default => 'bg-slate-700 text-slate-300',
+                            };
+                            $fulfillmentLabel = match($order['status'] ?? '') {
+                                'completed' => 'Delivered',
+                                'pending' => 'Needs review',
+                                'refunded' => 'Refunded',
+                                default => ucfirst($order['status'] ?? 'Unknown'),
+                            };
+                        @endphp
+                        <span class="px-2 py-0.5 rounded-full text-xs {{ $fulfillmentClass }}">{{ $fulfillmentLabel }}</span>
+                    </td>
                     <td class="px-5 py-3 text-slate-300">{{ $order['quantity'] ?? '—' }}</td>
                     <td class="px-5 py-3 text-slate-300">₦{{ number_format($order['unit_price'] ?? 0, 2) }}</td>
                     <td class="px-5 py-3 text-green-400 font-semibold">₦{{ number_format($order['total_price'] ?? 0, 2) }}</td>
@@ -88,7 +106,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="8" class="px-5 py-10 text-center text-slate-500">
+                <tr><td colspan="9" class="px-5 py-10 text-center text-slate-500">
                     @if(!$configured) API key not configured. @else No marketplace API purchases found. @endif
                 </td></tr>
             @endforelse
@@ -133,17 +151,23 @@
                     <td class="px-5 py-3 text-white max-w-[180px] truncate">{{ $acc['product_label'] ?? '—' }}</td>
                     <td class="px-5 py-3 text-slate-300 font-mono text-xs">#{{ $acc['order_id'] ?? '—' }}</td>
                     <td class="px-5 py-3">
-                        <span class="px-2 py-0.5 rounded-full text-xs {{ ($acc['is_sold'] ?? false) ? 'bg-green-900/50 text-green-400' : 'bg-slate-700 text-slate-400' }}">
-                            {{ ($acc['is_sold'] ?? false) ? 'Sold' : 'Unsold' }}
+                        <span class="px-2 py-0.5 rounded-full text-xs {{ ($acc['is_sold'] ?? false) ? 'bg-green-900/50 text-green-400' : (($acc['status'] ?? '') === 'pending' ? 'bg-yellow-900/50 text-yellow-300' : 'bg-slate-700 text-slate-400') }}">
+                            {{ ($acc['is_sold'] ?? false) ? 'Delivered' : (($acc['status'] ?? '') === 'pending' ? 'Needs review' : ucfirst($acc['status'] ?? 'Unsold')) }}
                         </span>
                     </td>
                     <td class="px-5 py-3 text-slate-300">₦{{ number_format($acc['order_total'] ?? 0, 2) }}</td>
                     <td class="px-5 py-3 text-slate-400 text-xs">{{ isset($acc['created_at']) ? \Carbon\Carbon::parse($acc['created_at'])->format('M j, Y H:i') : '—' }}</td>
                     <td class="px-5 py-3">
-                        <button onclick="viewCredentials({{ $acc['id'] }}, {{ json_encode($acc['credentials'] ?? '') }})"
-                            class="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors">
-                            View
-                        </button>
+                        @if(!empty($acc['credentials']))
+                            <button onclick="viewCredentials({{ $acc['id'] }}, {{ json_encode($acc['credentials']) }})"
+                                class="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors">
+                                View
+                            </button>
+                        @elseif(($acc['status'] ?? '') === 'pending')
+                            <span class="text-xs text-yellow-300">Awaiting review</span>
+                        @else
+                            <span class="text-xs text-slate-500">No credentials</span>
+                        @endif
                     </td>
                 </tr>
             @empty

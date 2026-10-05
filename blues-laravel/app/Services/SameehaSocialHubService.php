@@ -165,7 +165,7 @@ class SameehaSocialHubService
     /**
      * Purchase product keys. Sameeha returns the keys once in the purchase response.
      *
-     * @return array{success: bool, credentials?: string, order_id?: int|string|null, charge?: string|null, message?: string}
+     * @return array{success: bool, requires_review?: bool, credentials?: string, order_id?: int|string|null, charge?: string|null, http_status?: int|null, response_fields?: array, message?: string}
      */
     public function createOrder(int $productId, int $quantity = 1): array
     {
@@ -179,10 +179,16 @@ class SameehaSocialHubService
                 'quantity' => $quantity,
             ]);
             $payload = $response->json();
+            $status = $response->status();
+            $payload = is_array($payload) ? $payload : [];
+            $responseFields = array_keys($payload);
+            $dataFields = is_array($payload['data'] ?? null) ? array_keys($payload['data']) : [];
+            $orderId = $this->responseValue($payload, ['order_id', 'id']);
+            $charge = $this->responseValue($payload, ['charge', 'amount', 'cost']);
 
-            if (!$response->successful() || !is_array($payload)) {
-                $error = is_array($payload) ? (string) ($payload['error'] ?? '') : '';
-                $message = match ($response->status()) {
+            if (!$response->successful()) {
+                $error = (string) ($payload['error'] ?? '');
+                $message = match ($status) {
                     401 => 'The catalog provider rejected its API key. Please contact support.',
                     402 => 'The supplier wallet has insufficient funds. Please try again later.',
                     404 => 'This product is no longer available.',
@@ -190,58 +196,167 @@ class SameehaSocialHubService
                     429 => 'The catalog provider is busy. Please try again shortly.',
                     default => (string) ($payload['detail'] ?? 'The catalog provider could not complete this purchase.'),
                 };
+                $requiresReview = $status >= 500 || in_array($status, [408, 425], true) || $status < 400;
 
                 Log::warning('Sameeha product purchase failed', [
                     'product_id' => $productId,
-                    'status' => $response->status(),
+                    'status' => $status,
                     'error' => $error,
-                ]);
-                return ['success' => false, 'message' => $message];
-            }
-
-            $keys = $payload['keys'] ?? null;
-            if (!is_array($keys)) {
-                Log::error('Sameeha purchase response did not contain a keys array', [
-                    'product_id' => $productId,
-                    'status' => $response->status(),
+                    'requires_review' => $requiresReview,
+                    'response_fields' => $responseFields,
                 ]);
                 return [
                     'success' => false,
-                    'message' => 'The provider did not return product keys. Please contact support before trying again.',
-                ];
-            }
-
-            $credentials = array_values(array_filter(
-                $keys,
-                fn ($key) => is_string($key) && trim($key) !== ''
-            ));
-            if (count($credentials) < $quantity) {
-                Log::error('Sameeha purchase returned fewer keys than requested', [
-                    'product_id' => $productId,
-                    'requested_quantity' => $quantity,
-                    'returned_quantity' => count($credentials),
-                ]);
-                return [
-                    'success' => false,
-                    'message' => 'The provider returned an incomplete order. Please contact support.',
+                    'requires_review' => $requiresReview,
+                    'message' => $requiresReview
+                        ? 'The provider response is unclear. This order has been held for review; please do not purchase it again yet.'
+                        : $message,
+                    'http_status' => $status,
+                    'response_fields' => $responseFields,
+                    'order_id' => $orderId,
+                    'charge' => is_scalar($charge) ? (string) $charge : null,
                 ];
             }
 
             Cache::forget(self::PRODUCTS_CACHE_KEY);
 
+            // A successful HTTP response may mean Sameeha charged the account, even
+            // when its payload is malformed or uses a nested credentials field.
+            $credentials = $this->extractCredentials($payload);
+            if (count($credentials) < $quantity) {
+                Log::error('Sameeha purchase returned fewer keys than requested', [
+                    'product_id' => $productId,
+                    'requested_quantity' => $quantity,
+                    'returned_quantity' => count($credentials),
+                    'status' => $status,
+                    'response_fields' => $responseFields,
+                    'data_fields' => $dataFields,
+                ]);
+                return [
+                    'success' => false,
+                    'requires_review' => true,
+                    'message' => 'The provider may have processed this order but did not return usable credentials. It has been held for review; please do not purchase it again yet.',
+                    'http_status' => $status,
+                    'response_fields' => $responseFields,
+                    'order_id' => $orderId,
+                    'charge' => is_scalar($charge) ? (string) $charge : null,
+                    'credentials' => implode("\n", $credentials),
+                ];
+            }
+
             return [
                 'success' => true,
                 'credentials' => implode("\n", $credentials),
-                'order_id' => $payload['order_id'] ?? null,
-                'charge' => isset($payload['charge']) ? (string) $payload['charge'] : null,
+                'order_id' => $orderId,
+                'charge' => is_scalar($charge) ? (string) $charge : null,
+                'http_status' => $status,
             ];
         } catch (\Throwable $e) {
             Log::error('Sameeha product purchase request error', [
                 'product_id' => $productId,
                 'error' => $e->getMessage(),
             ]);
-            return ['success' => false, 'message' => 'Could not reach the catalog provider. Please try again.'];
+            return [
+                'success' => false,
+                'requires_review' => true,
+                'message' => 'The provider response is unclear. This order has been held for review; please do not purchase it again yet.',
+            ];
         }
+    }
+
+    /**
+     * Accept the documented top-level key list plus common nested/string response
+     * shapes without ever writing credential values to the application log.
+     */
+    private function extractCredentials(array $payload): array
+    {
+        $containers = [$payload];
+        foreach (['data', 'result', 'order'] as $container) {
+            if (is_array($payload[$container] ?? null)) {
+                $containers[] = $payload[$container];
+            }
+        }
+
+        foreach ($containers as $container) {
+            foreach (['keys', 'credentials', 'key', 'credential', 'account'] as $field) {
+                if (!array_key_exists($field, $container)) {
+                    continue;
+                }
+
+                $credentials = $this->normalizeCredentialValue($container[$field]);
+                if ($credentials !== []) {
+                    return $credentials;
+                }
+            }
+        }
+
+        return [];
+    }
+
+    private function normalizeCredentialValue(mixed $value): array
+    {
+        if (is_string($value)) {
+            $value = trim($value);
+            return $value === '' ? [] : [$value];
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        if (array_is_list($value)) {
+            $credentials = [];
+            foreach ($value as $item) {
+                if (is_string($item) && trim($item) !== '') {
+                    $credentials[] = trim($item);
+                } elseif (is_array($item)) {
+                    $formatted = $this->formatCredentialRecord($item);
+                    if ($formatted !== '') {
+                        $credentials[] = $formatted;
+                    }
+                }
+            }
+            return $credentials;
+        }
+
+        foreach (['keys', 'credentials', 'key', 'credential', 'value'] as $field) {
+            if (array_key_exists($field, $value)) {
+                $credentials = $this->normalizeCredentialValue($value[$field]);
+                if ($credentials !== []) {
+                    return $credentials;
+                }
+            }
+        }
+
+        $formatted = $this->formatCredentialRecord($value);
+        return $formatted === '' ? [] : [$formatted];
+    }
+
+    private function formatCredentialRecord(array $record): string
+    {
+        $lines = [];
+        foreach ($record as $label => $value) {
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                $lines[] = is_string($label)
+                    ? $label . ': ' . trim((string) $value)
+                    : trim((string) $value);
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function responseValue(array $payload, array $fields): mixed
+    {
+        foreach ([$payload, is_array($payload['data'] ?? null) ? $payload['data'] : []] as $container) {
+            foreach ($fields as $field) {
+                if (isset($container[$field]) && is_scalar($container[$field])) {
+                    return $container[$field];
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
