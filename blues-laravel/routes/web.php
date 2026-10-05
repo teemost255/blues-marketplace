@@ -223,6 +223,7 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::get('/api-orders',                          [ApiOrdersController::class, 'index'])->name('api-orders');
     Route::get('/api-orders/account/{id}',             [ApiOrdersController::class, 'accountDetails'])->name('api-orders.account-details');
     Route::get('/api-orders/order/{orderId}/accounts', [ApiOrdersController::class, 'orderAccounts'])->name('api-orders.order-accounts');
+    Route::post('/api-orders/{id}/resolve',            [ApiOrdersController::class, 'resolve'])->name('api-orders.resolve');
 
     // System Tools
     Route::get('/system-tools',             [SystemToolsController::class, 'index'])->name('system-tools');

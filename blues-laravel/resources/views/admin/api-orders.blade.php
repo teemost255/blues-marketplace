@@ -59,6 +59,7 @@
             <thead><tr class="border-b border-slate-700 text-slate-400 text-xs uppercase">
                 <th class="px-5 py-3 text-left">Order ID</th>
                 <th class="px-5 py-3 text-left">Product</th>
+                <th class="px-5 py-3 text-left">Buyer</th>
                 <th class="px-5 py-3 text-left">Source</th>
                 <th class="px-5 py-3 text-left">Fulfillment</th>
                 <th class="px-5 py-3 text-left">Qty</th>
@@ -72,6 +73,7 @@
                 <tr class="border-b border-slate-700/50 hover:bg-slate-700/30">
                     <td class="px-5 py-3 text-slate-300 font-mono text-xs">#{{ $order['id'] }}</td>
                     <td class="px-5 py-3 text-white font-medium max-w-[200px] truncate">{{ $order['product_name'] ?? '—' }}</td>
+                    <td class="px-5 py-3 text-slate-300 text-xs">{{ $order['buyer_email'] ?? '—' }}</td>
                     <td class="px-5 py-3">
                         <span class="px-2 py-0.5 rounded-full text-xs {{ ($order['source'] ?? '') === 'catalog' ? 'bg-sky-900/50 text-sky-400' : 'bg-purple-900/50 text-purple-400' }}">
                             {{ ucfirst($order['source'] ?? '—') }}
@@ -106,7 +108,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="9" class="px-5 py-10 text-center text-slate-500">
+                <tr><td colspan="10" class="px-5 py-10 text-center text-slate-500">
                     @if(!$configured) API key not configured. @else No marketplace API purchases found. @endif
                 </td></tr>
             @endforelse
@@ -138,6 +140,7 @@
             <thead><tr class="border-b border-slate-700 text-slate-400 text-xs uppercase">
                 <th class="px-5 py-3 text-left">ID</th>
                 <th class="px-5 py-3 text-left">Product</th>
+                <th class="px-5 py-3 text-left">Buyer</th>
                 <th class="px-5 py-3 text-left">Order ID</th>
                 <th class="px-5 py-3 text-left">Status</th>
                 <th class="px-5 py-3 text-left">Total Paid</th>
@@ -149,6 +152,7 @@
                 <tr class="border-b border-slate-700/50 hover:bg-slate-700/30">
                     <td class="px-5 py-3 text-slate-400 font-mono text-xs">#{{ $acc['id'] }}</td>
                     <td class="px-5 py-3 text-white max-w-[180px] truncate">{{ $acc['product_label'] ?? '—' }}</td>
+                    <td class="px-5 py-3 text-slate-300 text-xs">{{ $acc['buyer_email'] ?? '—' }}</td>
                     <td class="px-5 py-3 text-slate-300 font-mono text-xs">#{{ $acc['order_id'] ?? '—' }}</td>
                     <td class="px-5 py-3">
                         <span class="px-2 py-0.5 rounded-full text-xs {{ ($acc['is_sold'] ?? false) ? 'bg-green-900/50 text-green-400' : (($acc['status'] ?? '') === 'pending' ? 'bg-yellow-900/50 text-yellow-300' : 'bg-slate-700 text-slate-400') }}">
@@ -164,14 +168,34 @@
                                 View
                             </button>
                         @elseif(($acc['status'] ?? '') === 'pending')
-                            <span class="text-xs text-yellow-300">Awaiting review</span>
+                            <details class="min-w-56">
+                                <summary class="cursor-pointer text-xs font-semibold text-yellow-300 hover:text-yellow-200">Resolve pending order</summary>
+                                <div class="mt-3 space-y-3">
+                                    <form method="POST" action="{{ route('admin.api-orders.resolve', $acc['id']) }}" class="space-y-2">
+                                        @csrf
+                                        <input type="hidden" name="action" value="deliver">
+                                        <label class="block text-xs text-slate-400">Credentials recovered from supplier</label>
+                                        <textarea name="credentials" rows="3" required maxlength="10000"
+                                            class="w-full rounded-lg bg-slate-900 border border-slate-600 text-xs text-white p-2"
+                                            placeholder="Paste credentials to deliver to the buyer"></textarea>
+                                        <button type="submit" class="px-2 py-1 rounded bg-green-700 hover:bg-green-600 text-white text-xs">Save & deliver</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('admin.api-orders.resolve', $acc['id']) }}"
+                                        onsubmit="return confirm('Only refund after confirming Sameeha did not charge this order.')">
+                                        @csrf
+                                        <input type="hidden" name="action" value="refund">
+                                        <button type="submit" class="px-2 py-1 rounded bg-red-900/60 hover:bg-red-800 text-red-200 text-xs">Refund wallet</button>
+                                    </form>
+                                    <p class="text-[11px] leading-relaxed text-slate-500">Refund only after confirming the supplier did not charge this order. Delivery marks the order complete.</p>
+                                </div>
+                            </details>
                         @else
                             <span class="text-xs text-slate-500">No credentials</span>
                         @endif
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="px-5 py-10 text-center text-slate-500">
+                <tr><td colspan="8" class="px-5 py-10 text-center text-slate-500">
                     @if(!$configured) API key not configured. @else No delivered keys found. @endif
                 </td></tr>
             @endforelse

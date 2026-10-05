@@ -218,7 +218,15 @@ class SameehaSocialHubService
                 ];
             }
 
-            Cache::forget(self::PRODUCTS_CACHE_KEY);
+            try {
+                Cache::forget(self::PRODUCTS_CACHE_KEY);
+            } catch (\Throwable $e) {
+                // Cache invalidation must not hide keys from a successful purchase.
+                Log::warning('Sameeha product cache could not be cleared after purchase', [
+                    'product_id' => $productId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             // A successful HTTP response may mean Sameeha charged the account, even
             // when its payload is malformed or uses a nested credentials field.

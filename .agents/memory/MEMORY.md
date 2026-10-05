@@ -1,1 +1,1 @@
-- [Sameeha key delivery](sameeha-key-delivery.md) — purchase keys are returned once; persist them locally and do not rely on undocumented provider history endpoints.
+- [Sameeha key delivery](sameeha-key-delivery.md) — persist attempts before calling; uncertain or incomplete responses stay pending until manually resolved.
