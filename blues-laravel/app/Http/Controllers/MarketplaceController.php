@@ -2,7 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Listing, ListingCategory, ListingCredential, Purchase, Wallet, WalletTransaction, Wishlist, Notification};
-use App\Services\{ReferralService, SurePlusLogsService};
+use App\Services\{ReferralService, SameehaSocialHubService};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Auth, DB, Log};
 
@@ -44,8 +44,8 @@ class MarketplaceController extends Controller
             : [];
 
         // Fetch ALL API catalog products (unfiltered — needed for category grouping)
-        $sujan          = app(SurePlusLogsService::class);
-        $allApiProducts = $sujan->getProducts();
+        $sameeha        = app(SameehaSocialHubService::class);
+        $allApiProducts = $sameeha->getProducts();
 
         // Apply commission markup once on the full list
         $commission = (float) \App\Models\Setting::get('api_commission_amount', '0');
@@ -271,7 +271,7 @@ class MarketplaceController extends Controller
     }
 
     /**
-     * Buy a product from the SurePlusLogs API catalog.
+     * Buy a product from the Sameeha Social Hub catalog.
      */
     public function buyApi(Request $request, int $productId)
     {
@@ -279,13 +279,13 @@ class MarketplaceController extends Controller
             return redirect()->route('login')->with('error', 'Please log in to purchase.');
         }
 
-        $sujan = app(SurePlusLogsService::class);
-        if (!$sujan->isConfigured()) {
+        $sameeha = app(SameehaSocialHubService::class);
+        if (!$sameeha->isConfigured()) {
             return back()->with('error', 'Catalog API is not configured. Please contact support.');
         }
 
         // Find product info from the cached product list
-        $products   = $sujan->getProducts();
+        $products   = $sameeha->getProducts();
         $product    = collect($products)->firstWhere('id', $productId);
 
         if (!$product) {
@@ -310,7 +310,7 @@ class MarketplaceController extends Controller
         }
 
         // Deduct wallet first, then call API — refund on failure
-        DB::transaction(function () use ($user, $wallet, $price, $productId, $productName, $sujan, &$purchase) {
+        DB::transaction(function () use ($user, $wallet, $price, $productId, $productName, &$purchase) {
             $wallet->decrement('balance', $price);
 
             WalletTransaction::create([
@@ -322,9 +322,8 @@ class MarketplaceController extends Controller
             ]);
         });
 
-        // Call the API to fulfill the order (pass product_type from product data)
-        $productType = $product['type'] ?? 'catalog';
-        $result = $sujan->createOrder($productId, 1, $productType);
+        // Sameeha returns purchased keys directly in the order response.
+        $result = $sameeha->createOrder($productId, 1);
 
         if (!$result['success']) {
             // Refund wallet
@@ -339,17 +338,20 @@ class MarketplaceController extends Controller
                 ]);
             });
 
-            Log::error('SurePlusLogs API order failed', ['product_id' => $productId, 'message' => $result['message']]);
+            Log::error('Sameeha API order failed', ['product_id' => $productId, 'message' => $result['message']]);
             return back()->with('error', 'Could not complete purchase: ' . $result['message']);
         }
 
         $credentials = $result['credentials'];
         $deliveryData = json_encode([
-            'source'      => 'sureplus_api',
+            'source'      => 'sameeha_api',
             'product_id'  => $productId,
             'product'     => $productName,
             'credentials' => $credentials,
             'order_id'    => $result['order_id'] ?? null,
+            'provider_charge' => $result['charge'] ?? null,
+            'currency'    => $product['currency'] ?? 'NGN',
+            'quantity'    => 1,
         ]);
 
         $purchase = Purchase::create([

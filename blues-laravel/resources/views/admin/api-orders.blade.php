@@ -1,12 +1,19 @@
 @extends('layouts.admin')
 @section('title', 'API Orders & Accounts')
-@section('page-title', 'SurePlusLogs — API Orders & Accounts')
+@section('page-title', 'Sameeha Social Hub — API Orders')
 
 @section('content')
 @if(!$configured)
 <div class="bg-yellow-900/30 border border-yellow-700/50 rounded-xl px-5 py-4 flex items-center gap-3 mb-6">
     <svg class="w-5 h-5 text-yellow-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-    <p class="text-yellow-300 text-sm">SurePlusLogs API key is not configured. <a href="{{ route('admin.settings') }}" class="underline font-semibold">Go to Settings</a> to add it.</p>
+    <p class="text-yellow-300 text-sm">Sameeha API key is not configured. <a href="{{ route('admin.settings') }}" class="underline font-semibold">Go to Settings</a> to add it.</p>
+</div>
+@endif
+
+@if($configured && $providerBalance)
+<div class="bg-slate-800 border border-slate-700 rounded-xl px-5 py-4 mb-6">
+    <p class="text-xs text-slate-400 mb-1">Sameeha supplier wallet balance</p>
+    <p class="text-xl font-bold text-green-400">{{ $providerBalance['currency'] }} {{ number_format($providerBalance['balance'], 2) }}</p>
 </div>
 @endif
 
@@ -82,7 +89,7 @@
                 </tr>
             @empty
                 <tr><td colspan="8" class="px-5 py-10 text-center text-slate-500">
-                    @if(!$configured) API key not configured. @else No orders found. @endif
+                    @if(!$configured) API key not configured. @else No marketplace API purchases found. @endif
                 </td></tr>
             @endforelse
             </tbody>
@@ -141,7 +148,7 @@
                 </tr>
             @empty
                 <tr><td colspan="7" class="px-5 py-10 text-center text-slate-500">
-                    @if(!$configured) API key not configured. @else No accounts found. @endif
+                    @if(!$configured) API key not configured. @else No delivered keys found. @endif
                 </td></tr>
             @endforelse
             </tbody>

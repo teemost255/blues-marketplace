@@ -207,7 +207,7 @@
                 @php
                     $rawData   = $order->delivery_data;
                     $decoded   = is_string($rawData) ? json_decode($rawData, true) : null;
-                    $isApiOrder = is_array($decoded) && in_array($decoded['source'] ?? '', ['sujan_api', 'sureplus_api']);
+                    $isApiOrder = is_array($decoded) && in_array($decoded['source'] ?? '', ['sujan_api', 'sureplus_api', 'sameeha_api']);
 
                     if ($isApiOrder) {
                         $creds = $decoded['credentials'] ?? null;

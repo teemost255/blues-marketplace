@@ -41,7 +41,7 @@ class SettingsController extends Controller
             'bank_name'                => Setting::get('bank_name', ''),
             'bank_account_number'      => Setting::get('bank_account_number', ''),
             'bank_account_name'        => Setting::get('bank_account_name', ''),
-            'sureplus_api_key'         => Setting::get('sureplus_api_key', ''),
+            'sameeha_api_key_configured' => Setting::get('sameeha_api_key', '') !== '',
             'api_commission_amount'    => Setting::get('api_commission_amount', '0'),
         ];
         return view('admin.settings', compact('settings'));
@@ -78,7 +78,7 @@ class SettingsController extends Controller
             'bank_name'               => 'nullable|string|max:100',
             'bank_account_number'     => 'nullable|string|max:50',
             'bank_account_name'       => 'nullable|string|max:100',
-            'sureplus_api_key'           => 'nullable|string',
+            'sameeha_api_key'            => 'nullable|string|max:255',
             'api_commission_amount'     => 'nullable|numeric|min:0',
         ]);
 
@@ -92,13 +92,19 @@ class SettingsController extends Controller
             'referral_bonus_tier2_threshold', 'referral_bonus_tier3_threshold',
             'promo_banner_text', 'promo_banner_color', 'low_balance_threshold',
             'bank_name', 'bank_account_number', 'bank_account_name',
-            'sureplus_api_key', 'api_commission_amount',
+            'sameeha_api_key', 'api_commission_amount',
         ];
         Setting::set('bank_transfer_enabled', $request->boolean('bank_transfer_enabled') ? '1' : '0');
         Setting::set('promo_banner_enabled', $request->boolean('promo_banner_enabled') ? '1' : '0');
 
         foreach ($keys as $key) {
+            if ($key === 'sameeha_api_key' && !$request->filled($key)) {
+                continue;
+            }
             Setting::set($key, $request->input($key, ''));
+        }
+        if ($request->filled('sameeha_api_key')) {
+            app(\App\Services\SameehaSocialHubService::class)->clearCache();
         }
         Setting::set('maintenance_mode', $request->boolean('maintenance_mode') ? '1' : '0');
 

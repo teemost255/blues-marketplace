@@ -353,29 +353,29 @@
         <p class="text-xs text-slate-500 mt-3">Users will see these details when they choose bank transfer at checkout. You must confirm each payment manually in the <a href="{{ route('admin.bank-transfers') }}" class="text-brand hover:underline">Bank Transfers</a> panel.</p>
     </div>
 
-    {{-- SurePlusLogs API Catalog --}}
+    {{-- Sameeha Social Hub API Catalog --}}
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
         <div class="flex items-center gap-3 mb-5">
             <div class="w-9 h-9 rounded-lg bg-sky-900/50 flex items-center justify-center">
                 <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
             </div>
             <div>
-                <h2 class="font-semibold text-white">API Catalog (SurePlusLogs)</h2>
-                <p class="text-xs text-slate-400">Reseller API — products appear live in the marketplace</p>
+                <h2 class="font-semibold text-white">API Catalog (Sameeha Social Hub)</h2>
+                <p class="text-xs text-slate-400">Account products appear in the marketplace and are delivered after purchase</p>
             </div>
         </div>
         <div>
             <label class="block text-xs text-slate-400 mb-1.5">API Secret Key</label>
             <div class="relative">
-                <input type="password" name="sureplus_api_key" id="sureplus-api-key-input"
-                    value="{{ $settings['sureplus_api_key'] }}"
-                    placeholder="rs_your_secret_key"
+                <input type="password" name="sameeha_api_key" id="sameeha-api-key-input"
+                    value=""
+                    placeholder="{{ $settings['sameeha_api_key_configured'] ? 'Saved key is set — enter a new key to replace it' : 'Enter your Sameeha API key' }}"
                     class="font-mono text-xs pr-10 w-full">
-                <button type="button" onclick="toggleSurePlusKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                <button type="button" onclick="toggleSameehaKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 </button>
             </div>
-            <p class="text-xs text-slate-500 mt-1.5">Bearer token used to authenticate requests to <span class="font-mono text-slate-300">api.surepluglogs.com</span>. Products are cached for 5 minutes and shown in the marketplace.</p>
+            <p class="text-xs text-slate-500 mt-1.5">Bearer token for <span class="font-mono text-slate-300">sameehasocialhub.com/api/v1</span>. Leave blank to keep the saved key. Products are cached for 5 minutes.</p>
         </div>
 
         <div class="mt-5 pt-5 border-t border-slate-700">
@@ -465,8 +465,8 @@ function toggleSecret() {
     const inp = document.getElementById('secret-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
-function toggleSurePlusKey() {
-    const inp = document.getElementById('sureplus-api-key-input');
+function toggleSameehaKey() {
+    const inp = document.getElementById('sameeha-api-key-input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
