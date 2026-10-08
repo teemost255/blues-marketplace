@@ -23,14 +23,15 @@ class ApiOrdersController extends Controller
 
         $orders = $purchases->getCollection()->map(function (Purchase $purchase) {
             $delivery = $this->deliveryData($purchase);
+            $quantity = max(1, (int) ($delivery['quantity'] ?? 1));
 
             return [
                 'id' => $purchase->id,
                 'product_name' => $purchase->api_product_name ?? $delivery['product'] ?? 'Catalog Product',
                 'buyer_email' => $purchase->user?->email ?? '—',
                 'source' => 'sameeha',
-                'quantity' => $delivery['quantity'] ?? 1,
-                'unit_price' => (float) $purchase->amount,
+                'quantity' => $quantity,
+                'unit_price' => round((float) $purchase->amount / $quantity, 2),
                 'total_price' => (float) $purchase->amount,
                 'status' => $purchase->status,
                 'created_at' => $purchase->created_at,

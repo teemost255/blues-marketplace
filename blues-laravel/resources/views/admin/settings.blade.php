@@ -361,22 +361,45 @@
             </div>
             <div>
                 <h2 class="font-semibold text-white">API Catalog (Sameeha Social Hub)</h2>
-                <p class="text-xs text-slate-400">Account products appear in the marketplace and are delivered after purchase</p>
+                <p class="text-xs text-slate-400">Configure the supplier key and control API products shown to customers</p>
+            </div>
+            <div class="ml-auto flex items-center gap-3">
+                <span id="api-catalog-status" class="text-xs font-semibold {{ ($settings['api_catalog_enabled'] ?? '1') === '1' ? 'text-emerald-400' : 'text-slate-400' }}">
+                    {{ ($settings['api_catalog_enabled'] ?? '1') === '1' ? 'ON' : 'OFF' }}
+                </span>
+                <label class="relative inline-flex items-center cursor-pointer" aria-label="Enable Sameeha API catalog">
+                    <input type="checkbox" name="api_catalog_enabled" id="api-catalog-toggle" value="1"
+                        {{ ($settings['api_catalog_enabled'] ?? '1') === '1' ? 'checked' : '' }} class="sr-only">
+                    <div id="api-catalog-toggle-bg" class="w-11 h-6 rounded-full transition-all duration-200 relative"
+                        style="background:{{ ($settings['api_catalog_enabled'] ?? '1') === '1' ? '#10b981' : '#475569' }}">
+                        <div id="api-catalog-toggle-dot" class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
+                            style="transform:{{ ($settings['api_catalog_enabled'] ?? '1') === '1' ? 'translateX(1.25rem)' : 'translateX(0)' }}"></div>
+                    </div>
+                </label>
             </div>
         </div>
         <div>
-            <label class="block text-xs text-slate-400 mb-1.5">API Secret Key</label>
+            <label class="block text-xs text-slate-400 mb-1.5">Sameeha Provider API Key</label>
             <div class="relative">
                 <input type="password" name="sameeha_api_key" id="sameeha-api-key-input"
                     value=""
-                    placeholder="{{ $settings['sameeha_api_key_configured'] ? 'Saved key is set — enter a new key to replace it' : 'Enter your Sameeha API key' }}"
+                    placeholder="{{ $settings['sameeha_api_key_configured'] ? 'A key is saved — enter a new key to replace it' : 'Enter your Sameeha API key' }}"
                     class="font-mono text-xs pr-10 w-full">
                 <button type="button" onclick="toggleSameehaKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 </button>
             </div>
-            <p class="text-xs text-slate-500 mt-1.5">Bearer token for <span class="font-mono text-slate-300">sameehasocialhub.com/api/v1</span>. Leave blank to keep the saved key. Products are cached for 5 minutes.</p>
+            <p class="text-xs text-slate-500 mt-1.5">
+                @if($settings['sameeha_api_key_configured'])
+                    <span class="text-emerald-400">A provider key is saved.</span>
+                @else
+                    <span class="text-amber-400">No provider key is saved yet.</span>
+                @endif
+                Enter a key manually to connect or replace it. The saved key stays hidden; leave blank to keep it. Save All Settings to apply changes.
+            </p>
+            <p class="text-xs text-slate-500 mt-1">Bearer token for <span class="font-mono text-slate-300">sameehasocialhub.com/api/v1</span>. Products are cached for 5 minutes.</p>
         </div>
+        <p class="text-xs text-slate-500 mt-4">Turning the catalog off hides supplier products and blocks new API purchases. Local marketplace listings remain available.</p>
 
         <div class="mt-5 pt-5 border-t border-slate-700">
             <label class="block text-xs text-slate-400 mb-1.5">Commission / Markup <span class="text-slate-500">(₦)</span></label>
@@ -477,6 +500,14 @@ function toggleMailPassword() {
 document.getElementById('bt-toggle').addEventListener('change', function() {
     document.getElementById('bt-toggle-bg').style.background = this.checked ? '#10b981' : '#475569';
     document.getElementById('bt-toggle-dot').style.transform = this.checked ? 'translateX(1.25rem)' : 'translateX(0)';
+});
+document.getElementById('api-catalog-toggle').addEventListener('change', function() {
+    document.getElementById('api-catalog-toggle-bg').style.background = this.checked ? '#10b981' : '#475569';
+    document.getElementById('api-catalog-toggle-dot').style.transform = this.checked ? 'translateX(1.25rem)' : 'translateX(0)';
+    const status = document.getElementById('api-catalog-status');
+    status.textContent = this.checked ? 'ON' : 'OFF';
+    status.classList.toggle('text-emerald-400', this.checked);
+    status.classList.toggle('text-slate-400', !this.checked);
 });
 </script>
 @endsection

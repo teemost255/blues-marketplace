@@ -44,8 +44,9 @@ class MarketplaceController extends Controller
             : [];
 
         // Fetch ALL API catalog products (unfiltered — needed for category grouping)
+        $apiCatalogEnabled = \App\Models\Setting::get('api_catalog_enabled', '1') === '1';
         $sameeha        = app(SameehaSocialHubService::class);
-        $allApiProducts = $sameeha->getProducts();
+        $allApiProducts = $apiCatalogEnabled ? $sameeha->getProducts() : [];
 
         // Apply commission markup once on the full list
         $commission = (float) \App\Models\Setting::get('api_commission_amount', '0');
@@ -279,6 +280,10 @@ class MarketplaceController extends Controller
             return redirect()->route('login')->with('error', 'Please log in to purchase.');
         }
 
+        if (\App\Models\Setting::get('api_catalog_enabled', '1') !== '1') {
+            return back()->with('error', 'The API catalog is currently unavailable.');
+        }
+
         $sameeha = app(SameehaSocialHubService::class);
         if (!$sameeha->isConfigured()) {
             return back()->with('error', 'Catalog API is not configured. Please contact support.');
@@ -302,12 +307,14 @@ class MarketplaceController extends Controller
             return back()->with('error', 'This product is currently out of stock.');
         }
 
-        $user   = Auth::user();
-        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+        $validated = $request->validate([
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:' . $stock],
+        ]);
+        $quantity = (int) ($validated['quantity'] ?? 1);
+        $totalPrice = round($price * $quantity, 2);
 
-        if ($wallet->balance < $price) {
-            return back()->with('error', 'Insufficient wallet balance. Please top up your wallet.');
-        }
+        $user   = Auth::user();
+        Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
 
         // Record a pending attempt before calling the supplier. If the connection
         // drops after Sameeha processes the order, this record prevents a lost,
@@ -318,26 +325,31 @@ class MarketplaceController extends Controller
             'product_id' => $productId,
             'product' => $productName,
             'currency' => $product['currency'] ?? 'NGN',
-            'quantity' => 1,
+            'quantity' => $quantity,
             'fulfillment_state' => 'requesting',
             'purchase_reference' => $purchaseReference,
         ];
 
-        DB::transaction(function () use ($user, $wallet, $price, $productId, $productName, $purchaseReference, $deliveryData, &$purchase) {
-            $wallet->decrement('balance', $price);
+        $purchase = DB::transaction(function () use ($user, $totalPrice, $productId, $productName, $purchaseReference, $deliveryData) {
+            $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+            if (!$wallet || (float) $wallet->balance < $totalPrice) {
+                return null;
+            }
+
+            $wallet->decrement('balance', $totalPrice);
 
             WalletTransaction::create([
                 'user_id'     => $user->id,
-                'amount'      => -$price,
+                'amount'      => -$totalPrice,
                 'type'        => 'purchase',
                 'reference'   => $purchaseReference,
-                'description' => 'Purchase: ' . $productName,
+                'description' => 'Purchase: ' . $productName . ' (quantity: ' . ($deliveryData['quantity'] ?? 1) . ')',
             ]);
 
-            $purchase = Purchase::create([
+            return Purchase::create([
                 'user_id'          => $user->id,
                 'listing_id'       => null,
-                'amount'           => $price,
+                'amount'           => $totalPrice,
                 'status'           => 'pending',
                 'source'           => 'api',
                 'api_product_id'   => $productId,
@@ -346,8 +358,12 @@ class MarketplaceController extends Controller
             ]);
         });
 
+        if (!$purchase) {
+            return back()->with('error', 'Insufficient wallet balance. Please top up your wallet.');
+        }
+
         // Sameeha returns purchased keys directly in the order response.
-        $result = $sameeha->createOrder($productId, 1);
+        $result = $sameeha->createOrder($productId, $quantity);
 
         if (!$result['success']) {
             if ($result['requires_review'] ?? false) {
@@ -386,11 +402,13 @@ class MarketplaceController extends Controller
             }
 
             // Refund only when the provider returned a definite rejection.
-            DB::transaction(function () use ($user, $wallet, $price, $productName, $purchase, $deliveryData) {
-                $wallet->increment('balance', $price);
+            DB::transaction(function () use ($user, $totalPrice, $productName, $purchase, $deliveryData) {
+                $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first()
+                    ?? Wallet::create(['user_id' => $user->id, 'balance' => 0]);
+                $wallet->increment('balance', $totalPrice);
                 WalletTransaction::create([
                     'user_id'     => $user->id,
-                    'amount'      => $price,
+                    'amount'      => $totalPrice,
                     'type'        => 'refund',
                     'reference'   => 'REFUND-CAT-' . $purchase->id . '-' . \Illuminate\Support\Str::uuid(),
                     'description' => 'Refund: ' . $productName . ' (API error)',

@@ -61,29 +61,82 @@
         </p>
     </div>
 
-    {{-- ── Split pill: Preview | Buy ─────────────────────────────────────────── --}}
-    <div class="flex rounded-full overflow-hidden border border-brand/30 text-sm font-bold">
-
+    <div class="flex gap-2">
         <button type="button"
             onclick="openPreviewModal({{ $previewData }})"
-            class="flex-1 flex items-center justify-center py-2.5 bg-brand hover:brightness-110 text-white transition-all select-none">
+            class="flex-1 rounded-xl border border-brand/40 bg-brand/10 hover:bg-brand/20 text-brand text-sm font-bold py-2.5 transition-all select-none">
             Preview
         </button>
 
-        <div class="w-px bg-white/10 shrink-0"></div>
-
         @if($stock > 0)
             @auth
-            <form method="POST" action="{{ route('dashboard.marketplace.buy-api', $pid) }}" class="flex-1"
-                onsubmit="return confirm('Buy \'{{ addslashes($name) }}\' for NGN {{ number_format($price, 2) }}?')">
+            <form method="POST" action="{{ route('dashboard.marketplace.buy-api', $pid) }}"
+                class="flex-[1.6] flex items-center gap-2"
+                data-api-purchase-form data-product-name="{{ $name }}" data-unit-price="{{ $price }}">
                 @csrf
-                <button type="submit" class="w-full h-full flex items-center justify-center py-2.5 bg-slate-900 hover:bg-slate-950 text-white transition-all">Buy</button>
+                <label class="sr-only" for="api-quantity-{{ $pid }}">Quantity for {{ $name }}</label>
+                <span class="text-[10px] font-semibold text-slate-400">Qty</span>
+                <input id="api-quantity-{{ $pid }}" type="number" name="quantity" value="1" min="1" max="{{ $stock }}" step="1" required
+                    class="w-16 shrink-0 rounded-xl border border-slate-600 bg-slate-900 px-2 py-2.5 text-center text-sm font-semibold text-white focus:border-brand"
+                    aria-label="Quantity, maximum {{ $stock }}">
+                <button type="submit" data-api-buy-button
+                    class="flex-1 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-bold py-2.5 transition-all whitespace-nowrap">
+                    Buy · NGN <span data-api-total>{{ number_format($price, 2) }}</span>
+                </button>
             </form>
             @else
-            <a href="{{ route('login') }}" class="flex-1 flex items-center justify-center py-2.5 bg-slate-900 hover:bg-slate-950 text-white transition-all">Buy</a>
+            <a href="{{ route('login') }}" class="flex-[1.6] flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-950 text-white text-sm font-bold py-2.5 transition-all">Log in to buy</a>
             @endauth
         @else
-            <div class="flex-1 flex items-center justify-center py-2.5 bg-slate-900 text-red-400/60 cursor-not-allowed font-semibold">Out of Stock</div>
+            <div class="flex-[1.6] flex items-center justify-center rounded-xl bg-slate-900 text-red-400/60 cursor-not-allowed text-sm font-semibold">Out of Stock</div>
         @endif
     </div>
 </div>
+
+@once
+<script>
+function updateApiPurchaseTotal(form) {
+    const quantityInput = form.querySelector('input[name="quantity"]');
+    const totalOutput = form.querySelector('[data-api-total]');
+    const buyButton = form.querySelector('[data-api-buy-button]');
+    const quantity = Number(quantityInput.value);
+    const isValid = Number.isInteger(quantity)
+        && quantity >= Number(quantityInput.min)
+        && quantity <= Number(quantityInput.max);
+
+    buyButton.disabled = !isValid;
+    buyButton.classList.toggle('opacity-50', !isValid);
+    totalOutput.textContent = isValid
+        ? new Intl.NumberFormat('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(form.dataset.unitPrice) * quantity)
+        : '—';
+}
+
+document.addEventListener('input', function(event) {
+    const form = event.target.closest('[data-api-purchase-form]');
+    if (form && event.target.matches('input[name="quantity"]')) updateApiPurchaseTotal(form);
+});
+
+document.addEventListener('change', function(event) {
+    const form = event.target.closest('[data-api-purchase-form]');
+    if (form && event.target.matches('input[name="quantity"]')) updateApiPurchaseTotal(form);
+});
+
+document.addEventListener('submit', function(event) {
+    const form = event.target.closest('[data-api-purchase-form]');
+    if (!form) return;
+
+    const quantityInput = form.querySelector('input[name="quantity"]');
+    const quantity = Number(quantityInput.value);
+    const total = Number(form.dataset.unitPrice) * quantity;
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > Number(quantityInput.max)) {
+        event.preventDefault();
+        quantityInput.focus();
+        return;
+    }
+    if (!window.confirm('Buy ' + quantity + ' × ' + form.dataset.productName + ' for NGN '
+        + new Intl.NumberFormat('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(total) + '?')) {
+        event.preventDefault();
+    }
+});
+</script>
+@endonce

@@ -42,6 +42,7 @@ class SettingsController extends Controller
             'bank_account_number'      => Setting::get('bank_account_number', ''),
             'bank_account_name'        => Setting::get('bank_account_name', ''),
             'sameeha_api_key_configured' => Setting::get('sameeha_api_key', '') !== '',
+            'api_catalog_enabled'      => Setting::get('api_catalog_enabled', '1'),
             'api_commission_amount'    => Setting::get('api_commission_amount', '0'),
         ];
         return view('admin.settings', compact('settings'));
@@ -96,6 +97,7 @@ class SettingsController extends Controller
         ];
         Setting::set('bank_transfer_enabled', $request->boolean('bank_transfer_enabled') ? '1' : '0');
         Setting::set('promo_banner_enabled', $request->boolean('promo_banner_enabled') ? '1' : '0');
+        Setting::set('api_catalog_enabled', $request->boolean('api_catalog_enabled') ? '1' : '0');
 
         foreach ($keys as $key) {
             if ($key === 'sameeha_api_key' && !$request->filled($key)) {
