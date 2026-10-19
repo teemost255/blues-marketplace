@@ -134,19 +134,36 @@ class MarketplaceQuantityAndCatalogTest extends TestCase
             ->assertSee('https://cdn.example.test/video.png');
     }
 
-    public function test_admin_can_see_a_working_whatsapp_support_link(): void
+    public function test_whatsapp_support_link_is_shown_to_customers_not_admins(): void
     {
+        Setting::set('whatsapp_number', '+234 801-234-5678');
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('href="https://wa.me/2348012345678?text=', false)
+            ->assertSee('Chat with us on WhatsApp');
+
+        $buyer = User::create([
+            'name' => 'Support Buyer',
+            'email' => 'support-buyer@example.test',
+            'password' => 'password',
+            'email_notifications' => false,
+        ]);
+        $buyer->forceFill(['email_verified_at' => now()])->save();
+        $this->actingAs($buyer)
+            ->get(route('dashboard.marketplace'))
+            ->assertOk()
+            ->assertSee('href="https://wa.me/2348012345678?text=', false)
+            ->assertSee('Chat with us on WhatsApp');
+
         $admin = AdminUser::create([
             'email' => 'support-admin@example.test',
             'password_hash' => 'unused',
             'display_name' => 'Support Admin',
         ]);
-        Setting::set('whatsapp_number', '+234 801-234-5678');
-
         $this->withSession(['admin_id' => $admin->id])
-            ->get(route('admin.settings'))
+            ->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('WhatsApp Support')
-            ->assertSee('href="https://wa.me/2348012345678"', false);
+            ->assertDontSee('href="https://wa.me/2348012345678', false)
+            ->assertDontSee('WhatsApp Support');
     }
 }

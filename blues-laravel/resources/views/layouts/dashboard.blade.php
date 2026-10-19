@@ -285,6 +285,8 @@
     </main>
 </div>
 
+@include('partials.whatsapp-support')
+
 @stack('scripts')
 <script>
 function openMobileSidebar() {
