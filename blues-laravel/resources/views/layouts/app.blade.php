@@ -253,7 +253,7 @@
 </footer>
 
 {{-- Floating WhatsApp Support Button --}}
-@php $waNumber = \App\Models\Setting::get('whatsapp_number', ''); @endphp
+@php $waNumber = preg_replace('/\D+/', '', \App\Models\Setting::get('whatsapp_number', '')); @endphp
 @if($waNumber)
 <style>
     .wa-btn {

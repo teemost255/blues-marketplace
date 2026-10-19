@@ -9,6 +9,8 @@
     $name     = $product['name'] ?? 'Unknown Product';
     $desc     = $product['description'] ?? null;
     $catLabel = $product['category'] ?? $product['type'] ?? null;
+    $image    = $product['image'] ?? null;
+    $fallbackIcon = $product['category_icon'] ?? $letter;
 
     $previewData = json_encode([
         'title'       => $name,
@@ -17,10 +19,11 @@
         'format'      => null,
         'stock'       => $stock,
         'price'       => number_format($price, 0),
-        'image'       => null,
+        'image'       => $image,
         'buyUrl'      => auth()->check() ? route('dashboard.marketplace.buy-api', $pid) : null,
         'iconBg'      => $iconBg,
         'letter'      => $letter,
+        'fallbackIcon' => $fallbackIcon,
     ]);
 @endphp
 
@@ -28,8 +31,14 @@
 
     {{-- ── Title row ─────────────────────────────────────────────────────────── --}}
     <div class="flex items-center gap-3 mb-3">
-        <div class="shrink-0 w-10 h-10 rounded-full {{ $iconBg }} flex items-center justify-center shadow-md">
-            <span class="text-white font-extrabold text-base leading-none">{{ $letter }}</span>
+        <div class="shrink-0 w-10 h-10 rounded-full {{ $iconBg }} flex items-center justify-center shadow-md overflow-hidden">
+            @if($image)
+                <img src="{{ $image }}" alt="" class="w-full h-full object-cover" loading="lazy"
+                    onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden')">
+                <span class="hidden {{ $product['category_icon'] ?? null ? 'text-lg leading-none' : 'text-white font-extrabold text-base leading-none' }}">{{ $fallbackIcon }}</span>
+            @else
+                <span class="{{ $product['category_icon'] ?? null ? 'text-lg leading-none' : 'text-white font-extrabold text-base leading-none' }}">{{ $fallbackIcon }}</span>
+            @endif
         </div>
 
         <div class="flex-1 min-w-0">

@@ -82,10 +82,18 @@
 
         @if($listing->stock > 0)
             @auth
-            <form method="POST" action="{{ route('dashboard.marketplace.buy', $listing->id) }}" class="flex-1"
-                onsubmit="return confirm('Buy \'{{ addslashes($listing->title) }}\' for NGN {{ number_format($listing->price, 2) }}?')">
+            <form method="POST" action="{{ route('dashboard.marketplace.buy', $listing->id) }}" class="flex-[1.6] flex items-center gap-2"
+                data-local-purchase-form data-product-name="{{ $listing->title }}" data-unit-price="{{ $listing->price }}">
                 @csrf
-                <button type="submit" class="w-full h-full flex items-center justify-center py-2.5 bg-slate-900 hover:bg-slate-950 text-white transition-all">Buy</button>
+                <label class="sr-only" for="local-quantity-{{ $listing->id }}">Quantity for {{ $listing->title }}</label>
+                <span class="text-[10px] font-semibold text-slate-400">Qty</span>
+                <input id="local-quantity-{{ $listing->id }}" type="number" name="quantity" value="1" min="1" max="{{ $listing->stock }}" step="1" required
+                    class="w-16 shrink-0 rounded-xl border border-slate-600 bg-slate-900 px-2 py-2 text-center text-sm font-semibold text-white focus:border-brand"
+                    aria-label="Quantity, maximum {{ $listing->stock }}">
+                <button type="submit" data-local-buy-button
+                    class="flex-1 rounded-xl bg-slate-900 hover:bg-slate-950 text-white text-sm font-bold py-2.5 transition-all whitespace-nowrap">
+                    Buy · NGN <span data-local-total>{{ number_format($listing->price, 2) }}</span>
+                </button>
             </form>
             @else
             <a href="{{ route('login') }}" class="flex-1 flex items-center justify-center py-2.5 bg-slate-900 hover:bg-slate-950 text-white transition-all">Buy</a>
@@ -95,3 +103,45 @@
         @endif
     </div>
 </div>
+
+@once
+<script>
+function updateLocalPurchaseTotal(form) {
+    const input = form.querySelector('input[name="quantity"]');
+    const output = form.querySelector('[data-local-total]');
+    const button = form.querySelector('[data-local-buy-button]');
+    const quantity = Number(input.value);
+    const valid = Number.isInteger(quantity) && quantity >= Number(input.min) && quantity <= Number(input.max);
+    button.disabled = !valid;
+    button.classList.toggle('opacity-50', !valid);
+    output.textContent = valid
+        ? new Intl.NumberFormat('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(form.dataset.unitPrice) * quantity)
+        : '—';
+}
+
+document.addEventListener('input', event => {
+    const form = event.target.closest('[data-local-purchase-form]');
+    if (form && event.target.matches('input[name="quantity"]')) updateLocalPurchaseTotal(form);
+});
+document.addEventListener('change', event => {
+    const form = event.target.closest('[data-local-purchase-form]');
+    if (form && event.target.matches('input[name="quantity"]')) updateLocalPurchaseTotal(form);
+});
+document.addEventListener('submit', event => {
+    const form = event.target.closest('[data-local-purchase-form]');
+    if (!form) return;
+    const input = form.querySelector('input[name="quantity"]');
+    const quantity = Number(input.value);
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > Number(input.max)) {
+        event.preventDefault();
+        input.focus();
+        return;
+    }
+    const total = Number(form.dataset.unitPrice) * quantity;
+    if (!window.confirm('Buy ' + quantity + ' × ' + form.dataset.productName + ' for NGN '
+        + new Intl.NumberFormat('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(total) + '?')) {
+        event.preventDefault();
+    }
+});
+</script>
+@endonce

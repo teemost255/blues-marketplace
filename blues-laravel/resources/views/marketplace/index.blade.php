@@ -215,7 +215,7 @@
             {{-- What you receive note --}}
             <p class="text-xs text-slate-500 flex items-start gap-1.5">
                 <svg class="w-3.5 h-3.5 text-yellow-400 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
-                You receive one credential set delivered instantly to your Orders page. Each set is unique and never reused.
+                 Each quantity is delivered as a separate credential set to your Orders page. Credential sets are unique and never reused.
             </p>
         </div>
 

@@ -43,6 +43,7 @@ use App\Http\Controllers\Admin\VirtualNumbersController;
 use App\Http\Controllers\Admin\VirtualNumberSettingsController;
 use App\Http\Controllers\Admin\SystemToolsController;
 use App\Http\Controllers\Admin\ApiOrdersController;
+use App\Http\Controllers\Admin\ApiCatalogController;
 
 // ── Public ────────────────────────────────────────────────────────────────────
 // Kora webhook (no CSRF)
@@ -187,6 +188,8 @@ Route::middleware(\App\Http\Middleware\AdminAuth::class)->prefix('admin')->name(
     Route::get('/settings',                     [SettingsController::class,          'index'])->name('settings');
     Route::post('/settings',                    [SettingsController::class,          'update'])->name('settings.update');
     Route::post('/settings/test-email',         [SettingsController::class,          'sendTestEmail'])->name('settings.test-email');
+    Route::get('/api-catalog',                  [ApiCatalogController::class, 'index'])->name('api-catalog');
+    Route::post('/api-catalog',                 [ApiCatalogController::class, 'update'])->name('api-catalog.update');
 
 
     Route::get('/announcements',  [AnnouncementsController::class, 'index'])->name('announcements');

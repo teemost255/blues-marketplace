@@ -47,6 +47,7 @@
                         <p class="text-white font-medium">
                             {{ $order->listing?->title ?? $order->api_product_name ?? 'Deleted listing' }}
                         </p>
+                        <p class="text-xs text-slate-400 mt-0.5">Quantity: {{ $order->quantity ?? 1 }}</p>
                         <p class="text-xs text-slate-500 mt-0.5">{{ $order->listing?->category ?? '' }}</p>
                         @if($providerReview)
                             <p class="text-xs text-yellow-300 mt-1">Supplier fulfillment is being checked. Do not place this order again yet; contact support if it does not update.</p>
@@ -132,6 +133,7 @@
         <div class="flex items-start justify-between gap-3 mb-3">
             <div class="min-w-0">
                 <p class="text-white font-semibold text-sm leading-snug truncate">{{ $order->listing?->title ?? $order->api_product_name ?? 'Deleted listing' }}</p>
+                <p class="text-xs text-slate-400 mt-0.5">Quantity: {{ $order->quantity ?? 1 }}</p>
                 @if($order->listing?->category)
                     <p class="text-xs text-brand mt-0.5">{{ $order->listing->category }}</p>
                 @endif
@@ -222,6 +224,7 @@
                     $rawData   = $order->delivery_data;
                     $decoded   = is_string($rawData) ? json_decode($rawData, true) : null;
                     $isApiOrder = is_array($decoded) && in_array($decoded['source'] ?? '', ['sujan_api', 'sureplus_api', 'sameeha_api']);
+                    $isLocalMultiOrder = is_array($decoded) && ($decoded['source'] ?? '') === 'local_listing' && is_array($decoded['credentials'] ?? null);
 
                     if ($isApiOrder) {
                         $creds = $decoded['credentials'] ?? null;
@@ -244,6 +247,12 @@
                             $displayCreds = $rawData;
                         }
                         $productLabel = $decoded['product'] ?? null;
+                    } elseif ($isLocalMultiOrder) {
+                        $displayCreds = collect($decoded['credentials'])
+                            ->values()
+                            ->map(fn($credential, $index) => 'Credential '.($index + 1).":\n".$credential)
+                            ->implode("\n\n");
+                        $productLabel = null;
                     } else {
                         $displayCreds = $rawData;
                         $productLabel = null;

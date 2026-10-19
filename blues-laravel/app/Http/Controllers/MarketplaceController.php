@@ -47,6 +47,13 @@ class MarketplaceController extends Controller
         $apiCatalogEnabled = \App\Models\Setting::get('api_catalog_enabled', '1') === '1';
         $sameeha        = app(SameehaSocialHubService::class);
         $allApiProducts = $apiCatalogEnabled ? $sameeha->getProducts() : [];
+        $selectedApiProductIds = \App\Models\Setting::apiCatalogProductIds();
+        if ($selectedApiProductIds !== null) {
+            $allApiProducts = array_values(array_filter(
+                $allApiProducts,
+                fn ($product) => in_array((int) ($product['id'] ?? 0), $selectedApiProductIds, true)
+            ));
+        }
 
         // Apply commission markup once on the full list
         $commission = (float) \App\Models\Setting::get('api_commission_amount', '0');
@@ -95,6 +102,7 @@ class MarketplaceController extends Controller
             }
 
             $p['category'] = $resolved;
+            $p['category_icon'] = $categories->firstWhere('name', $resolved)?->icon;
         }
         unset($p);
 
@@ -167,61 +175,98 @@ class MarketplaceController extends Controller
             return redirect()->route('login')->with('error', 'Please log in to purchase.');
         }
 
-        $listing = Listing::where('is_active', true)->where('stock', '>', 0)->findOrFail($id);
-        $user    = Auth::user();
-        $wallet  = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+        $validated = $request->validate([
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:500'],
+        ]);
+        $quantity = (int) ($validated['quantity'] ?? 1);
+        $user = Auth::user();
 
-        if ($wallet->balance < $listing->price) {
-            return back()->with('error', 'Insufficient wallet balance. Please top up your wallet.');
-        }
-
-        $wallet->decrement('balance', $listing->price);
-        // Pick one credential from the pool (credential system), or fall back to login_details
-        $credential    = null;
-        $deliveryData  = null;
-
-        if ($listing->usesCredentialSystem()) {
-            $credential = $listing->availableCredentials()->lockForUpdate()->first();
-            if (!$credential) {
-                return back()->with('error', 'This listing just sold out. Please check back later.');
+        $result = DB::transaction(function () use ($user, $id, $quantity) {
+            $listing = Listing::where('is_active', true)->lockForUpdate()->findOrFail($id);
+            if ($quantity > (int) $listing->stock) {
+                return ['error' => 'The requested quantity is no longer available. Please choose a smaller quantity.'];
             }
-            $deliveryData = $credential->details;
-        } else {
-            $deliveryData = $listing->login_details ?: null;
-            $listing->decrement('stock');
-        }
 
-        $purchase = Purchase::create([
-            'user_id'       => $user->id,
-            'listing_id'    => $listing->id,
-            'amount'        => $listing->price,
-            'status'        => 'completed',
-            'delivery_data' => $deliveryData,
-        ]);
+            $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first()
+                ?? Wallet::create(['user_id' => $user->id, 'balance' => 0]);
+            $totalPrice = round((float) $listing->price * $quantity, 2);
+            if ((float) $wallet->balance < $totalPrice) {
+                return ['error' => 'Insufficient wallet balance. Please top up your wallet.'];
+            }
 
-        // Mark credential as used and sync stock
-        if ($credential) {
-            $credential->update([
-                'is_used'     => true,
-                'used_at'     => now(),
-                'purchase_id' => $purchase->id,
+            $credentials = collect();
+            if ($listing->usesCredentialSystem()) {
+                $credentials = $listing->availableCredentials()
+                    ->lockForUpdate()
+                    ->limit($quantity)
+                    ->get();
+                if ($credentials->count() !== $quantity) {
+                    return ['error' => 'This listing just sold out. Please choose a smaller quantity.'];
+                }
+            } elseif ($quantity > 1) {
+                return ['error' => 'This product has only one shared credential set. Please select quantity 1.'];
+            }
+
+            $deliveryData = $credentials->isEmpty()
+                ? ($listing->login_details ?: null)
+                : ($quantity === 1
+                    ? $credentials->first()->details
+                    : json_encode([
+                        'source' => 'local_listing',
+                        'credentials' => $credentials->pluck('details')->values()->all(),
+                    ]));
+
+            $purchase = Purchase::create([
+                'user_id'       => $user->id,
+                'listing_id'    => $listing->id,
+                'amount'        => $totalPrice,
+                'quantity'      => $quantity,
+                'status'        => 'completed',
+                'delivery_data' => $deliveryData,
             ]);
-            $listing->syncStock();
+
+            if ($credentials->isNotEmpty()) {
+                foreach ($credentials as $credential) {
+                    $credential->update([
+                        'is_used'     => true,
+                        'used_at'     => now(),
+                        'purchase_id' => $purchase->id,
+                    ]);
+                }
+                $listing->syncStock();
+            } else {
+                $listing->decrement('stock', $quantity);
+            }
+
+            $wallet->decrement('balance', $totalPrice);
+            WalletTransaction::create([
+                'user_id'     => $user->id,
+                'amount'      => -$totalPrice,
+                'type'        => 'purchase',
+                'reference'   => 'PUR-'.$purchase->id,
+                'description' => 'Purchase: '.$listing->title.' (quantity: '.$quantity.')',
+            ]);
+
+            return [
+                'purchase' => $purchase,
+                'listing' => $listing,
+                'total_price' => $totalPrice,
+                'has_details' => !empty($deliveryData),
+            ];
+        });
+
+        if (isset($result['error'])) {
+            return back()->with('error', $result['error']);
         }
 
-        WalletTransaction::create([
-            'user_id'     => $user->id,
-            'amount'      => -$listing->price,
-            'type'        => 'purchase',
-            'reference'   => 'PUR-'.$purchase->id,
-            'description' => 'Purchase: '.$listing->title,
-        ]);
+        $purchase = $result['purchase'];
+        $listing = $result['listing'];
+        $hasDetails = $result['has_details'];
 
-        $hasDetails = !empty($listing->login_details);
         Notification::create([
             'user_id' => $user->id,
             'title'   => 'Purchase Successful',
-            'message' => 'Your purchase of "'.$listing->title.'" was successful. '.
+            'message' => 'Your purchase of "'.$listing->title.'" (quantity: '.$quantity.') was successful. '.
                          ($hasDetails ? 'Your login details are ready — check My Orders.' : 'Check your orders for delivery details.'),
             'type'    => 'success',
         ]);
@@ -282,6 +327,10 @@ class MarketplaceController extends Controller
 
         if (\App\Models\Setting::get('api_catalog_enabled', '1') !== '1') {
             return back()->with('error', 'The API catalog is currently unavailable.');
+        }
+        $selectedApiProductIds = \App\Models\Setting::apiCatalogProductIds();
+        if ($selectedApiProductIds !== null && !in_array($productId, $selectedApiProductIds, true)) {
+            return back()->with('error', 'This product is not currently available for sale.');
         }
 
         $sameeha = app(SameehaSocialHubService::class);
@@ -350,6 +399,7 @@ class MarketplaceController extends Controller
                 'user_id'          => $user->id,
                 'listing_id'       => null,
                 'amount'           => $totalPrice,
+                'quantity'         => $quantity,
                 'status'           => 'pending',
                 'source'           => 'api',
                 'api_product_id'   => $productId,

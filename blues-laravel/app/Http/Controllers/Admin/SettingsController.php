@@ -20,6 +20,7 @@ class SettingsController extends Controller
             'max_deposit'              => Setting::get('max_deposit', '1000000'),
             'maintenance_mode'         => Setting::get('maintenance_mode', '0'),
             'whatsapp_number'          => Setting::get('whatsapp_number', ''),
+            'whatsapp_number_digits'   => preg_replace('/\D+/', '', Setting::get('whatsapp_number', '')),
             'mail_mailer'              => Setting::get('mail_mailer', 'smtp'),
             'mail_host'                => Setting::get('mail_host', ''),
             'mail_port'                => Setting::get('mail_port', '587'),
@@ -59,6 +60,7 @@ class SettingsController extends Controller
             'min_deposit'             => 'nullable|numeric|min:1',
             'max_deposit'             => 'nullable|numeric|min:1',
             'maintenance_mode'        => 'nullable|in:0,1',
+            'whatsapp_number'         => ['nullable', 'string', 'max:30', 'regex:/^[+0-9\\s().-]*$/'],
 
             'mail_mailer'             => 'nullable|string|in:smtp,sendmail,log',
             'mail_host'               => 'nullable|string|max:255',
@@ -109,6 +111,7 @@ class SettingsController extends Controller
             app(\App\Services\SameehaSocialHubService::class)->clearCache();
         }
         Setting::set('maintenance_mode', $request->boolean('maintenance_mode') ? '1' : '0');
+        Setting::set('whatsapp_number', preg_replace('/\D+/', '', (string) $request->input('whatsapp_number', '')));
 
         return back()->with('success', 'Settings saved successfully.');
     }

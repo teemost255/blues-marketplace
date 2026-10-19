@@ -147,13 +147,18 @@ class SameehaSocialHubService
     private function normalizeProduct(array $product, array $categoryMap): array
     {
         $categoryId = (string) ($product['category_id'] ?? '');
+        $image = $product['image'] ?? $product['image_url'] ?? $product['thumbnail'] ?? $product['icon'] ?? '';
+        $image = is_string($image) && filter_var($image, FILTER_VALIDATE_URL)
+            && in_array(strtolower((string) parse_url($image, PHP_URL_SCHEME)), ['http', 'https'], true)
+                ? $image
+                : '';
 
         return [
             'id'          => (int) ($product['id'] ?? 0),
             'type'        => 'catalog',
             'name'        => (string) ($product['name'] ?? ''),
             'description' => '',
-            'image'       => '',
+            'image'       => $image,
             'category'    => $categoryMap[$categoryId] ?? ($categoryId !== '' ? $categoryId : 'Other'),
             'price'       => (float) ($product['price'] ?? 0),
             'stock'       => max(0, (int) ($product['stock'] ?? 0)),

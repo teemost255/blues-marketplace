@@ -16,4 +16,26 @@ class Setting extends Model
     {
         static::updateOrCreate(['key' => $key], ['value' => $value]);
     }
+
+    /**
+     * Null means the catalog has not been customized yet (show all products).
+     * An empty array is an intentional choice to show no supplier products.
+     */
+    public static function apiCatalogProductIds(): ?array
+    {
+        $stored = static::get('api_catalog_product_ids');
+        if ($stored === null) {
+            return null;
+        }
+
+        $ids = json_decode($stored, true);
+        if (!is_array($ids)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(
+            array_map('intval', $ids),
+            fn (int $id) => $id > 0
+        )));
+    }
 }
