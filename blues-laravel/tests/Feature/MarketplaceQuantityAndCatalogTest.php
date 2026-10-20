@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -132,6 +133,63 @@ class MarketplaceQuantityAndCatalogTest extends TestCase
             ->assertSee('Selected video plan')
             ->assertDontSee('Hidden catalog plan')
             ->assertSee('https://cdn.example.test/video.png');
+    }
+
+    public function test_api_purchase_records_and_charges_the_requested_quantity(): void
+    {
+        Cache::flush();
+        Http::fake([
+            'sameehasocialhub.com/api/v1/categories' => Http::response([
+                'results' => [['id' => 9, 'name' => 'Streaming']],
+            ]),
+            'sameehasocialhub.com/api/v1/products*' => Http::response([
+                'count' => 1,
+                'results' => [[
+                    'id' => 77,
+                    'name' => 'Streaming API Product',
+                    'category_id' => 9,
+                    'price' => 100,
+                    'stock' => 5,
+                ]],
+            ]),
+            'sameehasocialhub.com/api/v1/buy' => Http::response([
+                'order_id' => 4321,
+                'charge' => '200.00',
+                'keys' => ['api-key-one', 'api-key-two'],
+            ]),
+        ]);
+        Setting::set('sameeha_api_key', 'test-provider-token');
+        Setting::set('api_catalog_enabled', '1');
+        Setting::set('api_commission_amount', '0');
+        Setting::set('low_balance_threshold', '0');
+
+        $buyer = User::create([
+            'name' => 'API Buyer',
+            'email' => 'api-buyer@example.test',
+            'password' => 'password',
+            'email_notifications' => false,
+        ]);
+        $buyer->forceFill(['email_verified_at' => now()])->save();
+        Wallet::create(['user_id' => $buyer->id, 'balance' => 500]);
+
+        $response = $this->actingAs($buyer)
+            ->from(route('dashboard.marketplace'))
+            ->post(route('dashboard.marketplace.buy-api', 77), ['quantity' => 2]);
+        $response->assertRedirect(route('dashboard.orders'))
+            ->assertSessionHas('success');
+
+        $purchase = Purchase::where('user_id', $buyer->id)->sole();
+        $deliveryData = json_decode($purchase->delivery_data, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame(2, $purchase->quantity);
+        $this->assertSame(200.0, (float) $purchase->amount);
+        $this->assertSame('completed', $purchase->status);
+        $this->assertSame(['api-key-one', 'api-key-two'], explode("\n", $deliveryData['credentials']));
+        $this->assertSame(300.0, (float) Wallet::where('user_id', $buyer->id)->value('balance'));
+
+        Http::assertSent(fn (ClientRequest $request) =>
+            $request->url() === 'https://sameehasocialhub.com/api/v1/buy'
+            && $request['quantity'] === 2
+        );
     }
 
     public function test_whatsapp_support_link_is_shown_to_customers_not_admins(): void

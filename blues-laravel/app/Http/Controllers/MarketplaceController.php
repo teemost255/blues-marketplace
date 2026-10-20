@@ -379,7 +379,7 @@ class MarketplaceController extends Controller
             'purchase_reference' => $purchaseReference,
         ];
 
-        $purchase = DB::transaction(function () use ($user, $totalPrice, $productId, $productName, $purchaseReference, $deliveryData) {
+        $purchase = DB::transaction(function () use ($user, $totalPrice, $quantity, $productId, $productName, $purchaseReference, $deliveryData) {
             $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
             if (!$wallet || (float) $wallet->balance < $totalPrice) {
                 return null;
