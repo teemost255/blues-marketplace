@@ -3,7 +3,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\{Wallet, WalletTransaction, Notification, Setting, VirtualNumberOrder};
-use App\Services\{HeroSmsService, GrizzlySmsService};
+use App\Services\{HeroSmsService, GrizzlySmsService, PvaDealsSmsService};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Auth, DB, Log};
 
@@ -251,10 +251,13 @@ class VirtualNumberController extends Controller
     /**
      * Return the correct SMS service instance for a given provider identifier.
      */
-    private function getProviderService(string $provider): HeroSmsService|GrizzlySmsService
+    private function getProviderService(string $provider): HeroSmsService|GrizzlySmsService|PvaDealsSmsService
     {
         if ($provider === 'server1') {
             return new GrizzlySmsService();
+        }
+        if ($provider === 'server3') {
+            return new PvaDealsSmsService();
         }
         return new HeroSmsService();
     }
@@ -264,7 +267,8 @@ class VirtualNumberController extends Controller
         $user    = Auth::user();
         $wallet  = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
         $enabled = Setting::get('herosms_enabled', '0') === '1'
-                || Setting::get('grizzly_enabled', '0') === '1';
+                || Setting::get('grizzly_enabled', '0') === '1'
+                || Setting::get('pvadeals_enabled', '0') === '1';
 
         $orders = VirtualNumberOrder::where('user_id', $user->id)
             ->latest()
@@ -273,8 +277,47 @@ class VirtualNumberController extends Controller
         return view('dashboard.virtual-numbers', compact('wallet', 'enabled', 'orders'));
     }
 
-    public function getCountries()
+    public function getCountries(Request $request)
     {
+        if ((int) $request->query('server', 0) === 3) {
+            if (Setting::get('pvadeals_enabled', '0') !== '1') {
+                return response()->json(['countries' => []], 503);
+            }
+
+            $sms = new PvaDealsSmsService();
+            if (!$sms->isConfigured()) {
+                return response()->json(['countries' => []], 503);
+            }
+
+            try {
+                $countries = [];
+                foreach ($sms->getServices() as $service) {
+                    if (!is_array($service) || (int) ($service['STRstock'] ?? 0) <= 0
+                        || (float) ($service['STRprice'] ?? 0) <= 0) {
+                        continue;
+                    }
+
+                    $countryCode = PvaDealsSmsService::countryCode($service['country'] ?? null);
+                    if ($countryCode === '') {
+                        continue;
+                    }
+
+                    $countries[$countryCode] = [
+                        'id' => $countryCode,
+                        'name' => PvaDealsSmsService::countryName($countryCode, $service['country'] ?? null),
+                    ];
+                }
+
+                $countries = array_values($countries);
+                usort($countries, fn ($a, $b) => strcmp($a['name'], $b['name']));
+
+                return response()->json(['countries' => $countries]);
+            } catch (\Throwable $e) {
+                Log::warning('PVADeals country catalog unavailable.', ['error' => $e->getMessage()]);
+                return response()->json(['error' => 'Could not load Server 3 countries.'], 503);
+            }
+        }
+
         // Prefer server1; fall back to server2
         $sms = new GrizzlySmsService();
         if (!$sms->isConfigured() || Setting::get('grizzly_enabled', '0') !== '1') {
@@ -301,9 +344,15 @@ class VirtualNumberController extends Controller
 
     public function getServices(Request $request)
     {
-        $request->validate(['country' => 'nullable|integer']);
-
         $serverPref = (int) $request->input('server', 0); // 1 = force server1, 2 = force server2, 0 = auto
+        $request->validate([
+            'country' => $serverPref === 3 ? 'nullable|string|max:100' : 'nullable|integer',
+            'sort' => 'nullable|in:az,za,count,price_asc,price_desc',
+        ]);
+
+        if ($serverPref === 3) {
+            return $this->getPvaDealsServices($request);
+        }
 
         if ($serverPref === 2) {
             $sms = new HeroSmsService();
@@ -410,8 +459,84 @@ class VirtualNumberController extends Controller
         return response()->json(['services' => $services]);
     }
 
+    private function getPvaDealsServices(Request $request)
+    {
+        if (Setting::get('pvadeals_enabled', '0') !== '1') {
+            return response()->json(['error' => 'Server 3 is not available.'], 503);
+        }
+
+        $sms = new PvaDealsSmsService();
+        if (!$sms->isConfigured()) {
+            return response()->json(['error' => 'Server 3 is not configured.'], 503);
+        }
+
+        try {
+            $selectedCountry = strtoupper(trim((string) $request->query('country', '0')));
+            $services = [];
+
+            foreach ($sms->getServices() as $item) {
+                if (!is_array($item) || empty($item['_id']) || empty($item['name'])) {
+                    continue;
+                }
+
+                $stock = (int) ($item['STRstock'] ?? 0);
+                $usdCost = $item['STRprice'] ?? null;
+                if ($stock <= 0 || !is_numeric($usdCost) || (float) $usdCost <= 0) {
+                    continue;
+                }
+
+                $providerCountry = (string) ($item['country'] ?? '');
+                $countryCode = PvaDealsSmsService::countryCode($providerCountry);
+                if ($countryCode === '') {
+                    continue;
+                }
+                if ($selectedCountry !== '' && $selectedCountry !== '0' && $selectedCountry !== $countryCode) {
+                    continue;
+                }
+
+                $services[] = [
+                    'code' => (string) $item['_id'],
+                    'name' => mb_substr((string) $item['name'], 0, 100),
+                    'count' => $stock,
+                    'price' => HeroSmsService::calculateNgnPrice((float) $usdCost),
+                    'usd_cost' => (float) $usdCost,
+                    'country_code' => $countryCode,
+                    'country_name' => PvaDealsSmsService::countryName($countryCode, $providerCountry),
+                ];
+            }
+
+            $sort = $request->input('sort', 'az');
+            if ($sort === 'az') {
+                usort($services, fn ($a, $b) => strcmp($a['name'], $b['name']));
+            } elseif ($sort === 'za') {
+                usort($services, fn ($a, $b) => strcmp($b['name'], $a['name']));
+            } elseif ($sort === 'count') {
+                usort($services, fn ($a, $b) => $b['count'] <=> $a['count']);
+            } elseif ($sort === 'price_asc') {
+                usort($services, fn ($a, $b) => $a['price'] <=> $b['price']);
+            } elseif ($sort === 'price_desc') {
+                usort($services, fn ($a, $b) => $b['price'] <=> $a['price']);
+            }
+
+            return response()->json(['services' => $services]);
+        } catch (\Throwable $e) {
+            Log::warning('PVADeals service catalog unavailable.', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Could not load Server 3 services.'], 503);
+        }
+    }
+
     public function order(Request $request)
     {
+        if ((int) $request->input('server_pref', 0) === 3) {
+            $request->validate([
+                'service' => 'required|string|max:64',
+                'server_pref' => 'required|integer|in:3',
+                'country_name' => 'nullable|string|max:100',
+            ]);
+
+            return $this->orderPvaDeals($request);
+        }
+
         $request->validate([
             'service'    => 'required|string|max:10',
             'country'    => 'required|integer|min:1',
@@ -443,7 +568,7 @@ class VirtualNumberController extends Controller
 
         $maxActive   = (int) Setting::get('herosms_max_active', '3');
         $activeCount = VirtualNumberOrder::where('user_id', $user->id)
-            ->whereIn('status', ['waiting', 'received'])
+            ->whereIn('status', ['pending', 'waiting', 'received'])
             ->count();
 
         if ($activeCount >= $maxActive) {
@@ -594,6 +719,334 @@ class VirtualNumberController extends Controller
         ]);
     }
 
+    private function orderPvaDeals(Request $request)
+    {
+        if (Setting::get('pvadeals_enabled', '0') !== '1') {
+            return response()->json(['error' => 'Server 3 is not available right now.'], 503);
+        }
+
+        $sms = new PvaDealsSmsService();
+        if (!$sms->isConfigured()) {
+            return response()->json(['error' => 'Server 3 is not configured.'], 503);
+        }
+
+        try {
+            $service = $sms->findService((string) $request->input('service'));
+        } catch (\Throwable $e) {
+            Log::warning('PVADeals catalog lookup failed before purchase.', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Could not verify this service. Please try again shortly.'], 503);
+        }
+
+        if (!$service || !is_numeric($service['STRprice'] ?? null)
+            || (float) $service['STRprice'] <= 0
+            || (int) ($service['STRstock'] ?? 0) <= 0) {
+            return response()->json(['error' => 'This service is no longer available. Please choose another.'], 422);
+        }
+
+        $serviceId = (string) $service['_id'];
+        $countryCode = PvaDealsSmsService::countryCode($service['country'] ?? null);
+        $countryName = PvaDealsSmsService::countryName($countryCode, $service['country'] ?? null);
+        if ($countryCode === ''
+            || ($request->filled('country_name')
+                && PvaDealsSmsService::countryCode($request->input('country_name')) !== $countryCode)) {
+            return response()->json(['error' => 'The selected country does not match this service. Refresh and try again.'], 422);
+        }
+
+        $price = HeroSmsService::calculateNgnPrice((float) $service['STRprice']);
+        $serviceName = mb_substr((string) ($service['name'] ?? 'Virtual number'), 0, 100);
+        $user = Auth::user();
+        $wallet = Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+
+        if ((float) $wallet->balance < $price) {
+            return response()->json([
+                'error' => 'Insufficient wallet balance. You need ₦' . number_format($price, 2) . '. Please top up first.',
+            ], 422);
+        }
+
+        $maxActive = (int) Setting::get('herosms_max_active', '3');
+        $activeCount = VirtualNumberOrder::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'waiting', 'received'])
+            ->count();
+        if ($activeCount >= $maxActive) {
+            return response()->json([
+                'error' => "You have reached the maximum of {$maxActive} active rentals. Complete or cancel existing ones first.",
+            ], 422);
+        }
+
+        // Reserve the customer's wallet before the upstream call. If the
+        // provider response is ambiguous, this pending record prevents a
+        // duplicate purchase or an automatic refund of a possibly charged order.
+        try {
+            $order = DB::transaction(function () use ($user, $wallet, $price, $serviceId, $serviceName, $countryName) {
+                $lockedWallet = Wallet::where('id', $wallet->id)->lockForUpdate()->firstOrFail();
+                if ((float) $lockedWallet->balance < $price) {
+                    throw new \DomainException('Insufficient wallet balance.');
+                }
+
+                $lockedWallet->decrement('balance', round($price, 2));
+                WalletTransaction::create([
+                    'user_id' => $user->id,
+                    'amount' => -round($price, 2),
+                    'type' => 'purchase',
+                    'reference' => 'VN-S3-' . strtoupper(bin2hex(random_bytes(8))),
+                    'description' => "Virtual number: {$serviceName}",
+                ]);
+
+                return VirtualNumberOrder::create([
+                    'user_id' => $user->id,
+                    'activation_id' => null,
+                    'phone_number' => null,
+                    'service' => $serviceId,
+                    'service_name' => $serviceName,
+                    'country' => 0,
+                    'country_name' => mb_substr($countryName, 0, 100),
+                    'cost' => round($price, 2),
+                    'status' => 'pending',
+                    'provider' => 'server3',
+                    'expires_at' => null,
+                ]);
+            });
+        } catch (\DomainException) {
+            return response()->json([
+                'error' => 'Insufficient wallet balance. Please top up and try again.',
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('Could not reserve wallet for PVADeals order.', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'The order could not be started. Please try again.'], 500);
+        }
+
+        $purchase = $sms->purchaseNumber($serviceId);
+        if (!$purchase['success']) {
+            if ($purchase['uncertain']) {
+                Log::warning('PVADeals order outcome requires review; wallet reservation retained.', [
+                    'order_id' => $order->id,
+                    'http_status' => $purchase['http_status'] ?? null,
+                    'error' => $purchase['error'] ?? 'Unconfirmed provider response',
+                ]);
+
+                return response()->json([
+                    'error' => 'The provider has not confirmed this order yet. Your wallet amount is temporarily reserved. Do not place it again; contact support with order #' . $order->id . '.',
+                    'pending_confirmation' => true,
+                    'order_id' => $order->id,
+                ], 503);
+            }
+
+            try {
+                $this->releasePvaDealsReservation($order);
+            } catch (\Throwable $e) {
+                Log::error('Could not release a failed PVADeals order reservation.', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return response()->json([
+                    'error' => 'The provider rejected this order, but the wallet release needs review. Contact support with order #' . $order->id . '.',
+                    'pending_confirmation' => true,
+                    'order_id' => $order->id,
+                ], 500);
+            }
+
+            $status = (int) ($purchase['http_status'] ?? 0);
+            $message = match ($status) {
+                401 => 'Server 3 API credentials were rejected. Please contact support.',
+                403 => 'The provider account cannot make this purchase right now.',
+                404, 422 => 'No number is available for this service right now. Please try another service.',
+                429 => 'Server 3 is busy. Please wait a moment and try again.',
+                503 => 'Server 3 is temporarily unavailable. Please try again shortly.',
+                default => 'Could not get a number. Please try another service.',
+            };
+
+            return response()->json(['error' => $message], 422);
+        }
+
+        $providerRequest = $purchase['request'];
+        $phoneNumber = ltrim((string) $providerRequest['number'], '+');
+        try {
+            $expiresAt = !empty($providerRequest['endTime'])
+                ? \Illuminate\Support\Carbon::parse($providerRequest['endTime'])
+                : now()->addMinutes(20);
+
+            $order->update([
+                'activation_id' => (string) $providerRequest['_id'],
+                'phone_number' => $phoneNumber,
+                'service_name' => mb_substr((string) ($providerRequest['serviceName'] ?? $serviceName), 0, 100),
+                'country_name' => mb_substr($countryName, 0, 100),
+                'status' => 'waiting',
+                'expires_at' => $expiresAt,
+            ]);
+        } catch (\Throwable $e) {
+            Log::critical('PVADeals number purchased but local order could not be finalized.', [
+                'order_id' => $order->id,
+                'provider_request_id' => $providerRequest['_id'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'The number was purchased, but the order needs review. Do not place it again; contact support with order #' . $order->id . '.',
+                'pending_confirmation' => true,
+                'order_id' => $order->id,
+            ], 500);
+        }
+
+        try {
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Virtual Number Assigned',
+                'message' => "Your {$serviceName} number is ready: +{$phoneNumber}",
+                'type' => 'info',
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('PVADeals order notification could not be created.', ['error' => $e->getMessage()]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'order' => [
+                'id' => $order->id,
+                'phone_number' => $phoneNumber,
+                'service_name' => $serviceName,
+                'status' => 'waiting',
+                'expires_at' => $expiresAt->toIso8601String(),
+            ],
+        ]);
+    }
+
+    private function releasePvaDealsReservation(VirtualNumberOrder $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $lockedOrder = VirtualNumberOrder::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            if ($lockedOrder->status !== 'pending') {
+                return;
+            }
+
+            $wallet = Wallet::where('user_id', $lockedOrder->user_id)->lockForUpdate()->firstOrFail();
+            $refund = round((float) $lockedOrder->cost, 2);
+            $wallet->increment('balance', $refund);
+
+            WalletTransaction::create([
+                'user_id' => $lockedOrder->user_id,
+                'amount' => $refund,
+                'type' => 'refund',
+                'reference' => 'VN-S3-REF-' . $lockedOrder->id,
+                'description' => 'Release of uncompleted PVADeals virtual number reservation',
+            ]);
+
+            $lockedOrder->update(['status' => 'cancelled']);
+        });
+    }
+
+    private function recoverPendingPvaDealsOrder(VirtualNumberOrder $order): void
+    {
+        $apiKey = Setting::get('pvadeals_api_key', '');
+        if (!$apiKey || !$order->created_at) {
+            return;
+        }
+
+        $cacheKey = 'pvadeals.recent-requests.' . hash('sha256', $apiKey);
+        try {
+            $recentRequests = Cache::remember($cacheKey, now()->addSeconds(15), function () {
+                return (new PvaDealsSmsService())->getRecentRequests();
+            });
+        } catch (\Throwable $e) {
+            Log::notice('Could not reconcile a pending PVADeals order yet.', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+            return;
+        }
+
+        $candidates = [];
+        foreach ($recentRequests as $request) {
+            if (!is_array($request)
+                || (string) ($request['serviceId'] ?? '') !== (string) $order->service
+                || strtoupper((string) ($request['numberType'] ?? '')) !== 'STR'
+                || !in_array(strtoupper((string) ($request['status'] ?? '')), ['RESERVED', 'COMPLETED'])
+                || empty($request['_id'])
+                || empty($request['number'])
+                || empty($request['createdAt'])) {
+                continue;
+            }
+
+            if (VirtualNumberOrder::where('provider', 'server3')
+                ->where('activation_id', (string) $request['_id'])
+                ->exists()) {
+                continue;
+            }
+
+            try {
+                $providerCreatedAt = \Illuminate\Support\Carbon::parse($request['createdAt']);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if (abs($providerCreatedAt->getTimestamp() - $order->created_at->getTimestamp()) > 120) {
+                continue;
+            }
+
+            // Only attach a provider request when the local and upstream
+            // histories each identify one matching purchase.
+            $localMatches = VirtualNumberOrder::where('provider', 'server3')
+                ->where('status', 'pending')
+                ->where('service', $order->service)
+                ->whereBetween('created_at', [
+                    $providerCreatedAt->copy()->subSeconds(120),
+                    $providerCreatedAt->copy()->addSeconds(10),
+                ])
+                ->count();
+
+            if ($localMatches === 1) {
+                $candidates[] = $request;
+            }
+        }
+
+        if (count($candidates) !== 1) {
+            return;
+        }
+
+        $providerRequest = $candidates[0];
+        try {
+            $expiresAt = !empty($providerRequest['endTime'])
+                ? \Illuminate\Support\Carbon::parse($providerRequest['endTime'])
+                : now()->addMinutes(20);
+
+            $updated = DB::transaction(function () use ($order, $providerRequest, $expiresAt) {
+                $lockedOrder = VirtualNumberOrder::whereKey($order->id)->lockForUpdate()->firstOrFail();
+                if ($lockedOrder->status !== 'pending') {
+                    return false;
+                }
+
+                $lockedOrder->update([
+                    'activation_id' => (string) $providerRequest['_id'],
+                    'phone_number' => ltrim((string) $providerRequest['number'], '+'),
+                    'service_name' => mb_substr(
+                        (string) ($providerRequest['serviceName'] ?? $lockedOrder->service_name),
+                        0,
+                        100
+                    ),
+                    'status' => 'waiting',
+                    'expires_at' => $expiresAt,
+                ]);
+
+                return true;
+            });
+
+            if ($updated) {
+                Log::notice('Recovered a pending PVADeals order from provider request history.', [
+                    'order_id' => $order->id,
+                    'provider_request_id' => $providerRequest['_id'],
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('PVADeals order recovery failed to persist.', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     /**
      * Generic VN webhook — called by any provider when an SMS code arrives.
      * Secured by a secret token in the query string.
@@ -692,6 +1145,59 @@ class VirtualNumberController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /**
+     * PVADeals sends the full SMS body using requestId/message fields.
+     */
+    public function webhookServer3(Request $request)
+    {
+        $secret = Setting::get('pvadeals_webhook_secret', '');
+        $tokenIn = (string) $request->query('token', '');
+        if (!$secret || !hash_equals($secret, $tokenIn)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        if ($request->input('event') !== 'sms_received') {
+            return response()->json(['ok' => true]);
+        }
+
+        $requestId = $request->input('requestId');
+        $message = $request->input('message');
+        if (!is_string($requestId) || $requestId === ''
+            || !is_string($message) || trim($message) === ''
+            || mb_strlen($message) > 5000) {
+            return response()->json(['error' => 'Invalid webhook payload'], 422);
+        }
+
+        $order = VirtualNumberOrder::where('provider', 'server3')
+            ->where('activation_id', $requestId)
+            ->whereIn('status', ['waiting', 'received'])
+            ->first();
+
+        if (!$order) {
+            // Ask PVADeals to retry briefly in case this webhook beat the
+            // local order update after a successful purchase.
+            return response()->json(['error' => 'Order is not available yet'], 503);
+        }
+
+        $order->update(['status' => 'received', 'sms_code' => trim($message)]);
+
+        try {
+            Notification::create([
+                'user_id' => $order->user_id,
+                'title' => 'SMS Code Received',
+                'message' => mb_substr("Your {$order->service_name} verification message has arrived.", 0, 250),
+                'type' => 'success',
+            ]);
+        } catch (\Throwable) {}
+
+        Log::info('PVADeals SMS webhook received.', [
+            'order_id' => $order->id,
+            'request_id' => $requestId,
+        ]);
+
+        return response()->json(['ok' => true]);
+    }
+
     public function resend(Request $request, VirtualNumberOrder $order)
     {
         if ($order->user_id != Auth::id()) {
@@ -700,6 +1206,10 @@ class VirtualNumberController extends Controller
 
         if ($order->status !== 'waiting') {
             return response()->json(['error' => 'Can only resend on waiting orders.'], 422);
+        }
+
+        if ($order->provider === 'server3') {
+            return response()->json(['error' => 'PVADeals does not support resending an SMS for this rental.'], 422);
         }
 
         $sms = $this->getProviderService($order->provider ?? 'server2');
@@ -712,6 +1222,24 @@ class VirtualNumberController extends Controller
     {
         if ($order->user_id != Auth::id()) {
             return response()->json(['error' => 'Unauthorized.'], 403);
+        }
+
+        if ($order->provider === 'server3') {
+            if ($order->status === 'pending') {
+                $this->recoverPendingPvaDealsOrder($order);
+                $order->refresh();
+            }
+
+            if ($order->status === 'waiting' && $order->expires_at && $order->expires_at->isPast()) {
+                $order->update(['status' => 'expired']);
+                $order->refresh();
+            }
+
+            return response()->json([
+                'status' => $order->status,
+                'code' => $order->sms_code,
+                'phone_number' => $order->phone_number,
+            ]);
         }
 
         if (!in_array($order->status, ['waiting', 'received'])) {
@@ -745,8 +1273,10 @@ class VirtualNumberController extends Controller
             return response()->json(['error' => 'This order cannot be completed.'], 422);
         }
 
-        $sms = $this->getProviderService($order->provider ?? 'server2');
-        $sms->setStatusComplete($order->activation_id);
+        if ($order->provider !== 'server3') {
+            $sms = $this->getProviderService($order->provider ?? 'server2');
+            $sms->setStatusComplete($order->activation_id);
+        }
 
         $order->update(['status' => 'completed']);
 
@@ -763,8 +1293,31 @@ class VirtualNumberController extends Controller
             return response()->json(['error' => 'This order cannot be cancelled.'], 422);
         }
 
-        $sms = $this->getProviderService($order->provider ?? 'server2');
-        $sms->setStatusCancel($order->activation_id);
+        if ($order->provider === 'server3') {
+            if (!$order->activation_id) {
+                return response()->json([
+                    'error' => 'This purchase is still being confirmed. Contact support before cancelling.',
+                ], 422);
+            }
+
+            try {
+                $cancelled = (new PvaDealsSmsService())->flagNumber((string) $order->activation_id);
+                if (!$cancelled) {
+                    return response()->json(['error' => 'PVADeals did not confirm that this number can be cancelled.'], 422);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('PVADeals rejected or could not confirm a cancellation.', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+                return response()->json([
+                    'error' => 'The provider did not confirm cancellation. No refund was issued; please try again or contact support.',
+                ], 422);
+            }
+        } else {
+            $sms = $this->getProviderService($order->provider ?? 'server2');
+            $sms->setStatusCancel($order->activation_id);
+        }
 
         $order->update(['status' => 'cancelled']);
 

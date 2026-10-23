@@ -3,7 +3,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\{VirtualNumberOrder, Setting, Wallet, WalletTransaction};
-use App\Services\HeroSmsService;
+use App\Services\{HeroSmsService, PvaDealsSmsService};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -27,6 +27,7 @@ class VirtualNumbersController extends Controller
         $stats = [
             'total'     => VirtualNumberOrder::count(),
             'waiting'   => VirtualNumberOrder::where('status', 'waiting')->count(),
+            'pending'   => VirtualNumberOrder::where('status', 'pending')->count(),
             'completed' => VirtualNumberOrder::where('status', 'completed')->count(),
             'revenue'   => VirtualNumberOrder::whereIn('status', ['waiting', 'received', 'completed'])->sum('cost'),
         ];
@@ -44,6 +45,40 @@ class VirtualNumbersController extends Controller
     {
         if (in_array($order->status, ['completed', 'cancelled'])) {
             return response()->json(['error' => 'This order cannot be refunded (status: ' . $order->status . ').'], 422);
+        }
+
+        if ($order->provider === 'server3' && $order->status === 'pending') {
+            return response()->json([
+                'error' => 'This PVADeals purchase is unconfirmed. Check the provider request history before issuing a refund.',
+            ], 422);
+        }
+
+        if ($order->provider === 'server3' && $order->status === 'received') {
+            return response()->json([
+                'error' => 'PVADeals has already delivered an SMS for this order. Review the provider request before refunding.',
+            ], 422);
+        }
+
+        if ($order->provider === 'server3' && $order->status === 'waiting') {
+            if (!$order->activation_id) {
+                return response()->json(['error' => 'The provider order ID is missing; reconcile this order first.'], 422);
+            }
+
+            try {
+                $providerRequest = (new PvaDealsSmsService())->getRequest((string) $order->activation_id);
+                if (strtoupper((string) ($providerRequest['status'] ?? '')) !== 'FLAGGED'
+                    && !(new PvaDealsSmsService())->flagNumber((string) $order->activation_id)) {
+                    return response()->json(['error' => 'PVADeals did not confirm that this number can be flagged.'], 422);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Admin PVADeals refund could not confirm provider cancellation.', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+                return response()->json([
+                    'error' => 'Provider cancellation was not confirmed. No refund was issued.',
+                ], 422);
+            }
         }
 
         try {
@@ -66,12 +101,14 @@ class VirtualNumbersController extends Controller
             });
 
             // Cancel at provider (best-effort)
-            try {
-                $sms = new HeroSmsService();
-                if ($sms->isConfigured() && $order->activation_id) {
-                    $sms->setStatusCancel($order->activation_id);
+            if ($order->provider !== 'server3') {
+                try {
+                    $sms = new HeroSmsService();
+                    if ($sms->isConfigured() && $order->activation_id) {
+                        $sms->setStatusCancel($order->activation_id);
+                    }
+                } catch (\Throwable) {}
                 }
-            } catch (\Throwable) {}
 
             Log::info('Admin refunded VN order', ['order_id' => $order->id, 'amount' => $order->cost]);
             return response()->json(['success' => true, 'message' => '₦' . number_format($order->cost, 2) . ' refunded to user wallet.']);

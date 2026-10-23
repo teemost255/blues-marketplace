@@ -37,6 +37,7 @@ bash deploy.sh
 - URL: `/adminlogin`
 - Default credentials: `admin@blues.com` / `admin123`
 - API keys (Paystack, LogsPlug, etc.) are managed inside the admin panel under Settings — no need to set them in `.env`
+- Virtual number Server 3 uses PVADeals. Save its API key in Admin → Virtual Number Settings, test the connection, enable Server 3, then register the displayed webhook URL. This integration exposes PVADeals 20-minute short-term rentals; long-term plans and number reuse are not included.
 
 ## Running the imported project on Replit
 

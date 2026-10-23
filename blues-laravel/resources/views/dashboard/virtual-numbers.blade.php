@@ -159,7 +159,7 @@
                     d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
             </svg>
             Active Rentals
-            @php $activeCount = $orders->getCollection()->whereIn('status',['waiting','received'])->count(); @endphp
+            @php $activeCount = $orders->getCollection()->whereIn('status',['pending','waiting','received'])->count(); @endphp
             @if($activeCount > 0)
             <span class="text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"
                   style="background:#3b82f6;color:#fff;">{{ $activeCount }}</span>
@@ -258,7 +258,7 @@
 
     {{-- ════════════════════ TAB: Active Rentals ════════════════════ --}}
     <div class="vn-tab-panel" id="tab-active">
-        @php $activeOrders = $orders->getCollection()->whereIn('status', ['waiting', 'received']); @endphp
+        @php $activeOrders = $orders->getCollection()->whereIn('status', ['pending', 'waiting', 'received']); @endphp
         @if($activeOrders->isEmpty())
         <div class="empty-state">
             <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,8 +327,13 @@
                     <div class="flex gap-3">
                         <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5" style="background:#92400e;color:#fcd34d;">!</div>
                         <div>
-                            <p class="text-sm font-semibold text-white">No code? Try "Resend SMS"</p>
-                            <p class="text-xs text-slate-400 mt-0.5">If no code arrives within 2 minutes, tap <strong style="color:#93c5fd;">Resend SMS</strong> to request a new one, or <strong style="color:#f87171;">Cancel</strong> for a partial refund.</p>
+                        @if(request()->query('server') === '3')
+                        <p class="text-sm font-semibold text-white">No code yet?</p>
+                        <p class="text-xs text-slate-400 mt-0.5">PVADeals sends SMS codes to this page automatically. Cancellation is only available when the provider confirms the number can be flagged.</p>
+                        @else
+                        <p class="text-sm font-semibold text-white">No code? Try "Resend SMS"</p>
+                        <p class="text-xs text-slate-400 mt-0.5">If no code arrives within 2 minutes, tap <strong style="color:#93c5fd;">Resend SMS</strong> to request a new one, or <strong style="color:#f87171;">Cancel</strong> if the provider allows it.</p>
+                        @endif
                         </div>
                     </div>
                 </div>
@@ -356,19 +361,25 @@
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
-                                <p class="font-bold text-white font-mono tracking-wide text-sm">+{{ $order->phone_number }}</p>
+                                @if($order->phone_number)
+                                <p class="order-phone-number font-bold text-white font-mono tracking-wide text-sm">+{{ $order->phone_number }}</p>
                                 <button onclick="copyCode('+{{ $order->phone_number }}', this)"
                                         class="copy-btn" title="Copy number">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                     </svg>
                                 </button>
+                                @else
+                                <p class="font-bold text-amber-300 text-sm">Purchase confirmation pending</p>
+                                @endif
                             </div>
                             <p class="text-xs text-slate-400 mt-0.5">{{ $order->service_name }}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap justify-end">
-                        @if($order->status === 'received')
+                        @if($order->status === 'pending')
+                        <span class="status-waiting"><span class="pulse-dot"></span>Provider confirmation pending</span>
+                        @elseif($order->status === 'received')
                         <span class="status-received">✓ SMS Received</span>
                         @else
                         <span class="status-waiting">
@@ -434,7 +445,8 @@
                         <span id="last-checked-{{ $order->id }}" class="text-slate-500 font-normal ml-0.5"></span>
                     </span>
 
-                    {{-- Resend SMS button --}}
+                    {{-- Resend is not available through PVADeals' short-term API. --}}
+                    @if($order->provider !== 'server3')
                     <button onclick="resendSms({{ $order->id }})"
                             class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
                             style="background:#131f35;color:#94a3b8;border:1px solid #1e3a5f;"
@@ -445,6 +457,7 @@
                         </svg>
                         Resend SMS
                     </button>
+                    @endif
                     @endif
 
                     @if($order->status === 'received')
@@ -563,6 +576,7 @@
                     <td class="px-5 py-3">
                         @php
                         $badge = match($order->status) {
+                            'pending'   => ['background:#451a0320;color:#fbbf24;border:1px solid #92400e;', '… Purchase pending'],
                             'waiting'   => ['background:#1e3a8a20;color:#93c5fd;border:1px solid #1d4ed8;', '⏳ Waiting'],
                             'received'  => ['background:#052e16;color:#4ade80;border:1px solid #14532d;',  '✓ Received'],
                             'completed' => ['background:#052e16;color:#4ade80;border:1px solid #166534;',  '✓ Completed'],
@@ -767,17 +781,19 @@ function switchTab(tabId, btn) {
 /* ══════ Country loading ══════ */
 async function loadCountries() {
     try {
-        const r    = await fetch('{{ route("dashboard.virtual-numbers.countries") }}', { headers: { Accept: 'application/json' } });
+        const countryUrl = new URL('{{ route("dashboard.virtual-numbers.countries") }}', window.location.origin);
+        if (_vnServerPref) countryUrl.searchParams.set('server', _vnServerPref);
+        const r    = await fetch(countryUrl, { headers: { Accept: 'application/json' } });
         const data = await r.json();
         if (!data.countries?.length) return;
 
         const filterSel = document.getElementById('country-filter');
         const modalSel  = document.getElementById('modal-country');
 
-        filterSel.innerHTML = '<option value="0">— All Countries —</option>';
+        filterSel.replaceChildren(new Option('— All Countries —', '0'));
         data.countries.forEach(c => {
             countryMap[c.id] = c.name;
-            filterSel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+            filterSel.add(new Option(c.name, c.id));
         });
 
         // Modal select populated lazily on open
@@ -819,6 +835,19 @@ function populateModalCountries(pinCountryId) {
 /* ── Detect server preference from URL (?server=1 or ?server=2) ── */
 const _vnServerPref = new URLSearchParams(window.location.search).get('server') || '';
 
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[char]);
+}
+
+function jsString(value) {
+    return JSON.stringify(String(value))
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026');
+}
+
 async function loadServices() {
     const country = document.getElementById('country-filter').value;
     const sort    = document.getElementById('sort-filter').value;
@@ -826,9 +855,11 @@ async function loadServices() {
     loading?.classList.remove('hidden');
 
     try {
-        let url = `{{ route('dashboard.virtual-numbers.services') }}?country=${country}&sort=${sort}`;
-        if (_vnServerPref) url += `&server=${_vnServerPref}`;
-        const r   = await fetch(url, { headers: { Accept: 'application/json' } });
+        const serviceUrl = new URL('{{ route("dashboard.virtual-numbers.services") }}', window.location.origin);
+        serviceUrl.searchParams.set('country', country);
+        serviceUrl.searchParams.set('sort', sort);
+        if (_vnServerPref) serviceUrl.searchParams.set('server', _vnServerPref);
+        const r   = await fetch(serviceUrl, { headers: { Accept: 'application/json' } });
         const d   = await r.json();
         allServices = d.services ?? [];
         renderServices(allServices);
@@ -882,13 +913,20 @@ function renderServices(services) {
 
         const priceJson  = priceNgn !== null ? priceNgn : 0;
         const usdJson    = svc.usd_cost !== null && svc.usd_cost !== undefined ? svc.usd_cost : null;
-        const nameEsc    = svc.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const safeName = escapeHtml(svc.name);
 
         // Supplemental service — different country source
-        const pinId      = svc.supplemental ? (svc.supplemental_country_id ?? null) : null;
-        const pinName    = svc.supplemental ? (svc.supplemental_country_name ?? '') : '';
+        const pinId      = svc.supplemental
+            ? (svc.supplemental_country_id ?? null)
+            : (_vnServerPref === '3' ? (svc.country_code ?? null) : null);
+        const pinName    = svc.supplemental
+            ? (svc.supplemental_country_name ?? '')
+            : (_vnServerPref === '3' ? (svc.country_name ?? '') : '');
         const suppBadge  = svc.supplemental
-            ? `<span class="text-xs font-semibold px-1.5 py-0.5 rounded" style="background:#0f2d1a;color:#4ade80;border:1px solid #14532d;">${pinName}</span>`
+            ? `<span class="text-xs font-semibold px-1.5 py-0.5 rounded" style="background:#0f2d1a;color:#4ade80;border:1px solid #14532d;">${escapeHtml(pinName)}</span>`
+            : '';
+        const providerCountryBadge = _vnServerPref === '3' && pinName
+            ? `<span class="text-xs font-semibold px-1.5 py-0.5 rounded" style="background:#172554;color:#bfdbfe;border:1px solid #1e3a8a;">${escapeHtml(pinName)}</span>`
             : '';
         const cardStyle  = svc.supplemental
             ? 'border-color:#14532d;background:#0a1a10;'
@@ -897,15 +935,16 @@ function renderServices(services) {
             ? 'background:linear-gradient(135deg,#065f46,#10b981);'
             : '';
 
-        const openCall = `openBuyModal('${svc.code}', '${nameEsc}', ${svc.count}, ${priceJson}, ${JSON.stringify(usdJson)}, ${JSON.stringify(pinId)}, '${pinName}')`;
+        const openCall = `openBuyModal(${jsString(svc.code)}, ${jsString(svc.name)}, ${Number(svc.count)}, ${Number(priceJson)}, ${JSON.stringify(usdJson)}, ${JSON.stringify(pinId)}, ${jsString(pinName)}, ${jsString(svc.country_code ?? '')}, ${jsString(svc.country_name ?? '')})`;
 
         return `
-        <div class="svc-card" style="${cardStyle}" onclick="${openCall}">
-            <div class="svc-badge" style="${badgeSyle}">${initial}</div>
+        <div class="svc-card" style="${cardStyle}" onclick="${escapeHtml(openCall)}">
+            <div class="svc-badge" style="${badgeSyle}">${escapeHtml(initial)}</div>
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                    <p class="text-sm font-semibold text-white truncate">${svc.name}</p>
+                    <p class="text-sm font-semibold text-white truncate">${safeName}</p>
                     ${suppBadge}
+                    ${providerCountryBadge}
                 </div>
                 <p class="text-xs text-slate-500 mt-0.5">${countTxt} available</p>
             </div>
@@ -913,7 +952,7 @@ function renderServices(services) {
                 ${priceTag}
                 ${usdHint}
                 <button class="buy-btn" style="${svc.supplemental ? 'background:#10b981;' : ''}"
-                        onclick="event.stopPropagation(); ${openCall}">
+                        onclick="event.stopPropagation(); ${escapeHtml(openCall)}">
                     Buy
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -931,8 +970,8 @@ function filterServices() {
 }
 
 /* ══════ Buy Modal ══════ */
-function openBuyModal(code, name, count, priceNgn, usdCost, pinCountryId, pinCountryName) {
-    selectedService = { code, name, count, price: priceNgn, usd_cost: usdCost };
+function openBuyModal(code, name, count, priceNgn, usdCost, pinCountryId, pinCountryName, countryCode = '', countryName = '') {
+    selectedService = { code, name, count, price: priceNgn, usd_cost: usdCost, country_code: countryCode, country_name: countryName };
     const rowSvc = document.getElementById('modal-row-service');
     if (rowSvc) rowSvc.textContent = name;
     document.getElementById('modal-error').classList.add('hidden');
@@ -981,7 +1020,10 @@ async function fetchModalPrice() {
     if (btnLabel) btnLabel.textContent = 'Loading price…';
 
     try {
-        const r = await fetch(`{{ route('dashboard.virtual-numbers.services') }}?country=${countryId}`, {
+        const serviceUrl = new URL('{{ route("dashboard.virtual-numbers.services") }}', window.location.origin);
+        serviceUrl.searchParams.set('country', countryId);
+        if (_vnServerPref) serviceUrl.searchParams.set('server', _vnServerPref);
+        const r = await fetch(serviceUrl, {
             headers: { Accept: 'application/json' }
         });
         const d   = await r.json();
@@ -1010,12 +1052,15 @@ async function confirmBuy() {
     const errTxt      = document.getElementById('modal-error-text');
     const countrySel  = document.getElementById('modal-country');
     const country     = countrySel.value;
-    const countryName = countrySel.options[countrySel.selectedIndex]?.text ?? '';
+    const isServer3   = _vnServerPref === '3';
+    const countryName = isServer3
+        ? (selectedService.country_name || countrySel.options[countrySel.selectedIndex]?.text || '')
+        : (countrySel.options[countrySel.selectedIndex]?.text ?? '');
 
     errBox.classList.add('hidden');
 
     // Require a specific country to be selected
-    if (!country || country === '0') {
+    if (!country || (!isServer3 && country === '0')) {
         errTxt.textContent = 'Please select a country before purchasing.';
         errBox.classList.remove('hidden');
         countrySel.focus();
@@ -1029,7 +1074,11 @@ async function confirmBuy() {
     const resetLabel = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> <span>Buy${priceFmt && priceFmt !== '—' ? ' — ' + priceFmt : ''}</span>`;
 
     try {
-        const orderBody = { service: selectedService.code, country: parseInt(country), country_name: countryName };
+        const orderBody = {
+            service: selectedService.code,
+            country: isServer3 ? 0 : parseInt(country, 10),
+            country_name: countryName,
+        };
         if (_vnServerPref) orderBody.server_pref = parseInt(_vnServerPref);
         const r = await fetch('{{ route("dashboard.virtual-numbers.order") }}', {
             method: 'POST',
@@ -1042,7 +1091,17 @@ async function confirmBuy() {
             closeBuyModal();
             showToast(`✓ Number assigned: +${data.order.phone_number}`, 'success');
             // Reload and switch to Active Rentals tab
-            setTimeout(() => { location.href = location.pathname + '?tab=active'; }, 1200);
+            setTimeout(() => {
+                const serverQuery = _vnServerPref ? `&server=${encodeURIComponent(_vnServerPref)}` : '';
+                location.href = location.pathname + `?tab=active${serverQuery}`;
+            }, 1200);
+        } else if (data.pending_confirmation) {
+            closeBuyModal();
+            showToast(data.error || 'Purchase confirmation pending. Do not place it again.', 'error');
+            setTimeout(() => {
+                const serverQuery = _vnServerPref ? `&server=${encodeURIComponent(_vnServerPref)}` : '';
+                location.href = location.pathname + `?tab=active${serverQuery}`;
+            }, 1200);
         } else {
             // data.error = our custom message; data.debug = raw DB error; data.message = Laravel's format
             const msg  = data.error || data.message || 'Something went wrong. Please try again.';
@@ -1053,6 +1112,15 @@ async function confirmBuy() {
             btn.innerHTML = resetLabel;
         }
     } catch (e) {
+        if (isServer3) {
+            closeBuyModal();
+            showToast('The Server 3 purchase response could not be confirmed. Do not retry; contact support.', 'error');
+            setTimeout(() => {
+                const serverQuery = _vnServerPref ? `&server=${encodeURIComponent(_vnServerPref)}` : '';
+                location.href = location.pathname + `?tab=active${serverQuery}`;
+            }, 1200);
+            return;
+        }
         errTxt.textContent = 'Network error. Please check your connection and try again.';
         errBox.classList.remove('hidden');
         btn.disabled = false;
@@ -1068,7 +1136,7 @@ function applyReceivedState(orderId, code) {
         codeBox.classList.remove('hidden');
         // Update copy button to use the new code
         const copyBtn = codeBox.querySelector('button');
-        if (copyBtn) copyBtn.setAttribute('onclick', `copyCode('${code}', this)`);
+        if (copyBtn) copyBtn.onclick = () => copyCode(code, copyBtn);
     }
     const codeText = document.getElementById(`code-text-${orderId}`);
     if (codeText) codeText.textContent = code;
@@ -1212,6 +1280,15 @@ async function pollOrder(orderId) {
         });
         if (!r.ok) return;
         const data = await r.json();
+
+        if (data.phone_number) {
+            const card = document.getElementById(`active-order-${orderId}`);
+            if (card && !card.querySelector('.order-phone-number')) {
+                const serverQuery = _vnServerPref ? `&server=${encodeURIComponent(_vnServerPref)}` : '';
+                location.href = location.pathname + `?tab=active${serverQuery}`;
+                return;
+            }
+        }
 
         // Update last-checked timestamp
         const lcEl = document.getElementById(`last-checked-${orderId}`);

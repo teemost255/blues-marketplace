@@ -192,6 +192,11 @@
                     <span class="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0"></span>
                     Server 2
                 </a>
+                <a href="{{ route('dashboard.virtual-numbers') }}?server=3"
+                   class="sidebar-sub-link {{ $vnActive && $currentServer === '3' ? 'active' : '' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0"></span>
+                    Server 3
+                </a>
             </div>
         </div>
 

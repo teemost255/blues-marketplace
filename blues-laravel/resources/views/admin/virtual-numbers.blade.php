@@ -4,10 +4,14 @@
 @section('content')
 
 {{-- Stats --}}
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
     <div class="bg-slate-800 border border-slate-700 rounded-xl px-5 py-4">
         <p class="text-2xl font-bold text-white">{{ number_format($stats['total']) }}</p>
         <p class="text-xs text-slate-400 mt-0.5">Total Orders</p>
+    </div>
+    <div class="bg-slate-800 border border-slate-700 rounded-xl px-5 py-4">
+        <p class="text-2xl font-bold text-amber-400">{{ number_format($stats['pending']) }}</p>
+        <p class="text-xs text-slate-400 mt-0.5">Provider Confirmation Pending</p>
     </div>
     <div class="bg-slate-800 border border-slate-700 rounded-xl px-5 py-4">
         <p class="text-2xl font-bold text-blue-400">{{ number_format($stats['waiting']) }}</p>
@@ -61,6 +65,7 @@
         <select name="status" onchange="this.form.submit()"
                 class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 pr-8 appearance-none">
             <option value="all" {{ request('status','all')==='all'?'selected':'' }}>All Statuses</option>
+            <option value="pending"  {{ request('status')==='pending'  ?'selected':'' }}>… Provider confirmation pending</option>
             <option value="waiting"   {{ request('status')==='waiting'  ?'selected':'' }}>⏳ Waiting</option>
             <option value="received"  {{ request('status')==='received' ?'selected':'' }}>📨 Received</option>
             <option value="completed" {{ request('status')==='completed'?'selected':'' }}>✓ Completed</option>
@@ -106,15 +111,20 @@
                         <p class="text-xs text-slate-500">{{ $order->user?->email }}</p>
                     </td>
                     <td class="px-5 py-3">
-                        <span class="font-mono text-white text-sm">+{{ $order->phone_number ?? '—' }}</span>
+                        @if($order->phone_number)
+                        <span class="font-mono text-white text-sm">+{{ $order->phone_number }}</span>
+                        @else
+                        <span class="text-amber-300 text-xs">Pending confirmation</span>
+                        @endif
                     </td>
                     <td class="px-5 py-3">
                         <p class="text-white text-sm">{{ $order->service_name }}</p>
                         <p class="text-xs text-slate-500">{{ $order->country_name ?: 'Country #'.$order->country }}</p>
+                        <p class="text-xs text-indigo-300">{{ match($order->provider) {'server1' => 'GrizzlySMS', 'server2' => 'HeroSMS', 'server3' => 'PVADeals', default => 'HeroSMS'} }}</p>
                     </td>
                     <td class="px-5 py-3">
                         @if($order->sms_code)
-                        <span class="font-mono text-emerald-400 font-semibold tracking-widest">{{ $order->sms_code }}</span>
+                        <span class="font-mono text-emerald-400 font-semibold break-all max-w-xs inline-block">{{ $order->sms_code }}</span>
                         @else
                         <span class="text-slate-600">—</span>
                         @endif
@@ -123,6 +133,7 @@
                     <td class="px-5 py-3">
                         @php
                             $badge = match($order->status) {
+                                'pending'   => 'bg-amber-900/50 text-amber-400 border-amber-700/50',
                                 'waiting'   => 'bg-blue-900/50 text-blue-400 border-blue-700/50',
                                 'received'  => 'bg-sky-900/50 text-sky-300 border-sky-700/50',
                                 'completed' => 'bg-green-900/50 text-green-400 border-green-700/50',
@@ -131,6 +142,7 @@
                                 default     => 'bg-slate-700 text-slate-400 border-slate-600',
                             };
                             $icon = match($order->status) {
+                                'pending'   => '…',
                                 'waiting'   => '⏳',
                                 'received'  => '📨',
                                 'completed' => '✓',
@@ -149,14 +161,18 @@
                     <td class="px-5 py-3">
                         <div class="flex flex-col gap-1.5 min-w-[120px]">
                             {{-- Refund button — only for non-terminal states --}}
-                            @if(!in_array($order->status, ['completed','cancelled']))
+                            @if(!in_array($order->status, ['completed','cancelled'])
+                                && !($order->provider === 'server3' && $order->status === 'pending'))
                             <button onclick="vnAction({{ $order->id }}, 'refund')"
                                     class="text-xs px-2.5 py-1 rounded bg-amber-700/40 hover:bg-amber-600/60 text-amber-300 border border-amber-700/50 transition-colors">
                                 ↩ Refund
                             </button>
+                            @elseif($order->provider === 'server3' && $order->status === 'pending')
+                            <span class="text-xs text-amber-300 max-w-[180px]">Check PVADeals request history before refunding.</span>
                             @endif
                             {{-- Status dropdown --}}
-                            @if(!in_array($order->status, ['cancelled']))
+                            @if(!in_array($order->status, ['cancelled'])
+                                && !($order->provider === 'server3' && $order->status === 'pending'))
                             <select onchange="vnSetStatus({{ $order->id }}, this.value, this)"
                                     class="text-xs bg-slate-700 border border-slate-600 text-slate-300 rounded px-1.5 py-1 focus:outline-none">
                                 <option value="">Change status…</option>

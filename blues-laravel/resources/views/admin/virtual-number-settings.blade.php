@@ -286,6 +286,69 @@
 
 
     {{-- ════════════════════════════════════════════
+         CARD 2 — Server 3 (PVADeals)
+    ════════════════════════════════════════════ --}}
+    <div class="vn-card">
+        <div class="vn-card-header">
+            <div class="vn-icon-badge" style="background:linear-gradient(135deg,#3730a3,#6366f1)">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-white">Server 3 — PVADeals</p>
+                <p class="text-xs text-slate-400 mt-0.5">Short-term 20-minute rentals. Uses PVADeals service prices and SMS webhooks.</p>
+            </div>
+        </div>
+
+        <div class="vn-divider"></div>
+
+        <div class="vn-card-body pt-4 space-y-4">
+            <div class="vn-field">
+                <label>API Key</label>
+                <div class="pw-wrap">
+                    <input type="password" name="pvadeals_api_key" id="pvadeals-key-input"
+                           value="" autocomplete="new-password"
+                           placeholder="{{ $settings['pvadeals_api_key_configured'] ? 'Saved — enter a new key to replace it' : 'API-…' }}">
+                    <button type="button" class="pw-reveal" onclick="togglePw('pvadeals-key-input', this)" title="Show / hide">
+                        <svg id="eye-pvadeals-key-input" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </button>
+                </div>
+                <p class="field-hint">
+                    Create an API key under PVADeals Settings → API Keys.
+                    {{ $settings['pvadeals_api_key_configured'] ? 'Leave blank to keep the saved key.' : '' }}
+                </p>
+            </div>
+
+            <div class="flex items-center flex-wrap gap-3">
+                <button type="button" id="test-s3-btn" onclick="testConnectionS3()"
+                        style="display:inline-flex;align-items:center;gap:.5rem;font-size:.8rem;font-weight:600;padding:.5rem 1rem;border-radius:.5rem;background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);cursor:pointer;">
+                    Test Server 3
+                </button>
+                <span id="test-s3-result" class="text-xs hidden"></span>
+            </div>
+        </div>
+
+        <div class="vn-divider"></div>
+
+        <div class="vn-row">
+            <div class="vn-row-label">
+                <p>Enable Server 3</p>
+                <span>Make PVADeals available from the Server 3 virtual-number menu.</span>
+            </div>
+            <label class="vn-toggle-wrap" for="pvadeals-enabled-toggle">
+                <input type="checkbox" name="pvadeals_enabled" id="pvadeals-enabled-toggle"
+                       value="1" {{ $settings['pvadeals_enabled'] === '1' ? 'checked' : '' }}>
+                <div class="vn-track"></div>
+            </label>
+        </div>
+    </div>
+
+
+    {{-- ════════════════════════════════════════════
          CARD 2 — Commission & Controls
     ════════════════════════════════════════════ --}}
     <div class="vn-card">
@@ -422,7 +485,7 @@
     {{-- ════════════════════════════════════════════
          CARD 3 — Provider Balances
     ════════════════════════════════════════════ --}}
-    @if($server1Balance !== null || $server2Balance !== null)
+    @if($server1Balance !== null || $server2Balance !== null || $server3Balance !== null)
     <div class="vn-card">
         <div class="vn-card-header">
             <div class="vn-icon-badge" style="background:linear-gradient(135deg,#065f46,#10b981)">
@@ -435,7 +498,7 @@
                 <p class="text-xs text-slate-400 mt-0.5">Live API wallet balances for each server</p>
             </div>
         </div>
-        <div class="grid grid-cols-2 gap-px" style="background:rgba(255,255,255,.06);">
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-px" style="background:rgba(255,255,255,.06);">
             <div class="stat-chip text-left">
                 <p class="text-xs text-slate-500 mb-1">Server 1</p>
                 @if($server1Balance !== null)
@@ -448,6 +511,14 @@
                 <p class="text-xs text-slate-500 mb-1">Server 2</p>
                 @if($server2Balance !== null)
                 <p class="text-lg font-bold text-emerald-400">${{ number_format($server2Balance, 4) }}</p>
+                @else
+                <p class="text-sm text-slate-600">Not configured</p>
+                @endif
+            </div>
+            <div class="stat-chip text-left">
+                <p class="text-xs text-slate-500 mb-1">Server 3</p>
+                @if($server3Balance !== null)
+                <p class="text-lg font-bold text-emerald-400">${{ number_format($server3Balance, 4) }}</p>
                 @else
                 <p class="text-sm text-slate-600">Not configured</p>
                 @endif
@@ -545,6 +616,41 @@
                            placeholder="auto-generated"
                            style="font-family:monospace; font-size:.78rem;">
                     <p class="field-hint">Embedded as <code style="color:#94a3b8;">?token=</code> in the URL above. Update in HeroSMS after any change.</p>
+                </div>
+            </div>
+
+            <div style="height:1px;background:rgba(255,255,255,.06);"></div>
+
+            {{-- Server 3 Webhook --}}
+            <div>
+                <p class="text-xs font-semibold text-indigo-400 mb-3 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-indigo-400 inline-block"></span>
+                    Server 3 — PVADeals Webhook
+                </p>
+                <div class="vn-field">
+                    <label>Webhook URL <span class="text-slate-600">(register with PVADeals)</span></label>
+                    @php
+                        $webhookS3Url = url('/pvadeals/webhook') . '?token=' . $settings['pvadeals_webhook_secret'];
+                    @endphp
+                    <div class="flex gap-2">
+                        <input type="text" id="webhook-s3-url-input"
+                               value="{{ $webhookS3Url }}"
+                               readonly
+                               style="font-size:.72rem;font-family:monospace;color:#94a3b8;cursor:default;">
+                        <button type="button" onclick="copyWebhookUrl('webhook-s3-url-input','copy-wh-s3-btn')"
+                                id="copy-wh-s3-btn"
+                                style="flex-shrink:0;padding:.625rem .875rem;background:#312e81;border:1px solid rgba(99,102,241,.35);border-radius:.5rem;color:#c7d2fe;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">
+                            Copy
+                        </button>
+                    </div>
+                    <p class="field-hint">PVADeals account → Settings → Webhook, or use the register button below. SMS messages are delivered to this URL.</p>
+                </div>
+                <div class="flex items-center flex-wrap gap-3 mt-3">
+                    <button type="button" id="configure-s3-webhook-btn" onclick="configureWebhookS3()"
+                            style="display:inline-flex;align-items:center;gap:.5rem;font-size:.8rem;font-weight:600;padding:.5rem 1rem;border-radius:.5rem;background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);cursor:pointer;">
+                        Register Webhook
+                    </button>
+                    <span id="configure-s3-webhook-result" class="text-xs hidden"></span>
                 </div>
             </div>
 
@@ -730,6 +836,60 @@ async function testConnectionS1() {
 
     btn.disabled = false;
     btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Test Server 1`;
+}
+
+/* ── Test connection (Server 3) ── */
+async function testConnectionS3() {
+    const btn = document.getElementById('test-s3-btn');
+    const result = document.getElementById('test-s3-result');
+    btn.disabled = true;
+    result.classList.remove('hidden');
+    result.textContent = 'Connecting…';
+    result.style.color = '#94a3b8';
+
+    try {
+        const r = await fetch('{{ route("admin.virtual-number-settings.test-s3") }}', {
+            headers: { Accept: 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+        });
+        const d = await r.json();
+        result.textContent = d.message;
+        result.style.color = d.success ? '#4ade80' : '#f87171';
+    } catch (e) {
+        result.textContent = 'Request failed. Check the connection and saved API key.';
+        result.style.color = '#f87171';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Test Server 3';
+}
+
+async function configureWebhookS3() {
+    const btn = document.getElementById('configure-s3-webhook-btn');
+    const result = document.getElementById('configure-s3-webhook-result');
+    btn.disabled = true;
+    result.classList.remove('hidden');
+    result.textContent = 'Registering…';
+    result.style.color = '#94a3b8';
+
+    try {
+        const r = await fetch('{{ route("admin.virtual-number-settings.webhook-s3") }}', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({}),
+        });
+        const d = await r.json();
+        result.textContent = d.message || 'Webhook setup failed.';
+        result.style.color = d.success ? '#4ade80' : '#f87171';
+    } catch (e) {
+        result.textContent = 'Request failed. You can copy the URL and add it in PVADeals settings.';
+        result.style.color = '#f87171';
+    }
+
+    btn.disabled = false;
 }
 
 /* Init commission label */

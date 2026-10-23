@@ -14,6 +14,7 @@ class PollVirtualNumbers extends Command
     public function handle(): void
     {
         $orders = VirtualNumberOrder::where('status', 'waiting')
+            ->whereIn('provider', ['server1', 'server2'])
             ->whereNotNull('activation_id')
             ->get();
 

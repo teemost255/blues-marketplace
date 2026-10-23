@@ -3,7 +3,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
-use App\Services\{HeroSmsService, GrizzlySmsService};
+use App\Services\{HeroSmsService, GrizzlySmsService, PvaDealsSmsService};
 use Illuminate\Http\Request;
 
 class VirtualNumberSettingsController extends Controller
@@ -16,6 +16,9 @@ class VirtualNumberSettingsController extends Controller
         }
         if (!Setting::get('grizzly_webhook_secret', '')) {
             Setting::set('grizzly_webhook_secret', bin2hex(random_bytes(20)));
+        }
+        if (!Setting::get('pvadeals_webhook_secret', '')) {
+            Setting::set('pvadeals_webhook_secret', bin2hex(random_bytes(20)));
         }
 
         $settings = [
@@ -34,11 +37,16 @@ class VirtualNumberSettingsController extends Controller
             'grizzly_enabled'        => Setting::get('grizzly_enabled', '0'),
             'grizzly_api_key'        => Setting::get('grizzly_api_key', ''),
             'grizzly_webhook_secret' => Setting::get('grizzly_webhook_secret', ''),
+
+            'pvadeals_enabled' => Setting::get('pvadeals_enabled', '0'),
+            'pvadeals_api_key_configured' => Setting::get('pvadeals_api_key', '') !== '',
+            'pvadeals_webhook_secret' => Setting::get('pvadeals_webhook_secret', ''),
         ];
 
         // Server balances (internal, admin-only)
         $server1Balance = null;
         $server2Balance = null;
+        $server3Balance = null;
 
         $s1 = new GrizzlySmsService();
         if ($s1->isConfigured()) {
@@ -50,7 +58,12 @@ class VirtualNumberSettingsController extends Controller
             try { $server2Balance = $s2->getBalance(); } catch (\Exception $e) {}
         }
 
-        return view('admin.virtual-number-settings', compact('settings', 'server1Balance', 'server2Balance'));
+        $s3 = new PvaDealsSmsService();
+        if ($s3->isConfigured()) {
+            try { $server3Balance = $s3->getBalance(); } catch (\Exception $e) {}
+        }
+
+        return view('admin.virtual-number-settings', compact('settings', 'server1Balance', 'server2Balance', 'server3Balance'));
     }
 
     public function update(Request $request)
@@ -64,10 +77,17 @@ class VirtualNumberSettingsController extends Controller
             'herosms_expiry_minutes'    => 'nullable|integer|min:5|max:60',
             'herosms_max_active'        => 'nullable|integer|min:1|max:10',
             'grizzly_api_key'           => 'nullable|string|max:255',
+            'pvadeals_api_key'          => 'nullable|string|max:255',
         ]);
 
         Setting::set('herosms_enabled', $request->boolean('herosms_enabled') ? '1' : '0');
         Setting::set('grizzly_enabled', $request->boolean('grizzly_enabled') ? '1' : '0');
+        Setting::set('pvadeals_enabled', $request->boolean('pvadeals_enabled') ? '1' : '0');
+
+        // Keep the saved key when the password field is left blank.
+        if ($request->filled('pvadeals_api_key')) {
+            Setting::set('pvadeals_api_key', $request->input('pvadeals_api_key'));
+        }
 
         $keys = [
             'herosms_api_key', 'herosms_exchange_rate', 'herosms_commission_type',
@@ -120,6 +140,54 @@ class VirtualNumberSettingsController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Connection failed: ' . $e->getMessage()]);
+        }
+    }
+
+    public function testConnectionServer3()
+    {
+        $sms = new PvaDealsSmsService();
+        if (!$sms->isConfigured()) {
+            return response()->json(['success' => false, 'message' => 'Server 3 API key not configured.']);
+        }
+
+        try {
+            $balance = $sms->getBalance();
+            return response()->json([
+                'success' => true,
+                'balance' => $balance,
+                'message' => "Server 3 connection successful! Balance: \${$balance}",
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Connection failed: ' . $e->getMessage()]);
+        }
+    }
+
+    public function configureWebhookServer3()
+    {
+        $sms = new PvaDealsSmsService();
+        if (!$sms->isConfigured()) {
+            return response()->json(['success' => false, 'message' => 'Server 3 API key not configured.'], 422);
+        }
+
+        $secret = Setting::get('pvadeals_webhook_secret', '');
+        if ($secret === '') {
+            return response()->json(['success' => false, 'message' => 'Webhook secret is not configured.'], 500);
+        }
+
+        $webhookUrl = url('/pvadeals/webhook') . '?token=' . rawurlencode($secret);
+
+        try {
+            $result = $sms->setWebhook($webhookUrl);
+            return response()->json([
+                'success' => true,
+                'message' => 'PVADeals webhook configured successfully.',
+                'url' => $result['url'] ?? $webhookUrl,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Webhook setup failed: ' . $e->getMessage() . ' You can copy the URL and add it in PVADeals settings.',
+            ], 422);
         }
     }
 

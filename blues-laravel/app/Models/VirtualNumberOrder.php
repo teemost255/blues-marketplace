@@ -24,12 +24,13 @@ class VirtualNumberOrder extends Model
 
     public function isActive(): bool
     {
-        return in_array($this->status, ['pending', 'waiting']);
+        return in_array($this->status, ['pending', 'waiting', 'received']);
     }
 
     public function statusBadgeClass(): string
     {
         return match($this->status) {
+            'pending'   => 'bg-amber-900/50 text-amber-400 border-amber-700/50',
             'waiting'   => 'bg-yellow-900/50 text-yellow-400 border-yellow-700/50',
             'received'  => 'bg-blue-900/50 text-blue-400 border-blue-700/50',
             'completed' => 'bg-green-900/50 text-green-400 border-green-700/50',
