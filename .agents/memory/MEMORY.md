@@ -1,1 +1,2 @@
 - [Sameeha key delivery](sameeha-key-delivery.md) — persist attempts before calling; uncertain or incomplete responses stay pending until manually resolved.
+- [PVADeals Server 3 scope](pvadeals-server3-scope.md) — keep the provider on the existing 20-minute rental flow; long-term rentals were excluded.

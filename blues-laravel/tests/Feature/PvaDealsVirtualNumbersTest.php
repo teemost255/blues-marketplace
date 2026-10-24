@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{Notification, User, VirtualNumberOrder, Wallet, WalletTransaction};
+use App\Models\{AdminUser, Notification, User, VirtualNumberOrder, Wallet, WalletTransaction};
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\{Cache, Http};
@@ -48,6 +48,32 @@ class PvaDealsVirtualNumbersTest extends TestCase
             ->getJson(route('dashboard.virtual-numbers.countries', ['server' => 3]))
             ->assertOk()
             ->assertJsonCount(2, 'countries');
+
+        $this->actingAs($buyer)
+            ->get(route('dashboard.virtual-numbers', ['server' => 3]))
+            ->assertOk();
+    }
+
+    public function test_admin_can_configure_server3_without_the_saved_api_key_being_rendered(): void
+    {
+        Setting::set('pvadeals_api_key', 'test-pvadeals-key');
+        Http::fake([
+            'prod-v3.pvadeals.com/v3/api/balance' => Http::response([
+                'success' => true,
+                'data' => ['credits' => 20],
+            ]),
+        ]);
+        $admin = AdminUser::create([
+            'email' => 'pva-admin@example.test',
+            'password_hash' => 'unused',
+            'display_name' => 'PVA Admin',
+        ]);
+
+        $this->withSession(['admin_id' => $admin->id])
+            ->get(route('admin.virtual-number-settings'))
+            ->assertOk()
+            ->assertSee('PVADeals')
+            ->assertDontSee('test-pvadeals-key');
     }
 
     public function test_server3_order_charges_wallet_and_sends_the_bearer_authenticated_short_term_request(): void
@@ -112,25 +138,6 @@ class PvaDealsVirtualNumbersTest extends TestCase
                 'success' => false,
                 'message' => 'Provider unavailable',
             ], 500),
-            'prod-v3.pvadeals.com/v3/api/requests*' => Http::response([
-                'success' => true,
-                'data' => [
-                    'data' => [
-                        'edges' => [[
-                            'node' => [
-                                '_id' => self::REQUEST_ID,
-                                'serviceName' => 'Airbnb',
-                                'serviceId' => self::SERVICE_ID,
-                                'number' => '+13135550123',
-                                'status' => 'RESERVED',
-                                'numberType' => 'STR',
-                                'createdAt' => now()->toIso8601String(),
-                                'endTime' => now()->addMinutes(20)->toIso8601String(),
-                            ],
-                        ]],
-                    ],
-                ],
-            ]),
         ]);
         $buyer = $this->createBuyer(1000);
 
@@ -148,10 +155,22 @@ class PvaDealsVirtualNumbersTest extends TestCase
         $this->assertSame(800.0, (float) Wallet::where('user_id', $buyer->id)->value('balance'));
         $this->assertSame(0, WalletTransaction::where('user_id', $buyer->id)->where('type', 'refund')->count());
 
-        Cache::forget('pvadeals.recent-requests.' . hash('sha256', Setting::get('pvadeals_api_key')));
-        $statusResponse = $this->postJson(route('dashboard.virtual-numbers.status', $pending));
-        Http::assertSent(fn ($request) => str_contains($request->url(), '/v3/api/requests'));
-        $statusResponse
+        Setting::set('pvadeals_webhook_secret', 'test-webhook-secret');
+        $this->postJson(route('dashboard.virtual-numbers.status', $pending))
+            ->assertOk()
+            ->assertJsonPath('status', 'pending')
+            ->assertJsonPath('phone_number', null);
+
+        $this->postJson(route('pvadeals.webhook', ['token' => 'test-webhook-secret']), [
+            'event' => 'number_purchased',
+            'timestamp' => now()->toIso8601String(),
+            'requestId' => self::REQUEST_ID,
+            'serviceId' => self::SERVICE_ID,
+            'number' => '+13135550123',
+            'message' => '',
+        ])->assertOk();
+
+        $this->postJson(route('dashboard.virtual-numbers.status', $pending))
             ->assertOk()
             ->assertJsonPath('status', 'waiting')
             ->assertJsonPath('phone_number', '13135550123');
@@ -166,6 +185,7 @@ class PvaDealsVirtualNumbersTest extends TestCase
         $order = $this->createServer3Order($buyer, self::REQUEST_ID, 'waiting', 200);
         $payload = [
             'event' => 'sms_received',
+            'timestamp' => now()->toIso8601String(),
             'requestId' => self::REQUEST_ID,
             'serviceId' => self::SERVICE_ID,
             'number' => '+13135550123',
@@ -180,6 +200,28 @@ class PvaDealsVirtualNumbersTest extends TestCase
         $this->assertSame('received', $order->fresh()->status);
         $this->assertSame($payload['message'], $order->fresh()->sms_code);
         $this->assertSame(1, Notification::where('user_id', $buyer->id)->count());
+    }
+
+    public function test_purchase_webhook_does_not_attach_an_ambiguous_request_to_two_pending_orders(): void
+    {
+        Setting::set('pvadeals_webhook_secret', 'test-webhook-secret');
+        $buyer = $this->createBuyer(1000);
+        $first = $this->createServer3Order($buyer, null, 'pending', 200);
+        $second = $this->createServer3Order($buyer, null, 'pending', 200);
+
+        $this->postJson(route('pvadeals.webhook', ['token' => 'test-webhook-secret']), [
+            'event' => 'number_purchased',
+            'timestamp' => now()->toIso8601String(),
+            'requestId' => self::REQUEST_ID,
+            'serviceId' => self::SERVICE_ID,
+            'number' => '+13135550123',
+            'message' => '',
+        ])->assertStatus(503);
+
+        $this->assertSame('pending', $first->fresh()->status);
+        $this->assertSame('pending', $second->fresh()->status);
+        $this->assertNull($first->fresh()->activation_id);
+        $this->assertNull($second->fresh()->activation_id);
     }
 
     public function test_server3_cancellation_refunds_only_after_provider_confirms_flagging(): void
@@ -221,7 +263,7 @@ class PvaDealsVirtualNumbersTest extends TestCase
         return $buyer;
     }
 
-    private function createServer3Order(User $buyer, string $requestId, string $status, float $cost): VirtualNumberOrder
+    private function createServer3Order(User $buyer, ?string $requestId, string $status, float $cost): VirtualNumberOrder
     {
         return VirtualNumberOrder::create([
             'user_id' => $buyer->id,

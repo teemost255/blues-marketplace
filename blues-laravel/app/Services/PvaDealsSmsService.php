@@ -130,20 +130,6 @@ class PvaDealsSmsService
         return $this->request('GET', 'request/' . rawurlencode($requestId));
     }
 
-    public function getRecentRequests(): array
-    {
-        $data = $this->request('GET', 'requests', ['first' => 20, 'orderBy' => 'desc']);
-        $edges = $data['data']['edges'] ?? null;
-        if (!is_array($edges)) {
-            throw new RuntimeException('PVADeals returned an invalid requests response.');
-        }
-
-        return array_values(array_filter(array_map(
-            fn ($edge) => is_array($edge) && is_array($edge['node'] ?? null) ? $edge['node'] : null,
-            $edges
-        )));
-    }
-
     public function flagNumber(string $requestId): bool
     {
         $data = $this->request('POST', 'flag/' . rawurlencode($requestId));

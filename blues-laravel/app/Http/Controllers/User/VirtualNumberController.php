@@ -938,128 +938,6 @@ class VirtualNumberController extends Controller
         });
     }
 
-    private function recoverPendingPvaDealsOrder(VirtualNumberOrder $order): void
-    {
-        $apiKey = Setting::get('pvadeals_api_key', '');
-        if (!$apiKey || !$order->created_at) {
-            return;
-        }
-
-        $cacheKey = 'pvadeals.recent-requests.v2.' . hash('sha256', $apiKey);
-        try {
-            fwrite(STDERR, "\nPVA_CACHE_EXISTS " . (Cache::has($cacheKey) ? 'yes' : 'no') . "\n");
-            $fetchSnapshot = function () {
-                fwrite(STDERR, "\nPVA_CACHE_MISS\n");
-                return [
-                    'fetched_at' => now()->getTimestamp(),
-                    'requests' => (new PvaDealsSmsService())->getRecentRequests(),
-                ];
-            };
-            $snapshot = Cache::remember($cacheKey, now()->addSeconds(15), $fetchSnapshot);
-            fwrite(STDERR, "\nPVA_SNAPSHOT " . json_encode($snapshot) . "\n");
-            if (is_array($snapshot)
-                && ($snapshot['fetched_at'] ?? 0) < $order->created_at->getTimestamp()) {
-                Cache::forget($cacheKey);
-                $snapshot = Cache::remember($cacheKey, now()->addSeconds(15), $fetchSnapshot);
-            }
-            $recentRequests = $snapshot['requests'] ?? [];
-        } catch (\Throwable $e) {
-            Log::notice('Could not reconcile a pending PVADeals order yet.', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-            ]);
-            return;
-        }
-
-        $candidates = [];
-        foreach ($recentRequests as $request) {
-            if (!is_array($request)
-                || (string) ($request['serviceId'] ?? '') !== (string) $order->service
-                || strtoupper((string) ($request['numberType'] ?? '')) !== 'STR'
-                || !in_array(strtoupper((string) ($request['status'] ?? '')), ['RESERVED', 'COMPLETED'])
-                || empty($request['_id'])
-                || empty($request['number'])
-                || empty($request['createdAt'])) {
-                continue;
-            }
-
-            if (VirtualNumberOrder::where('provider', 'server3')
-                ->where('activation_id', (string) $request['_id'])
-                ->exists()) {
-                continue;
-            }
-
-            try {
-                $providerCreatedAt = \Illuminate\Support\Carbon::parse($request['createdAt']);
-            } catch (\Throwable) {
-                continue;
-            }
-
-            if (abs($providerCreatedAt->getTimestamp() - $order->created_at->getTimestamp()) > 120) {
-                continue;
-            }
-
-            // Only attach a provider request when the local and upstream
-            // histories each identify one matching purchase.
-            $localMatches = VirtualNumberOrder::where('provider', 'server3')
-                ->where('status', 'pending')
-                ->where('service', $order->service)
-                ->whereBetween('created_at', [
-                    $providerCreatedAt->copy()->subSeconds(120),
-                    $providerCreatedAt->copy()->addSeconds(10),
-                ])
-                ->count();
-
-            if ($localMatches === 1) {
-                $candidates[] = $request;
-            }
-        }
-
-        if (count($candidates) !== 1) {
-            return;
-        }
-
-        $providerRequest = $candidates[0];
-        try {
-            $expiresAt = !empty($providerRequest['endTime'])
-                ? \Illuminate\Support\Carbon::parse($providerRequest['endTime'])
-                : now()->addMinutes(20);
-
-            $updated = DB::transaction(function () use ($order, $providerRequest, $expiresAt) {
-                $lockedOrder = VirtualNumberOrder::whereKey($order->id)->lockForUpdate()->firstOrFail();
-                if ($lockedOrder->status !== 'pending') {
-                    return false;
-                }
-
-                $lockedOrder->update([
-                    'activation_id' => (string) $providerRequest['_id'],
-                    'phone_number' => ltrim((string) $providerRequest['number'], '+'),
-                    'service_name' => mb_substr(
-                        (string) ($providerRequest['serviceName'] ?? $lockedOrder->service_name),
-                        0,
-                        100
-                    ),
-                    'status' => 'waiting',
-                    'expires_at' => $expiresAt,
-                ]);
-
-                return true;
-            });
-
-            if ($updated) {
-                Log::notice('Recovered a pending PVADeals order from provider request history.', [
-                    'order_id' => $order->id,
-                    'provider_request_id' => $providerRequest['_id'],
-                ]);
-            }
-        } catch (\Throwable $e) {
-            Log::error('PVADeals order recovery failed to persist.', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
     /**
      * Generic VN webhook — called by any provider when an SMS code arrives.
      * Secured by a secret token in the query string.
@@ -1169,43 +1047,88 @@ class VirtualNumberController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        if ($request->input('event') !== 'sms_received') {
+        $event = $request->input('event');
+        if (!in_array($event, ['number_purchased', 'sms_received'], true)) {
             return response()->json(['ok' => true]);
         }
 
         $requestId = $request->input('requestId');
+        $serviceId = $request->input('serviceId');
+        $number = $request->input('number');
+        $timestamp = $request->input('timestamp');
         $message = $request->input('message');
         if (!is_string($requestId) || $requestId === ''
-            || !is_string($message) || trim($message) === ''
-            || mb_strlen($message) > 5000) {
+            || !is_string($serviceId) || $serviceId === ''
+            || !is_string($number) || $number === ''
+            || !is_string($timestamp) || $timestamp === ''
+            || ($event === 'sms_received'
+                && (!is_string($message) || trim($message) === '' || mb_strlen($message) > 5000))) {
             return response()->json(['error' => 'Invalid webhook payload'], 422);
+        }
+
+        try {
+            $eventAt = \Illuminate\Support\Carbon::parse($timestamp);
+        } catch (\Throwable) {
+            return response()->json(['error' => 'Invalid webhook timestamp'], 422);
         }
 
         $order = VirtualNumberOrder::where('provider', 'server3')
             ->where('activation_id', $requestId)
-            ->whereIn('status', ['waiting', 'received'])
             ->first();
 
         if (!$order) {
-            // Ask PVADeals to retry briefly in case this webhook beat the
-            // local order update after a successful purchase.
-            return response()->json(['error' => 'Order is not available yet'], 503);
+            // A provider webhook can beat the local purchase response after
+            // a timeout. Link it only if one pending order matches uniquely.
+            $matches = VirtualNumberOrder::where('provider', 'server3')
+                ->where('status', 'pending')
+                ->where('service', $serviceId)
+                ->whereBetween('created_at', [
+                    $eventAt->copy()->subSeconds(120),
+                    $eventAt->copy()->addSeconds(120),
+                ])
+                ->get();
+
+            if ($matches->count() !== 1) {
+                return response()->json(['error' => 'Order is not uniquely available yet'], 503);
+            }
+
+            $order = $matches->first();
         }
 
-        $order->update(['status' => 'received', 'sms_code' => trim($message)]);
+        if (in_array($order->status, ['cancelled', 'expired', 'completed'], true)) {
+            return response()->json(['ok' => true]);
+        }
 
-        try {
-            Notification::create([
-                'user_id' => $order->user_id,
-                'title' => 'SMS Code Received',
-                'message' => mb_substr("Your {$order->service_name} verification message has arrived.", 0, 250),
-                'type' => 'success',
-            ]);
-        } catch (\Throwable) {}
+        $updates = [
+            'activation_id' => $requestId,
+            'phone_number' => ltrim($number, '+'),
+        ];
+        if ($event === 'number_purchased') {
+            if ($order->status === 'pending') {
+                $updates['status'] = 'waiting';
+                $updates['expires_at'] = $eventAt->copy()->addMinutes(20);
+            }
+        } else {
+            $updates['status'] = 'received';
+            $updates['sms_code'] = trim($message);
+        }
+        $order->update($updates);
 
-        Log::info('PVADeals SMS webhook received.', [
+        if ($event === 'sms_received') {
+            try {
+                Notification::create([
+                    'user_id' => $order->user_id,
+                    'title' => 'SMS Code Received',
+                    'message' => mb_substr("Your {$order->service_name} verification message has arrived.", 0, 250),
+                    'type' => 'success',
+                ]);
+            } catch (\Throwable) {}
+        }
+
+        Log::info('PVADeals webhook processed.', [
             'order_id' => $order->id,
             'request_id' => $requestId,
+            'event' => $event,
         ]);
 
         return response()->json(['ok' => true]);
@@ -1238,11 +1161,6 @@ class VirtualNumberController extends Controller
         }
 
         if ($order->provider === 'server3') {
-            if ($order->status === 'pending') {
-                $this->recoverPendingPvaDealsOrder($order);
-                $order->refresh();
-            }
-
             if ($order->status === 'waiting' && $order->expires_at && $order->expires_at->isPast()) {
                 $order->update(['status' => 'expired']);
                 $order->refresh();
