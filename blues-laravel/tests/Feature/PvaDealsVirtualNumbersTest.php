@@ -54,6 +54,21 @@ class PvaDealsVirtualNumbersTest extends TestCase
             ->assertOk();
     }
 
+    public function test_dashboard_menu_only_shows_admin_enabled_virtual_number_servers(): void
+    {
+        Setting::set('grizzly_enabled', '1');
+        Setting::set('herosms_enabled', '0');
+        Setting::set('pvadeals_enabled', '1');
+        $buyer = $this->createBuyer(1000);
+
+        $this->actingAs($buyer)
+            ->get(route('dashboard.virtual-numbers', ['server' => 3]))
+            ->assertOk()
+            ->assertSee('href="' . route('dashboard.virtual-numbers') . '?server=1"', false)
+            ->assertDontSee('href="' . route('dashboard.virtual-numbers') . '?server=2"', false)
+            ->assertSee('href="' . route('dashboard.virtual-numbers') . '?server=3"', false);
+    }
+
     public function test_admin_can_configure_server3_without_the_saved_api_key_being_rendered(): void
     {
         Setting::set('pvadeals_api_key', 'test-pvadeals-key');

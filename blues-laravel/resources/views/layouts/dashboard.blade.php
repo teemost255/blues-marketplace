@@ -164,7 +164,19 @@
         </a>
 
         {{-- Virtual Numbers dropdown (nested under Marketplace) --}}
-        @php $vnActive = request()->routeIs('dashboard.virtual-numbers*'); @endphp
+        @php
+            $vnActive = request()->routeIs('dashboard.virtual-numbers*');
+            $currentServer = (string) request()->query('server', '');
+            $vnEnabledSettings = \App\Models\Setting::query()
+                ->whereIn('key', ['grizzly_enabled', 'herosms_enabled', 'pvadeals_enabled'])
+                ->pluck('value', 'key');
+            $vnServers = array_filter([
+                ['id' => 1, 'setting' => 'grizzly_enabled', 'label' => 'Server 1', 'color' => 'bg-emerald-400'],
+                ['id' => 2, 'setting' => 'herosms_enabled', 'label' => 'Server 2', 'color' => 'bg-orange-400'],
+                ['id' => 3, 'setting' => 'pvadeals_enabled', 'label' => 'Server 3', 'color' => 'bg-indigo-400'],
+            ], fn ($server) => ($vnEnabledSettings[$server['setting']] ?? '0') === '1');
+        @endphp
+        @if($vnServers)
         <div>
             <button onclick="toggleVnDropdown()"
                     id="vn-dropdown-btn"
@@ -179,26 +191,16 @@
                 </svg>
             </button>
             <div id="vn-submenu" class="sidebar-submenu {{ $vnActive ? 'open' : '' }}">
-                @php
-                    $currentServer = request()->query('server', '');
-                @endphp
-                <a href="{{ route('dashboard.virtual-numbers') }}?server=1"
-                   class="sidebar-sub-link {{ $vnActive && $currentServer === '1' ? 'active' : '' }}">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
-                    Server 1
+                @foreach($vnServers as $server)
+                <a href="{{ route('dashboard.virtual-numbers') }}?server={{ $server['id'] }}"
+                   class="sidebar-sub-link {{ $vnActive && $currentServer === (string) $server['id'] ? 'active' : '' }}">
+                    <span class="w-1.5 h-1.5 rounded-full {{ $server['color'] }} flex-shrink-0"></span>
+                    {{ $server['label'] }}
                 </a>
-                <a href="{{ route('dashboard.virtual-numbers') }}?server=2"
-                   class="sidebar-sub-link {{ $vnActive && $currentServer === '2' ? 'active' : '' }}">
-                    <span class="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0"></span>
-                    Server 2
-                </a>
-                <a href="{{ route('dashboard.virtual-numbers') }}?server=3"
-                   class="sidebar-sub-link {{ $vnActive && $currentServer === '3' ? 'active' : '' }}">
-                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0"></span>
-                    Server 3
-                </a>
+                @endforeach
             </div>
         </div>
+        @endif
 
         <a href="{{ route('dashboard.wishlist') }}" class="sidebar-link {{ request()->routeIs('dashboard.wishlist') ? 'active' : '' }}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
