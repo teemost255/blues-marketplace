@@ -143,10 +143,15 @@ class PvaDealsVirtualNumbersTest extends TestCase
         $response->assertStatus(503)->assertJsonPath('pending_confirmation', true);
         $pending = VirtualNumberOrder::where('user_id', $buyer->id)->sole();
         $this->assertSame('pending', $pending->status);
+        $this->assertSame('server3', $pending->provider);
+        $this->assertSame('test-pvadeals-key', Setting::get('pvadeals_api_key'));
         $this->assertSame(800.0, (float) Wallet::where('user_id', $buyer->id)->value('balance'));
         $this->assertSame(0, WalletTransaction::where('user_id', $buyer->id)->where('type', 'refund')->count());
 
-        $this->postJson(route('dashboard.virtual-numbers.status', $pending))
+        Cache::forget('pvadeals.recent-requests.' . hash('sha256', Setting::get('pvadeals_api_key')));
+        $statusResponse = $this->postJson(route('dashboard.virtual-numbers.status', $pending));
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/v3/api/requests'));
+        $statusResponse
             ->assertOk()
             ->assertJsonPath('status', 'waiting')
             ->assertJsonPath('phone_number', '13135550123');

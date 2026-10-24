@@ -945,11 +945,24 @@ class VirtualNumberController extends Controller
             return;
         }
 
-        $cacheKey = 'pvadeals.recent-requests.' . hash('sha256', $apiKey);
+        $cacheKey = 'pvadeals.recent-requests.v2.' . hash('sha256', $apiKey);
         try {
-            $recentRequests = Cache::remember($cacheKey, now()->addSeconds(15), function () {
-                return (new PvaDealsSmsService())->getRecentRequests();
-            });
+            fwrite(STDERR, "\nPVA_CACHE_EXISTS " . (Cache::has($cacheKey) ? 'yes' : 'no') . "\n");
+            $fetchSnapshot = function () {
+                fwrite(STDERR, "\nPVA_CACHE_MISS\n");
+                return [
+                    'fetched_at' => now()->getTimestamp(),
+                    'requests' => (new PvaDealsSmsService())->getRecentRequests(),
+                ];
+            };
+            $snapshot = Cache::remember($cacheKey, now()->addSeconds(15), $fetchSnapshot);
+            fwrite(STDERR, "\nPVA_SNAPSHOT " . json_encode($snapshot) . "\n");
+            if (is_array($snapshot)
+                && ($snapshot['fetched_at'] ?? 0) < $order->created_at->getTimestamp()) {
+                Cache::forget($cacheKey);
+                $snapshot = Cache::remember($cacheKey, now()->addSeconds(15), $fetchSnapshot);
+            }
+            $recentRequests = $snapshot['requests'] ?? [];
         } catch (\Throwable $e) {
             Log::notice('Could not reconcile a pending PVADeals order yet.', [
                 'order_id' => $order->id,
